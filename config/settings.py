@@ -1,4 +1,5 @@
 import os
+import sys
 from pathlib import Path
 
 import dj_database_url
@@ -135,6 +136,11 @@ STORAGES = {
     },
 }
 WHITENOISE_MANIFEST_STRICT = False
+# Désactiver WhiteNoise Manifest pendant les tests unitaires
+if "test" in sys.argv:
+    STORAGES["staticfiles"]["BACKEND"] = (
+        "django.contrib.staticfiles.storage.StaticFilesStorage"
+    )
 
 
 # Email
