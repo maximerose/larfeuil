@@ -29,7 +29,14 @@ def run_deployment(base_dir, python_bin):
 
         # 4. Rassembler les fichiers statiques (Tailwind)
         subprocess.run(
-            [python_bin, "manage.py", "collectstatic", "--noinput"],
+            [
+                python_bin,
+                "manage.py",
+                "collectstatic",
+                "--noinput",
+                "--ignore",
+                "input.css",
+            ],
             cwd=base_dir,
             check=True,
         )

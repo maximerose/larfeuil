@@ -58,4 +58,4 @@ jobs:
           SECRET_KEY: ci-secret-key-testing
         run: |
           python manage.py check
-          python manage.py collectstatic --noinput
+          python manage.py collectstatic --noinput --ignore input.css

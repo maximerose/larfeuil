@@ -14,9 +14,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 STATIC_URL = "static/"
 
 # Indique à Django où aller chercher les fichiers statiques de l'app en dev
-STATICFILES_DIRS = [
-    BASE_DIR / "budget" / "static",
-]
+STATICFILES_DIRS = []
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.getenv("SECRET_KEY")
