@@ -6,7 +6,6 @@
   {% include "budget/partials/settings/_settings_nav.html" with active_tab="profile" %}
 
   <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-
     <!-- Colonne Gauche : Profil -->
     <section class="space-y-6">
       <div class="bg-brand-card border border-brand-border p-5 sm:p-6 rounded-card shadow-sm">
@@ -41,9 +40,7 @@
       <div class="bg-slate-900/50 border border-brand-border p-5 sm:p-6 rounded-card shadow-sm">
         <div class="flex items-center gap-3 mb-2">
           <div class="w-10 h-10 rounded-xl bg-action-info/10 text-action-info flex items-center justify-center shrink-0">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-            </svg>
+            {% include "budget/components/icon.html" with name="user-plus" class="w-5 h-5" %}
           </div>
           {% include "budget/components/heading.html" with title="Inviter un membre" level="3" %}
         </div>
@@ -54,7 +51,6 @@
 
         {% if invite_url %}
           <div class="space-y-3">
-            <!-- Affichage du Code Foyer court -->
             <div class="p-3 bg-slate-900 border border-brand-border rounded-xl flex items-center justify-between">
               <div>
                 <span class="text-[10px] text-slate-500 uppercase font-bold tracking-wider block">Code Foyer</span>
@@ -67,7 +63,6 @@
               </button>
             </div>
 
-            <!-- Lien d'invitation direct -->
             <div class="p-3 bg-brand-dark border border-slate-800 rounded-xl flex items-center gap-2">
               <input type="text"
                      readonly
@@ -91,6 +86,7 @@
         {% endif %}
       </div>
     </section>
+
     <div class="pt-6 border-t border-brand-border/50">
       <form method="post" action="{% url 'logout' %}">
         {% csrf_token %}

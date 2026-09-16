@@ -119,7 +119,7 @@ def parse_xlsx(file_path):
 
 
 class Command(BaseCommand):
-    help = "Extrait intelligemment l'historique en distinguant les charges par utilisateur."
+    help = "Extrait intelligemment l'historique et les prévisions en distinguant les charges par utilisateur."
 
     def add_arguments(self, parser):
         parser.add_argument(
@@ -184,7 +184,7 @@ class Command(BaseCommand):
             writer.writeheader()
             writer.writerows(unique_accounts.values())
 
-        # --- B. CHARGES FIXES (LOGIQUE DE DOUBLE PASSAGE) ---
+        # --- B. CHARGES FIXES & HISTORIQUE & PRÉVISIONS ---
         month_names = {
             "janvier": 1,
             "février": 2,
@@ -201,9 +201,11 @@ class Command(BaseCommand):
         }
 
         param_info = {}
+        category_records = {}  # <-- NOUVEAU : Sauvegarde des catégories et du statut Swilable
         observed_txs = defaultdict(list)
+        tx_records = []
 
-        # Passe 1 : Récupération des Paramètres (Fréquence, Montant forcé, Pro)
+        # Passe 1 : Récupération des Paramètres
         for file_path in file_paths:
             full_path = os.path.join(settings.BASE_DIR, file_path)
             sheets = parse_xlsx(full_path)
@@ -249,8 +251,31 @@ class Command(BaseCommand):
                             "due_date": parse_excel_date(due_date) or "",
                         }
 
-        # Passe 2 : Historique des paiements mensuels
-        tx_records = []
+                    # NOUVEAU : Lecture des catégories variables et du statut Swilable
+                    cat_name = row[10] if len(row) > 10 else None
+                    swilable = row[11] if len(row) > 11 else False
+
+                    if (
+                        cat_name is not None
+                        and str(cat_name).strip()
+                        and str(cat_name).strip() != "None"
+                        and str(cat_name).strip().lower() != "nan"
+                    ):
+                        cat_clean = str(cat_name).strip()
+                        if cat_clean.lower() in ["aménagement", "aménagement / maison"]:
+                            cat_clean = "Aménagement / Maison"
+
+                        swilable_bool = (
+                            str(swilable).strip().lower() in ["true", "1", "oui", "yes"]
+                            or swilable is True
+                        )
+
+                        category_records[cat_clean.lower()] = {
+                            "name": cat_clean,
+                            "is_meal_voucher_eligible": swilable_bool,
+                        }
+
+        # Passe 2 : Historique des paiements mensuels ET PRÉVISIONS
         for file_path in file_paths:
             full_path = os.path.join(settings.BASE_DIR, file_path)
             year_match = re.search(r"20\d\d", file_path)
@@ -261,6 +286,134 @@ class Command(BaseCommand):
                 if sheet_name.strip().lower() not in month_names:
                     continue
                 month_num = month_names[sheet_name.strip().lower()]
+
+                # === EXTRACTION SÉCURISÉE DES PRÉVISIONS (Colonnes AA à AD) ===
+                current_forecast_section = None
+                for r_idx, row in enumerate(rows):
+                    if len(row) > 26 and row[26] is not None and str(row[26]).strip():
+                        cell_26_str = str(row[26]).lower().strip()
+
+                        if (
+                            "répartition revenus" in cell_26_str
+                            or "prévisions revenus" in cell_26_str
+                        ):
+                            current_forecast_section = "INCOME"
+                        elif (
+                            "répartition charges fixes" in cell_26_str
+                            or "prévisions charges fixes" in cell_26_str
+                        ):
+                            current_forecast_section = "RECURRING"
+                        elif (
+                            "répartition charges variables" in cell_26_str
+                            or "prévisions charges variables" in cell_26_str
+                        ):
+                            current_forecast_section = "VARIABLE"
+                        elif (
+                            "répartition épargne" in cell_26_str
+                            or "prévisions épargne" in cell_26_str
+                        ):
+                            current_forecast_section = "SAVINGS"
+
+                        elif current_forecast_section:
+                            if "total" in cell_26_str:
+                                current_forecast_section = None
+                            elif cell_26_str != "type":
+                                cat_name = str(row[26]).strip()
+
+                                if cat_name.lower() in [
+                                    "la bellenergie",
+                                    "energie",
+                                    "énergie",
+                                    "électricité",
+                                    "electricite",
+                                ]:
+                                    cat_name = "Électricité"
+
+                                # Maxime (Col AB = 27)
+                                if len(row) > 27 and row[27] is not None:
+                                    raw_val = str(row[27]).strip()
+                                    if raw_val != "" and raw_val.lower() != "nan":
+                                        try:
+                                            amt = float(raw_val)
+                                            if (
+                                                current_forecast_section == "RECURRING"
+                                                or amt != 0
+                                            ):
+                                                tx_records.append(
+                                                    {
+                                                        "source_file": file_path,
+                                                        "year": default_year,
+                                                        "month": month_num,
+                                                        "section": f"FORECAST_{current_forecast_section}",
+                                                        "label_or_category": cat_name,
+                                                        "amount": amt,
+                                                        "user": "Maxime",
+                                                        "date": f"{default_year}-{month_num:02d}-01",
+                                                        "comment": "",
+                                                        "meal_voucher_amount": 0.0,
+                                                    }
+                                                )
+                                        except (ValueError, TypeError):
+                                            pass
+
+                                # Laurie (Col AC = 28)
+                                if len(row) > 28 and row[28] is not None:
+                                    raw_val = str(row[28]).strip()
+                                    if raw_val != "" and raw_val.lower() != "nan":
+                                        try:
+                                            amt = float(raw_val)
+                                            if (
+                                                current_forecast_section == "RECURRING"
+                                                or amt != 0
+                                            ):
+                                                tx_records.append(
+                                                    {
+                                                        "source_file": file_path,
+                                                        "year": default_year,
+                                                        "month": month_num,
+                                                        "section": f"FORECAST_{current_forecast_section}",
+                                                        "label_or_category": cat_name,
+                                                        "amount": amt,
+                                                        "user": "Laurie",
+                                                        "date": f"{default_year}-{month_num:02d}-01",
+                                                        "comment": "",
+                                                        "meal_voucher_amount": 0.0,
+                                                    }
+                                                )
+                                        except (ValueError, TypeError):
+                                            pass
+
+                                # Pro (Col AD = 29)
+                                if len(row) > 29 and row[29] is not None:
+                                    raw_val = str(row[29]).strip()
+                                    if raw_val != "" and raw_val.lower() != "nan":
+                                        try:
+                                            amt = float(raw_val)
+                                            if (
+                                                current_forecast_section == "RECURRING"
+                                                or amt != 0
+                                            ):
+                                                tx_records.append(
+                                                    {
+                                                        "source_file": file_path,
+                                                        "year": default_year,
+                                                        "month": month_num,
+                                                        "section": f"FORECAST_{current_forecast_section}",
+                                                        "label_or_category": cat_name,
+                                                        "amount": amt,
+                                                        "user": "Pro",
+                                                        "date": f"{default_year}-{month_num:02d}-01",
+                                                        "comment": "",
+                                                        "meal_voucher_amount": 0.0,
+                                                    }
+                                                )
+                                        except (ValueError, TypeError):
+                                            pass
+                    else:
+                        current_forecast_section = None
+                # === FIN EXTRACTION DES PRÉVISIONS ===
+
+                # === RÉCUPÉRATION CLASSIQUE (Transactions réelles) ===
                 header_row = 28
                 for r_idx in range(15, min(40, len(rows))):
                     if any(
@@ -271,14 +424,15 @@ class Command(BaseCommand):
                         header_row = r_idx
                         break
 
-                # Historique des charges fixes
+                # Charges fixes
                 for r_idx in range(header_row + 2, len(rows)):
                     row = rows[r_idx]
-                    label, amount, user, raw_date = (
+                    label, amount, user, raw_date, comment = (
                         row[7] if len(row) > 7 else None,
                         row[8] if len(row) > 8 else None,
                         row[9] if len(row) > 9 else None,
                         row[10] if len(row) > 10 else None,
+                        row[11] if len(row) > 11 else None,
                     )
 
                     if (
@@ -333,7 +487,9 @@ class Command(BaseCommand):
                                         "date": dt_str
                                         if dt_str
                                         else f"{default_year}-{month_num:02d}-01",
-                                        "comment": "",
+                                        "comment": str(comment).strip()
+                                        if comment is not None
+                                        else "",
                                         "meal_voucher_amount": 0.0,
                                     }
                                 )
@@ -426,11 +582,12 @@ class Command(BaseCommand):
                 # Épargne
                 for r_idx in range(header_row + 2, len(rows)):
                     row = rows[r_idx]
-                    acc, amount, user, raw_date = (
+                    acc, amount, user, raw_date, comment = (
                         row[20] if len(row) > 20 else None,
                         row[21] if len(row) > 21 else None,
                         row[22] if len(row) > 22 else None,
                         row[23] if len(row) > 23 else None,
+                        row[24] if len(row) > 24 else None,
                     )
                     if acc is not None and amount is not None:
                         try:
@@ -451,7 +608,9 @@ class Command(BaseCommand):
                                         "date": dt_str
                                         if dt_str
                                         else f"{default_year}-{month_num:02d}-01",
-                                        "comment": "",
+                                        "comment": str(comment).strip()
+                                        if comment is not None
+                                        else "",
                                         "meal_voucher_amount": 0.0,
                                     }
                                 )
@@ -477,24 +636,26 @@ class Command(BaseCommand):
             lbl_display = p_info["display"]
 
             if p_info["is_pro"]:
-                # Force absolue si coché Pro dans Paramètres (ex: Imagify payé par Maxime)
                 true_owners = ["Pro"]
-            elif not txs:
-                # Si personne ne l'a jamais payé
-                true_owners = ["Maxime"]
             else:
-                owner_counts = defaultdict(int)
-                for tx in txs:
-                    owner_counts[tx["owner"]] += 1
-
-                # Exclure les paiements "uniques" s'il y a un vrai payeur récurrent
-                valid_owners = [o for o, c in owner_counts.items() if c >= 2]
-                if not valid_owners:
-                    # Tout le monde a payé 1 seule fois, on attribue à celui qui l'a payé le plus récemment ou par défaut
-                    top_owner = max(owner_counts, key=owner_counts.get)
-                    true_owners = [top_owner]
+                if any(
+                    x in lbl_lower for x in ["salle de sport", "bestrong", "icloud"]
+                ):
+                    true_owners = ["Laurie"]
+                elif "viacham" in lbl_lower:
+                    true_owners = ["Maxime", "Laurie"]
+                elif not txs:
+                    true_owners = ["Maxime"]
                 else:
-                    true_owners = valid_owners
+                    owner_counts = defaultdict(int)
+                    for tx in txs:
+                        owner_counts[tx["owner"]] += 1
+                    valid_owners = [o for o, c in owner_counts.items() if c >= 2]
+                    if not valid_owners:
+                        top_owner = max(owner_counts, key=owner_counts.get)
+                        true_owners = [top_owner]
+                    else:
+                        true_owners = valid_owners
 
             for owner in true_owners:
                 if owner == "Pro":
@@ -546,6 +707,23 @@ class Command(BaseCommand):
                         "is_variable": lbl_lower in ["électricité", "urssaf", "impôts"],
                     }
                 )
+
+        # NOUVEAU : Sauvegarde des catégories et de leur éligibilité Tickets Resto
+        with open(
+            os.path.join(settings.BASE_DIR, "categories_init.csv"),
+            mode="w",
+            encoding="utf-8-sig",
+            newline="",
+        ) as f:
+            writer = csv.DictWriter(
+                f,
+                fieldnames=[
+                    "name",
+                    "is_meal_voucher_eligible",
+                ],
+            )
+            writer.writeheader()
+            writer.writerows(category_records.values())
 
         with open(
             os.path.join(settings.BASE_DIR, "recurring_expenses_init.csv"),

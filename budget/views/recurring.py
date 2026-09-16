@@ -1,3 +1,4 @@
+from decimal import Decimal
 from urllib.request import Request
 
 from django.contrib.auth.decorators import login_required
@@ -12,6 +13,7 @@ from budget.models.account import BankAccount
 from budget.models.recurring import RecurringExpenseShare
 from budget.services.forecast import get_recurring_expenses_with_status
 from budget.utils import get_target_month_from_request, htmx_login_required
+from core.models import Visibility
 
 
 @login_required
@@ -22,11 +24,14 @@ def settings_recurring_list_view(request: Request) -> HttpResponse:
 
     recurring_expenses = get_recurring_expenses_with_status(member, today)
 
+    has_multiple_members = member.household.members.filter(is_active=True).count() > 1
+
     return render(
         request,
         "budget/settings/recurring_list.html",
         {
             "recurring_expenses": recurring_expenses,
+            "has_multiple_members": has_multiple_members,
             "member": member,
             "breadcrumbs": ["Paramètres", "Charges fixes"],
         },
@@ -133,6 +138,10 @@ def settings_recurring_shares_view(request: Request, expense_id: str) -> HttpRes
                 share.full_clean()
                 share.save()
 
+                if expense.visibility == Visibility.PRIVATE:
+                    expense.visibility = Visibility.SHARED
+                    expense.save(update_fields=["visibility"])
+
                 response = HttpResponse("")
                 response["HX-Refresh"] = "true"
 
@@ -141,6 +150,14 @@ def settings_recurring_shares_view(request: Request, expense_id: str) -> HttpRes
                 form.add_error(None, e)
     else:
         form = RecurringExpenseShareForm(household=member.household)
+
+    members_count = member.household.members.filter(is_active=True).count()
+    if members_count > 0:
+        ideal_share = Decimal(str(round(expense.total_amount / members_count, 2)))
+    else:
+        ideal_share = expense.total_amount
+
+    suggested_amount = min(ideal_share, remaining)
 
     return render(
         request,
@@ -155,6 +172,7 @@ def settings_recurring_shares_view(request: Request, expense_id: str) -> HttpRes
             "expense": expense,
             "shares": shares,
             "remaining": remaining,
+            "suggested_amount": suggested_amount,
             "member": member,
             "account_options": account_options,
         },

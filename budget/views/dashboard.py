@@ -35,6 +35,7 @@ def dashboard_view(request: Request) -> HttpResponse:
     recurring_expenses = []
     variable_forecasts = []
     savings_forecasts = []
+    income_forecasts = []
 
     target_month = get_target_month_from_request(request)
     household = request.household
@@ -158,6 +159,38 @@ def dashboard_view(request: Request) -> HttpResponse:
             }
         )
 
+    income_qs = MonthlyForecast.objects.filter(
+        Q(member=member) | Q(visibility=Visibility.SHARED),
+        member__household=household,
+        month__year=target_month.year,
+        month__month=target_month.month,
+        category__isnull=False,
+        category__type=CategoryType.INCOME,
+        is_active=True,
+    ).select_related("category", "member")
+
+    for forecast in income_qs:
+        category = forecast.category
+        realized = Transaction.objects.filter(
+            bank_account__owner=forecast.member,
+            bank_account__in=accounts,
+            category=category,
+            budget_month__year=target_month.year,
+            budget_month__month=target_month.month,
+            transaction_type=TransactionType.INCOME,
+        ).aggregate(Sum("total_amount"))["total_amount__sum"] or Decimal("0.00")
+
+        remaining = max(Decimal("0.00"), forecast.amount - realized)
+        income_forecasts.append(
+            {
+                "category": category,
+                "member": forecast.member,
+                "budget_amount": forecast.amount,
+                "realized_amount": realized,
+                "remaining_amount": remaining,
+            }
+        )
+
     # 5. Calcul des prévisions
     projection_steps = calculate_monthly_projected_balances(member, target_month)
     for account in accounts:
@@ -239,6 +272,7 @@ def dashboard_view(request: Request) -> HttpResponse:
             "recurring_expenses": recurring_expenses,
             "variable_forecasts": variable_forecasts,
             "savings_forecasts": savings_forecasts,
+            "income_forecasts": income_forecasts,
             "accounts_data": accounts_with_projections,
             "today": target_month,
             "onboarding": onboarding_checklist,

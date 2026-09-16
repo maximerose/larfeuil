@@ -5,7 +5,7 @@ __pycache__
 *.db
 *.csv
 Budget_*.xlsx
-import_ready_history.csv
+*.Zone.Identifier
 db.sqlite3
 node_modules/
 

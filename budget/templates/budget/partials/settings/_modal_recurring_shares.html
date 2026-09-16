@@ -1,5 +1,4 @@
 <div class="space-y-6">
-
   <!-- Répartitions actuelles -->
   <div class="bg-slate-900/50 p-4 rounded-xl border border-brand-border">
     <p class="text-sm font-semibold text-slate-200 mb-3">Parts actuelles</p>
@@ -9,13 +8,12 @@
           <span class="text-slate-300">{{ share.bank_account.name }} <span class="text-[10px] text-slate-500">({{ share.bank_account.owner.name }})</span></span>
           <div class="flex items-center gap-3">
             <span class="font-bold text-slate-100">{{ share.amount }} €</span>
-            <button hx-post="{% url 'settings_recurring_share_delete' expense.id share.id %}"
+            <button type="button"
+                    hx-post="{% url 'settings_recurring_share_delete' expense.id share.id %}"
                     hx-confirm="Supprimer cette part ?"
                     class="text-slate-500 hover:text-action-danger transition-colors cursor-pointer"
                     title="Supprimer">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-              </svg>
+              {% include "budget/components/icon.html" with name="trash" class="w-4 h-4" %}
             </button>
           </div>
         </li>
@@ -44,7 +42,7 @@
 
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {% include "budget/components/select.html" with label="Compte payeur" name="bank_account" options=account_options required=True %}
-        {% include "budget/components/currency_input.html" with label="Montant (€)" name="amount" value=remaining required=True %}
+        {% include "budget/components/currency_input.html" with label="Montant (€)" name="amount" value=suggested_amount required=True %}
       </div>
 
       <button type="submit"
@@ -57,5 +55,4 @@
       La charge est entièrement répartie !
     </div>
   {% endif %}
-
 </div>

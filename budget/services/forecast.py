@@ -3,7 +3,7 @@ import datetime
 from collections import defaultdict
 from decimal import Decimal
 
-from django.db.models import Q, Sum
+from django.db.models import Case, F, Q, Sum, Value, When
 from django.utils import timezone
 
 from budget.models import (
@@ -58,7 +58,6 @@ def calculate_monthly_projected_balances(
             "after_incomes": initial.copy(),
         }
 
-    # Exception mensuelles de TOUT LE FOYER
     recurring_overrides = {
         f.recurring_expense_id: f.amount
         for f in MonthlyForecast.objects.filter(
@@ -70,7 +69,7 @@ def calculate_monthly_projected_balances(
         )
     }
 
-    # 1. Charges Fixes (Uniquement celles visibles par le membre)
+    # 1. Charges Fixes
     after_recurring = initial.copy()
     recurring_expenses = RecurringExpense.objects.filter(
         Q(owner=member)
@@ -81,14 +80,12 @@ def calculate_monthly_projected_balances(
 
     for expense in recurring_expenses:
         has_override = expense.id in recurring_overrides
-
         is_due_this_month = False
 
         if expense.frequency_months == 1:
             is_due_this_month = True
         elif expense.usual_due_day:
             next_date = expense.usual_due_day
-            # Si la date de départ est dans le futur par rapport au mois consulté, elle n'est pas encore due
             if next_date.replace(day=1) <= target_month:
                 while next_date.replace(day=1) < target_month:
                     next_date = advance_date(next_date, expense.frequency_months)
@@ -135,12 +132,30 @@ def calculate_monthly_projected_balances(
                 if not real_transactions.exists():
                     after_recurring[target_account.id] -= expected_amount
 
-    # 2. Charges Variables (Groupées par catégorie pour le foyer)
+    # 2. Charges Variables
     after_variables = after_recurring.copy()
     tr_accounts = [
         acc for acc in accounts if acc.account_type == AccountType.MEAL_VOUCHER
     ]
-    default_account = next((acc for acc in accounts if acc.is_default), None)
+
+    # Recherche robuste du compte par défaut
+    default_account = next(
+        (acc for acc in accounts if acc.is_default and acc.owner_id == member.id), None
+    )
+    if not default_account:
+        default_account = next(
+            (
+                acc
+                for acc in accounts
+                if acc.account_type == AccountType.CHECKING
+                and acc.owner_id == member.id
+            ),
+            None,
+        )
+    if not default_account:
+        default_account = next(
+            (acc for acc in accounts if acc.owner_id == member.id), None
+        )
 
     category_forecasts = defaultdict(Decimal)
     for f in MonthlyForecast.objects.filter(
@@ -156,14 +171,26 @@ def calculate_monthly_projected_balances(
         if category.type in [CategoryType.INCOME, CategoryType.SAVINGS]:
             continue
 
-        realized = Transaction.objects.filter(
+        # Prise en compte des remboursements (Dépenses - Revenus de la même catégorie)
+        realized_data = Transaction.objects.filter(
             bank_account__in=accounts,
             category=category,
             budget_month__year=target_month.year,
             budget_month__month=target_month.month,
-            transaction_type=TransactionType.EXPENSE,
-        ).aggregate(Sum("total_amount"))["total_amount__sum"] or Decimal("0.00")
-
+        ).aggregate(
+            net_spent=Sum(
+                Case(
+                    When(
+                        transaction_type=TransactionType.EXPENSE, then=F("total_amount")
+                    ),
+                    When(
+                        transaction_type=TransactionType.INCOME, then=-F("total_amount")
+                    ),
+                    default=Value(Decimal("0.00")),
+                )
+            )
+        )
+        realized = realized_data["net_spent"] or Decimal("0.00")
         remaining = max(Decimal("0.00"), total_amount - realized)
 
         if remaining > Decimal("0.00"):
@@ -171,24 +198,26 @@ def calculate_monthly_projected_balances(
 
             if target_acc and target_acc.id in after_variables:
                 after_variables[target_acc.id] -= remaining
-            elif category.is_meal_voucher_eligible and tr_accounts:
-                for tr_acc in tr_accounts:
-                    if remaining <= Decimal("0.00"):
-                        break
-                    available_tr = max(
-                        Decimal("0.00"), after_variables.get(tr_acc.id, Decimal("0.00"))
-                    )
-                    if available_tr > Decimal("0.00"):
-                        tr_deduction = min(remaining, available_tr)
-                        after_variables[tr_acc.id] -= tr_deduction
-                        remaining -= tr_deduction
+            else:
+                # Priorité au compte Tickets Resto si éligible
+                if category.is_meal_voucher_eligible and tr_accounts:
+                    for tr_acc in tr_accounts:
+                        if remaining <= Decimal("0.00"):
+                            break
+                        available_tr = max(
+                            Decimal("0.00"),
+                            after_variables.get(tr_acc.id, Decimal("0.00")),
+                        )
+                        if available_tr > Decimal("0.00"):
+                            tr_deduction = min(remaining, available_tr)
+                            after_variables[tr_acc.id] -= tr_deduction
+                            remaining -= tr_deduction
+
+                # Le reste s'impute sur le compte courant
                 if remaining > Decimal("0.00") and default_account:
                     after_variables[default_account.id] -= remaining
-            else:
-                if default_account:
-                    after_variables[default_account.id] -= remaining
 
-    # 3. Épargne (Groupée par compte)
+    # 3. Épargne
     after_savings = after_variables.copy()
     savings_totals = defaultdict(Decimal)
 
@@ -233,18 +262,30 @@ def calculate_monthly_projected_balances(
         if category.type != CategoryType.INCOME:
             continue
 
-        realized = Transaction.objects.filter(
+        realized_data = Transaction.objects.filter(
             bank_account__in=accounts,
             category=category,
             budget_month__year=target_month.year,
             budget_month__month=target_month.month,
-            transaction_type=TransactionType.INCOME,
-        ).aggregate(Sum("total_amount"))["total_amount__sum"] or Decimal("0.00")
+        ).aggregate(
+            net_income=Sum(
+                Case(
+                    When(
+                        transaction_type=TransactionType.INCOME, then=F("total_amount")
+                    ),
+                    When(
+                        transaction_type=TransactionType.EXPENSE,
+                        then=-F("total_amount"),
+                    ),
+                    default=Value(Decimal("0.00")),
+                )
+            )
+        )
+        realized = realized_data["net_income"] or Decimal("0.00")
 
         remaining_to_receive = max(Decimal("0.00"), total_amount - realized)
 
         if remaining_to_receive > Decimal("0.00"):
-            # Si la catégorie a un compte par défaut, on l'utilise
             target_acc = category.default_bank_account or default_account
             if target_acc and target_acc.id in after_incomes:
                 after_incomes[target_acc.id] += remaining_to_receive
@@ -283,7 +324,6 @@ def get_recurring_expenses_with_status(
         )
     }
 
-    # On récupère les comptes du membre pour savoir quelle est sa "vraie" part à payer
     member_accounts_ids = list(
         BankAccount.objects.filter(owner=member, is_active=True).values_list(
             "id", flat=True
@@ -295,7 +335,6 @@ def get_recurring_expenses_with_status(
         expected_total = recurring_overrides.get(expense.id, expense.total_amount)
         has_override = expense.id in recurring_overrides
 
-        # On récupère toutes les transactions (pour avoir l'historique détaillé)
         transactions = Transaction.objects.filter(
             recurring_expense=expense,
             budget_month__year=target_month.year,
@@ -305,23 +344,18 @@ def get_recurring_expenses_with_status(
 
         realized = sum(t.total_amount for t in transactions) or Decimal("0.00")
 
-        # --- Calcul de l'éligibilité et de l'échéance pour le mois cible ---
         next_date = None
         is_overdue = False
         is_due_this_month = False
 
         if expense.frequency_months == 1:
-            # Une charge mensuelle est DUE TOUS LES MOIS
             is_due_this_month = True
             if expense.usual_due_day:
                 last_day = calendar.monthrange(target_month.year, target_month.month)[1]
                 day = min(expense.usual_due_day.day, last_day)
                 next_date = datetime.date(target_month.year, target_month.month, day)
         elif expense.usual_due_day:
-            # Pour les fréquences > 1 mois (trimestriel, annuel, 24 mois...)
             start_month = expense.usual_due_day.replace(day=1)
-
-            # On vérifie si target_month tombe exactement sur le cycle d'échéance
             if target_month >= start_month:
                 diff_months = (target_month.year - start_month.year) * 12 + (
                     target_month.month - start_month.month
@@ -336,27 +370,21 @@ def get_recurring_expenses_with_status(
                         target_month.year, target_month.month, day
                     )
 
-        # Si la charge n'est pas due ce mois-ci, n'a pas d'override, ET rien n'a été payé : on la masque
-        if not is_due_this_month and not has_override and realized == Decimal("0.00"):
+        if not is_due_this_month and not has_override:
             continue
 
-        # Si le montant attendu final est de 0€ (contrat à 0 ou forcé à 0 ce mois-ci)
-        # ET qu'on n'a rien payé, on la masque du dashboard.
         if expected_total <= Decimal("0.00") and realized == Decimal("0.00"):
             continue
 
-        # --- Détermination du Statut ---
         is_past_month = target_month < today.replace(day=1)
 
         if is_past_month:
-            # Dans le passé, si au moins une transaction existe, la charge est soldée (évite les faux "partiellement payé")
             status = (
                 RecurringExpenseStatus.COMPLETED
                 if realized > Decimal("0.00")
                 else RecurringExpenseStatus.WAITING
             )
         else:
-            # Pour le mois en cours ou futur, logique standard
             status = (
                 RecurringExpenseStatus.WAITING
                 if realized == Decimal("0.00")
@@ -367,7 +395,6 @@ def get_recurring_expenses_with_status(
                 )
             )
 
-        # Retard uniquement pour le mois en cours / futur
         if (
             next_date
             and not is_past_month
@@ -376,7 +403,6 @@ def get_recurring_expenses_with_status(
         ):
             is_overdue = True
 
-        # Calcul de la part attendue pour le membre connecté
         my_expected_share = expected_total
         shares = expense.shares.filter(is_active=True)
         if shares.exists():
@@ -389,11 +415,8 @@ def get_recurring_expenses_with_status(
                 )
                 my_expected_share = round(expected_total * ratio, 2)
             else:
-                my_expected_share = Decimal(
-                    "0.00"
-                )  # Je n'ai pas de part sur cette charge
+                my_expected_share = Decimal("0.00")
 
-        # Calcul de ce que le membre a déjà payé
         my_realized = sum(
             t.total_amount
             for t in transactions
@@ -425,15 +448,15 @@ def get_recurring_expenses_with_status(
                 "expense": expense,
                 "bank_account_name": account_name,
                 "account_type": acc_type,
-                "expected_amount": expected_total,  # Total Foyer
-                "realized_amount": realized,  # Total payé par tout le Foyer
+                "expected_amount": expected_total,
+                "realized_amount": realized,
                 "status": status,
                 "next_date": next_date,
                 "is_overdue": is_overdue,
-                "my_expected_share": my_expected_share,  # Ma part théorique
-                "my_remaining": my_remaining,  # Ce qu'il ME reste à payer
+                "my_expected_share": my_expected_share,
+                "my_remaining": my_remaining,
                 "global_remaining": global_remaining,
-                "transactions": transactions,  # Historique pour l'UI
+                "transactions": transactions,
             }
         )
 

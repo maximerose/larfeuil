@@ -27,7 +27,8 @@ class BankAccountForm(forms.ModelForm):
             self.fields["fallback_account"].queryset = BankAccount.objects.filter(
                 owner__household=household,
                 is_active=True,
-            )
+            ).select_related("owner")
+
             # On empêche un compte d'être son propre relais en modification
             if self.instance and self.instance.pk:
                 self.fields["fallback_account"].queryset = self.fields[

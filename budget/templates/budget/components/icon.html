@@ -86,5 +86,43 @@
     <!-- ↕️ Inverser les comptes / Swap -->
   {% elif name == "arrows-up-down" %}
     <path stroke-linecap="round" stroke-linejoin="round" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+
+    <!-- 🗑️ Corbeille / Supprimer -->
+  {% elif name == "trash" %}
+    <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+
+    <!-- ➕ Ajouter / Plus -->
+  {% elif name == "plus" %}
+    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+
+    <!-- ✔️ Valider / Check -->
+  {% elif name == "check" %}
+    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+
+    <!-- 👤 Ajouter un utilisateur -->
+  {% elif name == "user-plus" %}
+    <path stroke-linecap="round" stroke-linejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+
+    <!-- 📈 Tendance Hausse -->
+  {% elif name == "arrow-trending-up" %}
+    <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 19.5l15-15m0 0H8.25m11.25 0v11.25" />
+
+    <!-- 📉 Tendance Baisse -->
+  {% elif name == "arrow-trending-down" %}
+    <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 4.5l-15 15m0 0h11.25m-11.25 0V8.25" />
+
+    <!-- ⚠️ Attention / Erreur -->
+  {% elif name == "exclamation-triangle" %}
+    <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+
+    <!-- ✉️ E-mail / Enveloppe -->
+  {% elif name == "envelope" %}
+    <path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+
+    <!-- ⏳ Chargement / Spinner -->
+  {% elif name == "spinner" %}
+    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+    </path>
   {% endif %}
 </svg>

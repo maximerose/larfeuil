@@ -58,7 +58,19 @@
         {% if form.daily_meal_voucher_limit.errors %}<p class="text-[11px] text-action-danger mt-1">{{ form.daily_meal_voucher_limit.errors.0 }}</p>{% endif %}
       </div>
       <div>
-        {% include "budget/components/select.html" with label="Compte relais (dépassement)" name="fallback_account" options=form.fields.fallback_account.queryset selected=form.fallback_account.value placeholder="Aucun relais" %}
+        <div class="space-y-1">
+          <label for="fallback_account"
+                 class="block text-xs font-semibold text-slate-400 uppercase tracking-wider">Compte relais (dépassement)</label>
+          <select name="fallback_account" id="fallback_account" class="input-base px-3 py-2.5 w-full">
+            <option value="" {% if not form.fallback_account.value %}selected{% endif %}>Aucun relais</option>
+            {% for acc in form.fields.fallback_account.queryset %}
+              <option value="{{ acc.id }}"
+                      {% if form.fallback_account.value|stringformat:"s" == acc.id|stringformat:"s" %}selected{% endif %}>
+                {{ acc.name }}{% if acc.owner.id != request.member.id %} ({{ acc.owner.name }}){% endif %}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
       </div>
     </div>
   </div>

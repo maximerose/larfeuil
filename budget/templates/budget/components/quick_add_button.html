@@ -1,22 +1,15 @@
-<button hx-get="{% url 'quick_transaction_form' %}"
+<button type="button"
+        hx-get="{% url 'quick_transaction_form' %}"
         hx-target="#modal-container"
         hx-swap="innerHTML"
         hx-indicator="this"
         class="group flex flex-col items-center justify-center gap-0.5 cursor-pointer active:scale-95 transition-transform {{ custom_class|default:'w-full' }}">
 
   <div class="{{ inner_class|default:'w-9 h-9 rounded-xl' }} bg-action-primary hover:bg-action-primary-hover text-brand-dark flex items-center justify-center shadow-md shadow-emerald-500/20 font-bold transition-colors">
-    <!-- Spinner HTMX (géré par notre CSS) -->
-    <svg class="w-5 h-5 animate-spin htmx-show-flex text-current"
-         xmlns="http://www.w3.org/2000/svg"
-         fill="none"
-         viewBox="0 0 24 24">
-      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
-      </path>
-    </svg>
+    <!-- Spinner HTMX -->
+    {% include "budget/components/icon.html" with name="spinner" class="w-5 h-5 animate-spin htmx-show-flex text-current" %}
+
     <!-- Icône Plus -->
-    <svg class="w-5 h-5 htmx-hide" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-      <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-    </svg>
+    {% include "budget/components/icon.html" with name="plus" class="w-5 h-5 htmx-hide" %}
   </div>
 </button>

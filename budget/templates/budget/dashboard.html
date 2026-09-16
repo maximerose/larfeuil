@@ -53,7 +53,8 @@
   </div>
 
   <!-- 3. ANTICIPATION & ÉCHÉANCES -->
-  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+  <!-- On passe en 3 colonnes pour afficher les Revenus -->
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
     <!-- Gauche : Charges fixes en attente -->
     <div class="space-y-4">
@@ -64,13 +65,22 @@
       {% include "budget/partials/recurring/_summary_list.html" %}
     </div>
 
-    <!-- Droite : Épargne prévue -->
+    <!-- Milieu : Épargne prévue -->
     <div class="space-y-4">
       <div class="flex items-center gap-2">
         <div class="text-budget-savings">{% include "budget/components/icon.html" with name="banknotes" %}</div>
-        {% include "budget/components/heading.html" with level="2" title="Objectifs d'Épargne du mois" %}
+        {% include "budget/components/heading.html" with level="2" title="Objectifs d'Épargne" %}
       </div>
       {% include "budget/partials/forecast/_savings_forecast.html" %}
+    </div>
+
+    <!-- Droite : Revenus prévus -->
+    <div class="space-y-4">
+      <div class="flex items-center gap-2">
+        <div class="text-budget-income">{% include "budget/components/icon.html" with name="banknotes" %}</div>
+        {% include "budget/components/heading.html" with level="2" title="Revenus prévus" %}
+      </div>
+      {% include "budget/partials/forecast/_income_forecast.html" %}
     </div>
 
   </div>

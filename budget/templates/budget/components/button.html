@@ -10,14 +10,7 @@
         class="relative w-full inline-flex items-center justify-center font-semibold px-4 py-2.5 rounded-xl transition-all active:scale-95 text-sm cursor-pointer {% if variant == 'primary' %} bg-action-primary hover:bg-action-primary-hover text-brand-dark shadow-lg shadow-emerald-500/20 font-bold {% elif variant == 'danger' %} bg-action-danger/20 hover:bg-action-danger/30 text-action-danger border border-action-danger/30 {% elif variant == 'warning' %} bg-action-warning/20 hover:bg-action-warning/30 text-action-warning border border-action-warning/30 {% elif variant == 'ghost' %} bg-transparent hover:bg-brand-border text-slate-300 {% else %} bg-brand-border hover:bg-slate-700 text-slate-200 {% endif %}">
 
     <!-- Icône de chargement -->
-    <svg class="animate-spin -ml-1 mr-2 h-4 w-4 htmx-show-flex text-current"
-         xmlns="http://www.w3.org/2000/svg"
-         fill="none"
-         viewBox="0 0 24 24">
-        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
-        </path>
-    </svg>
+    {% include "budget/components/icon.html" with name="spinner" class="animate-spin -ml-1 mr-2 h-4 w-4 htmx-show-flex text-current" %}
 
     <span class="htmx-hide">{{ label }}</span>
     <span class="htmx-show-inline ml-1">Enregistrement...</span>

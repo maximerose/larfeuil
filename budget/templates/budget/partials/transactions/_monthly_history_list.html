@@ -49,7 +49,7 @@
                     hx-confirm="Êtes-vous sûr de vouloir supprimer ce transfert ?"
                     class="p-1.5 text-slate-500 hover:text-action-danger hover:bg-action-danger/10 rounded-lg transition-colors cursor-pointer"
                     title="Supprimer">
-              {% include "budget/components/icon.html" with name="x-mark" class="w-4 h-4" %}
+              {% include "budget/components/icon.html" with name="trash" class="w-4 h-4" %}
             </button>
           </div>
         {% else %}
@@ -97,14 +97,30 @@
               </span>
             </div>
           {% endif %}
+
+          {% if tx.comment %}
+            <div class="text-[10px] text-slate-400 mt-1 truncate italic">💬 {{ tx.comment }}</div>
+          {% endif %}
         </div>
       </div>
 
       <div class="flex items-center gap-3 sm:gap-4 shrink-0">
         <div class="text-right">
-          <span class="font-bold text-sm whitespace-nowrap {% if tx.transaction_type == 'EXPENSE' %}text-action-danger{% else %}text-budget-income{% endif %}">
-            {% if tx.transaction_type == "EXPENSE" %}-{% else %}+{% endif %}{{ tx.total_amount|floatformat:"2g" }} €
-          </span>
+          {% if tx.transaction_type == "EXPENSE" %}
+            {% if tx.total_amount < 0 %}
+              <!-- Dépense négative (Remboursement) = Vert avec un '+' -->
+              <span class="font-bold text-sm whitespace-nowrap text-budget-income">+{{ tx.total_amount|stringformat:"f"|slice:"1:"|floatformat:"2g" }} €</span>
+            {% else %}
+              <span class="font-bold text-sm whitespace-nowrap text-action-danger">-{{ tx.total_amount|floatformat:"2g" }} €</span>
+            {% endif %}
+          {% else %}
+            {% if tx.total_amount < 0 %}
+              <!-- Revenu négatif (Correction) = Rouge -->
+              <span class="font-bold text-sm whitespace-nowrap text-action-danger">{{ tx.total_amount|floatformat:"2g" }} €</span>
+            {% else %}
+              <span class="font-bold text-sm whitespace-nowrap text-budget-income">+{{ tx.total_amount|floatformat:"2g" }} €</span>
+            {% endif %}
+          {% endif %}
         </div>
 
         {% if tx.bank_account.owner_id == member.id %}
@@ -121,7 +137,7 @@
                     hx-confirm="Êtes-vous sûr de vouloir supprimer cette transaction ?"
                     class="p-1.5 text-slate-500 hover:text-action-danger hover:bg-action-danger/10 rounded-lg transition-colors cursor-pointer"
                     title="Supprimer">
-              {% include "budget/components/icon.html" with name="x-mark" class="w-4 h-4" %}
+              {% include "budget/components/icon.html" with name="trash" class="w-4 h-4" %}
             </button>
           </div>
         {% endif %}
