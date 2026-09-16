@@ -1,4 +1,4 @@
-name: CD / Deploy to o2switch
+name: CD / Debug Connection
 
 on:
   workflow_run:
@@ -7,25 +7,23 @@ on:
     types: [completed]
 
 jobs:
-  deploy:
-    name: Déploiement SSH o2switch
+  debug:
+    name: Diagnostic Réseau SSH
     runs-on: ubuntu-latest
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
 
     steps:
-      - name: Connexion SSH et mise à jour de l'application
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.O2SWITCH_HOST }}
-          username: ${{ secrets.O2SWITCH_USER }}
-          key: ${{ secrets.O2SWITCH_SSH_KEY }}
-          port: ${{ secrets.O2SWITCH_PORT }}
-          script: |
-            cd ${{ secrets.O2SWITCH_APP_DIR }}
-            git pull origin main
-            source ${{ secrets.O2SWITCH_VENV_PATH }}/bin/activate
-            pip install -r requirements.txt
-            python manage.py migrate --noinput
-            python manage.py collectstatic --noinput
-            mkdir -p tmp
-            touch tmp/restart.txt
+      - name: 1. Inspection des variables
+        run: |
+          echo "--- Verification des formats ---"
+          echo "Host : '[${{ secrets.O2SWITCH_HOST }}]'"
+          echo "User : '[${{ secrets.O2SWITCH_USER }}]'"
+          echo "Port : '[${{ secrets.O2SWITCH_PORT }}]'"
+          echo "Longueur clé SSH : ${#SSH_KEY} caractères"
+        env:
+          SSH_KEY: ${{ secrets.O2SWITCH_SSH_KEY }}
+
+      - name: 2. Test de résolution DNS et ping TCP (Netcat)
+        run: |
+          echo "--- Test de port TCP avec netcat ---"
+          nc -zv -w 10 ${{ secrets.O2SWITCH_HOST }} ${{ secrets.O2SWITCH_PORT }}
