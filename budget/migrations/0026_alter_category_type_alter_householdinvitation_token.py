@@ -5,20 +5,34 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('budget', '0025_rename_household_householdinvitation_household_and_more'),
+        ("budget", "0025_rename_household_householdinvitation_household_and_more"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='category',
-            name='type',
-            field=models.CharField(choices=[('RECURRING', 'Charge fixe'), ('VARIABLE', 'Charge variable'), ('SAVINGS', 'Épargne'), ('INCOME', 'Revenu')], default='VARIABLE', max_length=20, verbose_name='Type de catégorie'),
+            model_name="category",
+            name="type",
+            field=models.CharField(
+                choices=[
+                    ("RECURRING", "Charge fixe"),
+                    ("VARIABLE", "Charge variable"),
+                    ("SAVINGS", "Épargne"),
+                    ("INCOME", "Revenu"),
+                ],
+                default="VARIABLE",
+                max_length=20,
+                verbose_name="Type de catégorie",
+            ),
         ),
         migrations.AlterField(
-            model_name='householdinvitation',
-            name='token',
-            field=models.UUIDField(default=uuid.UUID('5941f8a6-6f91-4888-81f3-5d530086e29e'), editable=False, unique=True, verbose_name='Jeton unique'),
+            model_name="householdinvitation",
+            name="token",
+            field=models.UUIDField(
+                default=uuid.UUID("5941f8a6-6f91-4888-81f3-5d530086e29e"),
+                editable=False,
+                unique=True,
+                verbose_name="Jeton unique",
+            ),
         ),
     ]

@@ -5,52 +5,109 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('budget', '0020_monthlyforecast_recurring_expense'),
+        ("budget", "0020_monthlyforecast_recurring_expense"),
     ]
 
     operations = [
         migrations.AlterModelOptions(
-            name='bankaccount',
-            options={'ordering': [models.Case(models.When(account_type='CHECKING', then=models.Value(1)), models.When(account_type='MEAL_VOUCHER', then=models.Value(2)), models.When(account_type='SAVINGS', then=models.Value(3)), models.When(account_type='BUSINESS', then=models.Value(4)), default=models.Value(5)), '-is_default', 'name'], 'verbose_name': 'Compte bancaire', 'verbose_name_plural': 'Comptes bancaires'},
+            name="bankaccount",
+            options={
+                "ordering": [
+                    models.Case(
+                        models.When(account_type="CHECKING", then=models.Value(1)),
+                        models.When(account_type="MEAL_VOUCHER", then=models.Value(2)),
+                        models.When(account_type="SAVINGS", then=models.Value(3)),
+                        models.When(account_type="BUSINESS", then=models.Value(4)),
+                        default=models.Value(5),
+                    ),
+                    "-is_default",
+                    "name",
+                ],
+                "verbose_name": "Compte bancaire",
+                "verbose_name_plural": "Comptes bancaires",
+            },
         ),
         migrations.AlterModelOptions(
-            name='category',
-            options={'ordering': ['name'], 'verbose_name': 'Catégorie', 'verbose_name_plural': 'Catégories'},
+            name="category",
+            options={
+                "ordering": ["name"],
+                "verbose_name": "Catégorie",
+                "verbose_name_plural": "Catégories",
+            },
         ),
         migrations.AlterModelOptions(
-            name='household',
-            options={'ordering': ['name'], 'verbose_name': ('Foyer',), 'verbose_name_plural': 'Foyers'},
+            name="household",
+            options={
+                "ordering": ["name"],
+                "verbose_name": ("Foyer",),
+                "verbose_name_plural": "Foyers",
+            },
         ),
         migrations.AlterModelOptions(
-            name='householdmember',
-            options={'ordering': ['name'], 'verbose_name': 'Membre du foyer', 'verbose_name_plural': 'Membres du foyer'},
+            name="householdmember",
+            options={
+                "ordering": ["name"],
+                "verbose_name": "Membre du foyer",
+                "verbose_name_plural": "Membres du foyer",
+            },
         ),
         migrations.AlterModelOptions(
-            name='monthlyforecast',
-            options={'ordering': ['-month', 'category__name', 'bank_account__name'], 'verbose_name': 'Prévision mensuelle', 'verbose_name_plural': 'Prévisions mensuelles'},
+            name="monthlyforecast",
+            options={
+                "ordering": ["-month", "category__name", "bank_account__name"],
+                "verbose_name": "Prévision mensuelle",
+                "verbose_name_plural": "Prévisions mensuelles",
+            },
         ),
         migrations.AlterModelOptions(
-            name='recurringexpense',
-            options={'ordering': ['label'], 'verbose_name': 'Charge récurrente', 'verbose_name_plural': 'Charges récurrentes'},
+            name="recurringexpense",
+            options={
+                "ordering": ["label"],
+                "verbose_name": "Charge récurrente",
+                "verbose_name_plural": "Charges récurrentes",
+            },
         ),
         migrations.AlterModelOptions(
-            name='transaction',
-            options={'ordering': ['-transaction_date', '-created_at'], 'verbose_name': 'Transaction', 'verbose_name_plural': 'Transactions'},
+            name="transaction",
+            options={
+                "ordering": ["-transaction_date", "-created_at"],
+                "verbose_name": "Transaction",
+                "verbose_name_plural": "Transactions",
+            },
         ),
         migrations.AlterModelOptions(
-            name='transfer',
-            options={'ordering': ['-date', '-created_at'], 'verbose_name': 'Transfert', 'verbose_name_plural': 'Transferts'},
+            name="transfer",
+            options={
+                "ordering": ["-date", "-created_at"],
+                "verbose_name": "Transfert",
+                "verbose_name_plural": "Transferts",
+            },
         ),
         migrations.AlterField(
-            model_name='monthlyforecast',
-            name='bank_account',
-            field=models.ForeignKey(blank=True, limit_choices_to={'account_type': 'SAVINGS'}, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='savings_forecasts', to='budget.bankaccount', verbose_name='Compte cible (Épargne)'),
+            model_name="monthlyforecast",
+            name="bank_account",
+            field=models.ForeignKey(
+                blank=True,
+                limit_choices_to={"account_type": "SAVINGS"},
+                null=True,
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="savings_forecasts",
+                to="budget.bankaccount",
+                verbose_name="Compte cible (Épargne)",
+            ),
         ),
         migrations.AlterField(
-            model_name='monthlyforecast',
-            name='category',
-            field=models.ForeignKey(blank=True, limit_choices_to={'type__in': ['VARIABLE', 'INCOME']}, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='forecasts', to='budget.category', verbose_name='Catégorie (Dépenses / Revenus)'),
+            model_name="monthlyforecast",
+            name="category",
+            field=models.ForeignKey(
+                blank=True,
+                limit_choices_to={"type__in": ["VARIABLE", "INCOME"]},
+                null=True,
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="forecasts",
+                to="budget.category",
+                verbose_name="Catégorie (Dépenses / Revenus)",
+            ),
         ),
     ]

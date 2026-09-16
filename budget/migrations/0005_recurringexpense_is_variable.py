@@ -4,15 +4,14 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('budget', '0004_recurringexpense_recurringexpenseshare'),
+        ("budget", "0004_recurringexpense_recurringexpenseshare"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='recurringexpense',
-            name='is_variable',
+            model_name="recurringexpense",
+            name="is_variable",
             field=models.BooleanField(default=False),
         ),
     ]

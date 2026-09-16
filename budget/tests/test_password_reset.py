@@ -65,5 +65,3 @@ class PasswordResetTests(TestCase):
         self.assertContains(
             response, "Ce lien de réinitialisation est invalide ou a expiré."
         )
-
-  

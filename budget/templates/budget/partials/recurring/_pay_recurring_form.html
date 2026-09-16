@@ -47,16 +47,16 @@
         const remainingDisplay = document.getElementById('dynamic-remaining');
         const diffAlert = document.getElementById('diff-alert');
         const diffAlertTitle = document.getElementById('diff-alert-title');
-        
+
         const initialRemaining = parseFloat("{{ remaining_to_pay }}".replace(',', '.')) || 0;
         const expectedAmount = parseFloat("{{ amount_to_pay }}".replace(',', '.')) || 0;
 
         function updateRemaining() {
             const inputValue = parseFloat(amountInput.value) || 0;
             let newRemaining = initialRemaining - inputValue;
-            
+
             remainingDisplay.textContent = newRemaining.toFixed(2).replace('.', ',') + ' €';
-            
+
             if (newRemaining > 0) {
                 remainingDisplay.className = "font-bold text-action-warning";
             } else if (newRemaining === 0) {

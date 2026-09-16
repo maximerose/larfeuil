@@ -5,50 +5,80 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('budget', '0018_bankaccount_visibility_and_more'),
+        ("budget", "0018_bankaccount_visibility_and_more"),
     ]
 
     operations = [
         migrations.RenameField(
-            model_name='monthlyforecast',
-            old_name='total_amount',
-            new_name='amount',
+            model_name="monthlyforecast",
+            old_name="total_amount",
+            new_name="amount",
         ),
         migrations.RemoveField(
-            model_name='category',
-            name='default_bank_account',
+            model_name="category",
+            name="default_bank_account",
         ),
         migrations.RemoveField(
-            model_name='category',
-            name='is_income',
+            model_name="category",
+            name="is_income",
         ),
         migrations.RemoveField(
-            model_name='category',
-            name='owner',
+            model_name="category",
+            name="owner",
         ),
         migrations.AddField(
-            model_name='category',
-            name='household',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='categories', to='budget.household', verbose_name='Foyer associé'),
+            model_name="category",
+            name="household",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="categories",
+                to="budget.household",
+                verbose_name="Foyer associé",
+            ),
         ),
         migrations.AddField(
-            model_name='category',
-            name='type',
-            field=models.CharField(choices=[('RECURRING', 'Charge fixe'), ('VARIABLE', 'Charge variable'), ('SAVING', 'Épargne'), ('INCOME', 'Revenu')], default='VARIABLE', max_length=20, verbose_name='Type de catégorie'),
+            model_name="category",
+            name="type",
+            field=models.CharField(
+                choices=[
+                    ("RECURRING", "Charge fixe"),
+                    ("VARIABLE", "Charge variable"),
+                    ("SAVING", "Épargne"),
+                    ("INCOME", "Revenu"),
+                ],
+                default="VARIABLE",
+                max_length=20,
+                verbose_name="Type de catégorie",
+            ),
         ),
         migrations.AddField(
-            model_name='monthlyforecast',
-            name='bank_account',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='savings_forecasts', to='budget.bankaccount', verbose_name='Compte cible (Épargne)'),
+            model_name="monthlyforecast",
+            name="bank_account",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="savings_forecasts",
+                to="budget.bankaccount",
+                verbose_name="Compte cible (Épargne)",
+            ),
         ),
         migrations.AlterField(
-            model_name='monthlyforecast',
-            name='category',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='forecasts', to='budget.category', verbose_name='Catégorie (Dépenses / Revenus)'),
+            model_name="monthlyforecast",
+            name="category",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="forecasts",
+                to="budget.category",
+                verbose_name="Catégorie (Dépenses / Revenus)",
+            ),
         ),
         migrations.DeleteModel(
-            name='MonthlyForecastShare',
+            name="MonthlyForecastShare",
         ),
     ]

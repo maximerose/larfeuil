@@ -8,31 +8,68 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('budget', '0011_transaction_meal_voucher_bank_account'),
+        ("budget", "0011_transaction_meal_voucher_bank_account"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='AccountSnapshot',
+            name="AccountSnapshot",
             fields=[
-                ('id', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('balance', models.DecimalField(decimal_places=2, max_digits=15)),
-                ('date', models.DateField(default=django.utils.timezone.localdate)),
-                ('bank_account', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='snapshots', to='budget.bankaccount')),
-                ('created_by', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='%(class)s_created', to=settings.AUTH_USER_MODEL)),
-                ('updated_by', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='%(class)s_updated', to=settings.AUTH_USER_MODEL)),
+                (
+                    "id",
+                    models.UUIDField(
+                        default=uuid.uuid4,
+                        editable=False,
+                        primary_key=True,
+                        serialize=False,
+                    ),
+                ),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                ("balance", models.DecimalField(decimal_places=2, max_digits=15)),
+                ("date", models.DateField(default=django.utils.timezone.localdate)),
+                (
+                    "bank_account",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="snapshots",
+                        to="budget.bankaccount",
+                    ),
+                ),
+                (
+                    "created_by",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        related_name="%(class)s_created",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
+                (
+                    "updated_by",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        related_name="%(class)s_updated",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'Relevé de compte (Snapshot)',
-                'verbose_name_plural': 'Relevés de comptes (Snapshots)',
-                'ordering': ['-date'],
-                'abstract': False,
-                'constraints': [models.UniqueConstraint(fields=('bank_account', 'date'), name='unique_daily_account_snapshot')],
+                "verbose_name": "Relevé de compte (Snapshot)",
+                "verbose_name_plural": "Relevés de comptes (Snapshots)",
+                "ordering": ["-date"],
+                "abstract": False,
+                "constraints": [
+                    models.UniqueConstraint(
+                        fields=("bank_account", "date"),
+                        name="unique_daily_account_snapshot",
+                    )
+                ],
             },
         ),
     ]

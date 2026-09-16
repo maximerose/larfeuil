@@ -5,15 +5,19 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('budget', '0015_transaction_recurring_expense'),
+        ("budget", "0015_transaction_recurring_expense"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='category',
-            name='owner',
-            field=models.ForeignKey(null=True, on_delete=django.db.models.deletion.CASCADE, related_name='categories', to='budget.householdmember'),
+            model_name="category",
+            name="owner",
+            field=models.ForeignKey(
+                null=True,
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="categories",
+                to="budget.householdmember",
+            ),
         ),
     ]

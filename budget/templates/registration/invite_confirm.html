@@ -2,30 +2,30 @@
 {% block title %}Rejoindre un foyer | Mon Budget{% endblock %}
 
 {% block auth_content %}
-    <div class="text-center space-y-4">
-        <div class="w-16 h-16 bg-brand/10 text-brand rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg shadow-emerald-500/20">
-            {% include "budget/components/icon.html" with name="home" class="w-8 h-8" %}
-        </div>
-
-        {% include "budget/components/heading.html" with title="Rejoindre un foyer" subtitle="On vous a invité à collaborer !" %}
-
-        <p class="text-sm text-slate-300 py-4">
-            Voulez-vous vraiment rejoindre <strong class="text-slate-100">"{{ invitation.household.name }}"</strong> ?
-            <br />
-            <span class="text-xs text-action-warning mt-2 block">Attention : cela remplacera votre foyer actuel.</span>
-        </p>
-
-        <form method="post" class="pt-4 flex gap-3">
-            {% csrf_token %}
-            <div class="flex-1">
-                <a href="{% url 'dashboard' %}"
-                   class="w-full inline-flex items-center justify-center font-semibold px-4 py-2.5 rounded-xl transition-all active:scale-95 text-sm cursor-pointer bg-brand-border hover:bg-slate-700 text-slate-200">
-                    Annuler
-                </a>
-            </div>
-            <div class="flex-1">
-                {% include "budget/components/button.html" with label="Rejoindre" variant="primary" type="submit" %}
-            </div>
-        </form>
+  <div class="text-center space-y-4">
+    <div class="w-16 h-16 bg-brand/10 text-brand rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg shadow-emerald-500/20">
+      {% include "budget/components/icon.html" with name="home" class="w-8 h-8" %}
     </div>
+
+    {% include "budget/components/heading.html" with title="Rejoindre un foyer" subtitle="On vous a invité à collaborer !" %}
+
+    <p class="text-sm text-slate-300 py-4">
+      Voulez-vous vraiment rejoindre <strong class="text-slate-100">"{{ invitation.household.name }}"</strong> ?
+      <br />
+      <span class="text-xs text-action-warning mt-2 block">Attention : cela remplacera votre foyer actuel.</span>
+    </p>
+
+    <form method="post" class="pt-4 flex gap-3">
+      {% csrf_token %}
+      <div class="flex-1">
+        <a href="{% url 'dashboard' %}"
+           class="w-full inline-flex items-center justify-center font-semibold px-4 py-2.5 rounded-xl transition-all active:scale-95 text-sm cursor-pointer bg-brand-border hover:bg-slate-700 text-slate-200">
+          Annuler
+        </a>
+      </div>
+      <div class="flex-1">
+        {% include "budget/components/button.html" with label="Rejoindre" variant="primary" type="submit" %}
+      </div>
+    </form>
+  </div>
 {% endblock %}

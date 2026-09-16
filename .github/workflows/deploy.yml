@@ -1,0 +1,31 @@
+name: CD / Deploy to o2switch
+
+on:
+  workflow_run:
+    workflows: ["CI / Quality & Tests"]
+    branches: ["main", "master"]
+    types: [completed]
+
+jobs:
+  deploy:
+    name: Déploiement SSH o2switch
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+
+    steps:
+      - name: Connexion SSH et mise à jour de l'application
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.O2SWITCH_HOST }}
+          username: ${{ secrets.O2SWITCH_USER }}
+          key: ${{ secrets.O2SWITCH_SSH_KEY }}
+          port: ${{ secrets.O2SWITCH_PORT || 22 }}
+          script: |
+            cd ${{ secrets.O2SWITCH_APP_DIR }}
+            git pull origin main
+            source ${{ secrets.O2SWITCH_VENV_PATH }}/bin/activate
+            pip install -r requirements.txt
+            python manage.py migrate --noinput
+            python manage.py collectstatic --noinput
+            mkdir -p tmp
+            touch tmp/restart.txt

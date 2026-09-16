@@ -5,7 +5,9 @@ from budget.models import AccountSnapshot, BankAccount
 
 
 class Command(BaseCommand):
-    help = "Crée un snapshot journalier du solde pour tous les comptes bancaires actifs."
+    help = (
+        "Crée un snapshot journalier du solde pour tous les comptes bancaires actifs."
+    )
 
     def handle(self, *args, **options) -> None:
         today = timezone.localdate()

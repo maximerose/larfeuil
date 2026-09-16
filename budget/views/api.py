@@ -31,7 +31,7 @@ def api_create_element_view(request):
                     return JsonResponse(
                         {"error": "Cette catégorie existe déjà."}, status=400
                     )
-                    
+
                 # L'utilisateur pourra toujours la requalifier dans ses paramètres
                 category = Category.objects.create(
                     name=value.strip(),

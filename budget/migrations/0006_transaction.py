@@ -9,33 +9,87 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('budget', '0005_recurringexpense_is_variable'),
+        ("budget", "0005_recurringexpense_is_variable"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='Transaction',
+            name="Transaction",
             fields=[
-                ('id', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('transaction_date', models.DateField(default=django.utils.timezone.now)),
-                ('transaction_type', models.CharField(choices=[('INCOME', 'Revenu'), ('EXPENSE', 'Dépense')], default='EXPENSE', max_length=20)),
-                ('total_amount', models.DecimalField(decimal_places=2, max_digits=15)),
-                ('swile_amount', models.DecimalField(decimal_places=2, default=Decimal('0.00'), max_digits=15)),
-                ('label', models.CharField(blank=True, default='', max_length=100)),
-                ('bank_account', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='transactions', to='budget.bankaccount')),
-                ('category', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='transactions', to='budget.category')),
-                ('created_by', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='%(class)s_created', to=settings.AUTH_USER_MODEL)),
-                ('updated_by', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='%(class)s_updated', to=settings.AUTH_USER_MODEL)),
+                (
+                    "id",
+                    models.UUIDField(
+                        default=uuid.uuid4,
+                        editable=False,
+                        primary_key=True,
+                        serialize=False,
+                    ),
+                ),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                (
+                    "transaction_date",
+                    models.DateField(default=django.utils.timezone.now),
+                ),
+                (
+                    "transaction_type",
+                    models.CharField(
+                        choices=[("INCOME", "Revenu"), ("EXPENSE", "Dépense")],
+                        default="EXPENSE",
+                        max_length=20,
+                    ),
+                ),
+                ("total_amount", models.DecimalField(decimal_places=2, max_digits=15)),
+                (
+                    "swile_amount",
+                    models.DecimalField(
+                        decimal_places=2, default=Decimal("0.00"), max_digits=15
+                    ),
+                ),
+                ("label", models.CharField(blank=True, default="", max_length=100)),
+                (
+                    "bank_account",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="transactions",
+                        to="budget.bankaccount",
+                    ),
+                ),
+                (
+                    "category",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.PROTECT,
+                        related_name="transactions",
+                        to="budget.category",
+                    ),
+                ),
+                (
+                    "created_by",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        related_name="%(class)s_created",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
+                (
+                    "updated_by",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        related_name="%(class)s_updated",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'Transaction',
-                'verbose_name_plural': 'Transactions',
-                'abstract': False,
+                "verbose_name": "Transaction",
+                "verbose_name_plural": "Transactions",
+                "abstract": False,
             },
         ),
     ]

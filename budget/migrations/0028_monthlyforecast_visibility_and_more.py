@@ -5,20 +5,29 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('budget', '0027_alter_category_options_and_more'),
+        ("budget", "0027_alter_category_options_and_more"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='monthlyforecast',
-            name='visibility',
-            field=models.CharField(choices=[('PRIVATE', 'Privé'), ('SHARED', 'Partagé')], default='SHARED', max_length=20, verbose_name='Visibilité'),
+            model_name="monthlyforecast",
+            name="visibility",
+            field=models.CharField(
+                choices=[("PRIVATE", "Privé"), ("SHARED", "Partagé")],
+                default="SHARED",
+                max_length=20,
+                verbose_name="Visibilité",
+            ),
         ),
         migrations.AlterField(
-            model_name='householdinvitation',
-            name='token',
-            field=models.UUIDField(default=uuid.UUID('26c53533-f928-48f6-981e-a7aac6722bf6'), editable=False, unique=True, verbose_name='Jeton unique'),
+            model_name="householdinvitation",
+            name="token",
+            field=models.UUIDField(
+                default=uuid.UUID("26c53533-f928-48f6-981e-a7aac6722bf6"),
+                editable=False,
+                unique=True,
+                verbose_name="Jeton unique",
+            ),
         ),
     ]

@@ -18,7 +18,9 @@
           </div>
         </li>
       {% empty %}
-        <li class="text-xs text-slate-500 italic pb-2">Aucune répartition. La charge sera prélevée intégralement sur le compte par défaut.</li>
+        <li class="text-xs text-slate-500 italic pb-2">
+          Aucune répartition. La charge sera prélevée intégralement sur le compte par défaut.
+        </li>
       {% endfor %}
     </ul>
 
@@ -37,7 +39,9 @@
       {% csrf_token %}
 
       {% if form.non_field_errors %}
-        <div class="p-3 bg-action-danger/10 border border-action-danger/30 text-action-danger rounded-xl text-xs">{{ form.non_field_errors.0 }}</div>
+        <div class="p-3 bg-action-danger/10 border border-action-danger/30 text-action-danger rounded-xl text-xs">
+          {{ form.non_field_errors.0 }}
+        </div>
       {% endif %}
 
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">

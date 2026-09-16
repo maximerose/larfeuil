@@ -5,15 +5,20 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('budget', '0010_rename_swile_amount_transaction_meal_voucher_amount_and_more'),
+        ("budget", "0010_rename_swile_amount_transaction_meal_voucher_amount_and_more"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='transaction',
-            name='meal_voucher_bank_account',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='meal_voucher_transactions', to='budget.bankaccount'),
+            model_name="transaction",
+            name="meal_voucher_bank_account",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name="meal_voucher_transactions",
+                to="budget.bankaccount",
+            ),
         ),
     ]

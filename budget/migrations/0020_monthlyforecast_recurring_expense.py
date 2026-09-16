@@ -5,15 +5,21 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('budget', '0019_rename_total_amount_monthlyforecast_amount_and_more'),
+        ("budget", "0019_rename_total_amount_monthlyforecast_amount_and_more"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='monthlyforecast',
-            name='recurring_expense',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='forecast_overrides', to='budget.recurringexpense', verbose_name='Charge fixe (Exception mensuelle)'),
+            model_name="monthlyforecast",
+            name="recurring_expense",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="forecast_overrides",
+                to="budget.recurringexpense",
+                verbose_name="Charge fixe (Exception mensuelle)",
+            ),
         ),
     ]

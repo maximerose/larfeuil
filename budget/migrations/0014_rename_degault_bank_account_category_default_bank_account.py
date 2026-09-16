@@ -4,15 +4,14 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('budget', '0013_bankaccount_fallback_account_bankaccount_is_default_and_more'),
+        ("budget", "0013_bankaccount_fallback_account_bankaccount_is_default_and_more"),
     ]
 
     operations = [
         migrations.RenameField(
-            model_name='category',
-            old_name='degault_bank_account',
-            new_name='default_bank_account',
+            model_name="category",
+            old_name="degault_bank_account",
+            new_name="default_bank_account",
         ),
     ]

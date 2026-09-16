@@ -75,7 +75,13 @@
 
         <div class="truncate">
           <p class="font-semibold text-slate-200 truncate">
-            {% if tx.label %}{{ tx.label }}{% elif tx.category %}{{ tx.category.name }}{% else %}{{ tx.recurring_expense.label }}{% endif %}
+            {% if tx.label %}
+              {{ tx.label }}
+            {% elif tx.category %}
+              {{ tx.category.name }}
+            {% else %}
+              {{ tx.recurring_expense.label }}
+            {% endif %}
           </p>
           <p class="text-[11px] text-slate-500 mt-0.5 truncate">
             {{ tx.transaction_date|date:"d M Y" }} • {{ tx.bank_account.name }}
@@ -98,9 +104,7 @@
             </div>
           {% endif %}
 
-          {% if tx.comment %}
-            <div class="text-[10px] text-slate-400 mt-1 truncate italic">💬 {{ tx.comment }}</div>
-          {% endif %}
+          {% if tx.comment %}<div class="text-[10px] text-slate-400 mt-1 truncate italic">💬 {{ tx.comment }}</div>{% endif %}
         </div>
       </div>
 

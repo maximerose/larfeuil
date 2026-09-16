@@ -6,24 +6,48 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('budget', '0026_alter_category_type_alter_householdinvitation_token'),
+        ("budget", "0026_alter_category_type_alter_householdinvitation_token"),
     ]
 
     operations = [
         migrations.AlterModelOptions(
-            name='category',
-            options={'ordering': [models.Case(models.When(then=models.Value(1), type='RECURRING'), models.When(then=models.Value(2), type='VARIABLE'), models.When(then=models.Value(3), type='SAVINGS'), models.When(then=models.Value(4), type='INCOME'), default=models.Value(5)), 'name'], 'verbose_name': 'Catégorie', 'verbose_name_plural': 'Catégories'},
+            name="category",
+            options={
+                "ordering": [
+                    models.Case(
+                        models.When(then=models.Value(1), type="RECURRING"),
+                        models.When(then=models.Value(2), type="VARIABLE"),
+                        models.When(then=models.Value(3), type="SAVINGS"),
+                        models.When(then=models.Value(4), type="INCOME"),
+                        default=models.Value(5),
+                    ),
+                    "name",
+                ],
+                "verbose_name": "Catégorie",
+                "verbose_name_plural": "Catégories",
+            },
         ),
         migrations.AlterField(
-            model_name='householdinvitation',
-            name='token',
-            field=models.UUIDField(default=uuid.UUID('80919079-f651-4ec8-a3c1-c9ee5107226f'), editable=False, unique=True, verbose_name='Jeton unique'),
+            model_name="householdinvitation",
+            name="token",
+            field=models.UUIDField(
+                default=uuid.UUID("80919079-f651-4ec8-a3c1-c9ee5107226f"),
+                editable=False,
+                unique=True,
+                verbose_name="Jeton unique",
+            ),
         ),
         migrations.AlterField(
-            model_name='transaction',
-            name='category',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.PROTECT, related_name='transactions', to='budget.category', verbose_name='Catégorie'),
+            model_name="transaction",
+            name="category",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.PROTECT,
+                related_name="transactions",
+                to="budget.category",
+                verbose_name="Catégorie",
+            ),
         ),
     ]

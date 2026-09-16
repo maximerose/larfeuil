@@ -17,7 +17,6 @@ from budget.models import (
 )
 from budget.models.account import AccountType
 from budget.models.category import CategoryType
-from budget.utils import remove_accents
 from core.models import Visibility
 
 

@@ -5,23 +5,23 @@
 // Fonction utilitaire centralisée
 function showToast(text, isError = false) {
     const bgColor = isError ? "rgba(244, 63, 94, 0.85)" : "rgba(16, 185, 129, 0.85)";
-    
+
     Toastify({
-        text: text, 
+        text: text,
         duration: isError ? 3000 : 1500, // On laisse l'erreur un peu plus longtemps
-        gravity: "bottom", 
+        gravity: "bottom",
         position: "center",
-        style: { 
-            background: bgColor, 
-            backdropFilter: "blur(8px)", 
-            WebkitBackdropFilter: "blur(8px)", 
-            borderRadius: "9999px", 
-            padding: "4px 12px", 
-            fontSize: "0.75rem", 
-            color: "#020617", 
-            fontWeight: "600", 
-            boxShadow: "0 4px 15px -3px rgba(0, 0, 0, 0.3)", 
-            marginBottom: "4rem" 
+        style: {
+            background: bgColor,
+            backdropFilter: "blur(8px)",
+            WebkitBackdropFilter: "blur(8px)",
+            borderRadius: "9999px",
+            padding: "4px 12px",
+            fontSize: "0.75rem",
+            color: "#020617",
+            fontWeight: "600",
+            boxShadow: "0 4px 15px -3px rgba(0, 0, 0, 0.3)",
+            marginBottom: "4rem"
         }
     }).showToast();
 }
@@ -48,7 +48,7 @@ document.body.addEventListener('htmx:confirm', (evt) => {
     Swal.fire({
         title: 'Êtes-vous sûr ?', text: evt.detail.question, icon: 'warning', showCancelButton: true,
         confirmButtonColor: '#f43f5e', cancelButtonColor: '#1e293b', confirmButtonText: 'Oui, continuer', cancelButtonText: 'Annuler',
-        background: '#0f172a', color: '#f1f5f9',      
+        background: '#0f172a', color: '#f1f5f9',
         customClass: { popup: 'border border-slate-700 rounded-[1.5rem]', confirmButton: 'font-bold rounded-xl px-5 py-2.5', cancelButton: 'font-bold rounded-xl px-5 py-2.5' }
     }).then((result) => {
         if (result.isConfirmed) evt.detail.issueRequest(true);
@@ -89,7 +89,7 @@ document.body.addEventListener('htmx:afterSettle', syncProgressBars);
 // =========================================================================
 function highlightElement(selector, fallbackUrl) {
     const target = document.querySelector(selector);
-    
+
     // Si l'élément est hors écran ou dans une modale dédiée non présente
     if (!target) {
         if (fallbackUrl) window.location.href = fallbackUrl;
@@ -108,7 +108,7 @@ function highlightElement(selector, fallbackUrl) {
 
     // 2. Faire défiler jusqu'à l'élément et appliquer l'effet Spotlight
     target.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    
+
     target.classList.add('relative', 'z-50', 'ring-4', 'ring-brand', 'ring-offset-4', 'ring-offset-slate-900', 'rounded-xl', 'transition-all');
     target.dataset.spotlight = "true";
 }
@@ -144,13 +144,13 @@ function initTomSelects() {
         const allowCreate = el.hasAttribute('data-api-create-url');
         const createUrl = el.getAttribute('data-api-create-url');
         const createType = el.getAttribute('data-create-type');
-        
+
         const hxHeaders = document.body.getAttribute('hx-headers');
         const csrfToken = hxHeaders ? JSON.parse(hxHeaders)['X-CSRFToken'] : '';
 
         let config = {
             create: false,
-            allowEmptyOption: true, 
+            allowEmptyOption: true,
             onDropdownClose: function() {
                 this.blur();
             },
@@ -186,7 +186,7 @@ function initTomSelects() {
                     callback(false);
                 });
             };
-            
+
             config.render.option_create = function(data, escape) {
                 return '<div class="create p-2 text-sm font-semibold cursor-pointer text-slate-300">Ajouter <strong class="text-brand">"' + escape(data.input) + '"</strong></div>';
             };

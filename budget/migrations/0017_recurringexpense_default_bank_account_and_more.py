@@ -8,381 +8,704 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('budget', '0016_category_owner'),
+        ("budget", "0016_category_owner"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='recurringexpense',
-            name='default_bank_account',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='recurring_expenses', to='budget.bankaccount', verbose_name='Compte prélevé par défaut'),
-        ),
-        migrations.AlterField(
-            model_name='accountsnapshot',
-            name='balance',
-            field=models.DecimalField(decimal_places=2, max_digits=15, verbose_name='Solde'),
-        ),
-        migrations.AlterField(
-            model_name='accountsnapshot',
-            name='bank_account',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='snapshots', to='budget.bankaccount', verbose_name='Compte associé'),
-        ),
-        migrations.AlterField(
-            model_name='accountsnapshot',
-            name='created_by',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='%(class)s_created', to=settings.AUTH_USER_MODEL, verbose_name='Créé par'),
-        ),
-        migrations.AlterField(
-            model_name='accountsnapshot',
-            name='date',
-            field=models.DateField(default=django.utils.timezone.localdate, verbose_name='Date'),
-        ),
-        migrations.AlterField(
-            model_name='accountsnapshot',
-            name='updated_by',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='%(class)s_updated', to=settings.AUTH_USER_MODEL, verbose_name='Modifié par'),
-        ),
-        migrations.AlterField(
-            model_name='bankaccount',
-            name='account_type',
-            field=models.CharField(choices=[('CHECKING', 'Compte courant'), ('SAVINGS', 'Compte épargne'), ('BUSINESS', 'Compte pro'), ('MEAL_VOUCHER', 'Tickets resto'), ('OTHER', 'Autre')], default='CHECKING', max_length=20, verbose_name='Type de compte'),
-        ),
-        migrations.AlterField(
-            model_name='bankaccount',
-            name='created_by',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='%(class)s_created', to=settings.AUTH_USER_MODEL, verbose_name='Créé par'),
-        ),
-        migrations.AlterField(
-            model_name='bankaccount',
-            name='current_balance',
-            field=models.DecimalField(decimal_places=2, default=Decimal('0.0'), max_digits=15, verbose_name='Solde actuel'),
-        ),
-        migrations.AlterField(
-            model_name='bankaccount',
-            name='daily_meal_voucher_limit',
-            field=models.DecimalField(blank=True, decimal_places=2, help_text="Si c'est un compte Tickets Resto, renseignez la limite quotidienne (ex : 25€)", max_digits=6, null=True, verbose_name='Limite quotidienne de tickets resto'),
-        ),
-        migrations.AlterField(
-            model_name='bankaccount',
-            name='fallback_account',
-            field=models.ForeignKey(blank=True, help_text="Si ce compte est un compte Tickets Resto, alors vous pouvez renseigner un autre compte qui fait la bascule lors d'un paiement d'un montant supérieur à la limite quotidienne", null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='fallback_for', to='budget.bankaccount', verbose_name='Compte de transition'),
-        ),
-        migrations.AlterField(
-            model_name='bankaccount',
-            name='is_active',
-            field=models.BooleanField(default=True, verbose_name='Actif'),
-        ),
-        migrations.AlterField(
-            model_name='bankaccount',
-            name='is_default',
-            field=models.BooleanField(default=False, verbose_name='Compte par défaut'),
-        ),
-        migrations.AlterField(
-            model_name='bankaccount',
-            name='name',
-            field=models.CharField(max_length=100, verbose_name='Nom du compte'),
-        ),
-        migrations.AlterField(
-            model_name='bankaccount',
-            name='owner',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='bank_accounts', to='budget.householdmember', verbose_name='Propriétaire du compte'),
-        ),
-        migrations.AlterField(
-            model_name='bankaccount',
-            name='updated_by',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='%(class)s_updated', to=settings.AUTH_USER_MODEL, verbose_name='Modifié par'),
-        ),
-        migrations.AlterField(
-            model_name='category',
-            name='created_by',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='%(class)s_created', to=settings.AUTH_USER_MODEL, verbose_name='Créé par'),
-        ),
-        migrations.AlterField(
-            model_name='category',
-            name='default_bank_account',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='default_for_categories', to='budget.bankaccount', verbose_name='Compte par défaut pour la catégorie'),
-        ),
-        migrations.AlterField(
-            model_name='category',
-            name='is_active',
-            field=models.BooleanField(default=True, verbose_name='Actif'),
-        ),
-        migrations.AlterField(
-            model_name='category',
-            name='is_income',
-            field=models.BooleanField(default=False, verbose_name='Catégorie de revenu'),
-        ),
-        migrations.AlterField(
-            model_name='category',
-            name='is_meal_voucher_eligible',
-            field=models.BooleanField(default=False, verbose_name='Éligible aux Tickets Resto'),
-        ),
-        migrations.AlterField(
-            model_name='category',
-            name='name',
-            field=models.CharField(max_length=100, verbose_name='Nom de la catégorie'),
-        ),
-        migrations.AlterField(
-            model_name='category',
-            name='owner',
-            field=models.ForeignKey(null=True, on_delete=django.db.models.deletion.CASCADE, related_name='categories', to='budget.householdmember', verbose_name='Utilisateur associé'),
-        ),
-        migrations.AlterField(
-            model_name='category',
-            name='updated_by',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='%(class)s_updated', to=settings.AUTH_USER_MODEL, verbose_name='Modifié par'),
-        ),
-        migrations.AlterField(
-            model_name='householdmember',
-            name='created_by',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='%(class)s_created', to=settings.AUTH_USER_MODEL, verbose_name='Créé par'),
-        ),
-        migrations.AlterField(
-            model_name='householdmember',
-            name='is_active',
-            field=models.BooleanField(default=True, verbose_name='Actif'),
-        ),
-        migrations.AlterField(
-            model_name='householdmember',
-            name='updated_by',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='%(class)s_updated', to=settings.AUTH_USER_MODEL, verbose_name='Modifié par'),
-        ),
-        migrations.AlterField(
-            model_name='monthlyforecast',
-            name='category',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='forecasts', to='budget.category', verbose_name='Catégorie'),
-        ),
-        migrations.AlterField(
-            model_name='monthlyforecast',
-            name='created_by',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='%(class)s_created', to=settings.AUTH_USER_MODEL, verbose_name='Créé par'),
-        ),
-        migrations.AlterField(
-            model_name='monthlyforecast',
-            name='is_active',
-            field=models.BooleanField(default=True, verbose_name='Actif'),
-        ),
-        migrations.AlterField(
-            model_name='monthlyforecast',
-            name='member',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='forecasts', to='budget.householdmember', verbose_name='Utilisateur associé'),
-        ),
-        migrations.AlterField(
-            model_name='monthlyforecast',
-            name='month',
-            field=models.DateField(default=django.utils.timezone.localdate, verbose_name='Mois'),
-        ),
-        migrations.AlterField(
-            model_name='monthlyforecast',
-            name='total_amount',
-            field=models.DecimalField(decimal_places=2, max_digits=15, verbose_name='Montant de la prévision'),
-        ),
-        migrations.AlterField(
-            model_name='monthlyforecast',
-            name='updated_by',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='%(class)s_updated', to=settings.AUTH_USER_MODEL, verbose_name='Modifié par'),
-        ),
-        migrations.AlterField(
-            model_name='monthlyforecastshare',
-            name='amount',
-            field=models.DecimalField(decimal_places=2, max_digits=15, verbose_name='Montant'),
-        ),
-        migrations.AlterField(
-            model_name='monthlyforecastshare',
-            name='bank_account',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='forecast_shares', to='budget.bankaccount', verbose_name='Compte associé'),
-        ),
-        migrations.AlterField(
-            model_name='monthlyforecastshare',
-            name='created_by',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='%(class)s_created', to=settings.AUTH_USER_MODEL, verbose_name='Créé par'),
-        ),
-        migrations.AlterField(
-            model_name='monthlyforecastshare',
-            name='forecast',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='shares', to='budget.monthlyforecast', verbose_name='Prévision'),
-        ),
-        migrations.AlterField(
-            model_name='monthlyforecastshare',
-            name='is_active',
-            field=models.BooleanField(default=True, verbose_name='Actif'),
-        ),
-        migrations.AlterField(
-            model_name='monthlyforecastshare',
-            name='updated_by',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='%(class)s_updated', to=settings.AUTH_USER_MODEL, verbose_name='Modifié par'),
-        ),
-        migrations.AlterField(
-            model_name='recurringexpense',
-            name='category',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='recurring_expenses', to='budget.category', verbose_name='Catégorie'),
-        ),
-        migrations.AlterField(
-            model_name='recurringexpense',
-            name='created_by',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='%(class)s_created', to=settings.AUTH_USER_MODEL, verbose_name='Créé par'),
-        ),
-        migrations.AlterField(
-            model_name='recurringexpense',
-            name='frequency_months',
-            field=models.PositiveIntegerField(default=1, verbose_name='Fréquence (tous les X mois)'),
-        ),
-        migrations.AlterField(
-            model_name='recurringexpense',
-            name='is_active',
-            field=models.BooleanField(default=True, verbose_name='Actif'),
-        ),
-        migrations.AlterField(
-            model_name='recurringexpense',
-            name='is_variable',
-            field=models.BooleanField(default=False, help_text="Le montant peut-il varier d'un mois à l'autre ? (ex : Facture d'éléctricité)", verbose_name='Variable'),
-        ),
-        migrations.AlterField(
-            model_name='recurringexpense',
-            name='label',
-            field=models.CharField(max_length=100, verbose_name='Nom'),
-        ),
-        migrations.AlterField(
-            model_name='recurringexpense',
-            name='total_amount',
-            field=models.DecimalField(decimal_places=2, max_digits=15, verbose_name='Montant'),
-        ),
-        migrations.AlterField(
-            model_name='recurringexpense',
-            name='updated_by',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='%(class)s_updated', to=settings.AUTH_USER_MODEL, verbose_name='Modifié par'),
-        ),
-        migrations.AlterField(
-            model_name='recurringexpense',
-            name='usual_due_day',
-            field=models.DateField(blank=True, null=True, verbose_name='Date de prélèvement'),
-        ),
-        migrations.AlterField(
-            model_name='recurringexpenseshare',
-            name='amount',
-            field=models.DecimalField(decimal_places=2, max_digits=15, verbose_name='Montant'),
-        ),
-        migrations.AlterField(
-            model_name='recurringexpenseshare',
-            name='bank_account',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='expense_shares', to='budget.bankaccount', verbose_name='Compte associé'),
-        ),
-        migrations.AlterField(
-            model_name='recurringexpenseshare',
-            name='created_by',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='%(class)s_created', to=settings.AUTH_USER_MODEL, verbose_name='Créé par'),
-        ),
-        migrations.AlterField(
-            model_name='recurringexpenseshare',
-            name='is_active',
-            field=models.BooleanField(default=True, verbose_name='Actif'),
-        ),
-        migrations.AlterField(
-            model_name='recurringexpenseshare',
-            name='recurring_expense',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='shares', to='budget.recurringexpense', verbose_name='Charge fixe'),
-        ),
-        migrations.AlterField(
-            model_name='recurringexpenseshare',
-            name='updated_by',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='%(class)s_updated', to=settings.AUTH_USER_MODEL, verbose_name='Modifié par'),
-        ),
-        migrations.AlterField(
-            model_name='transaction',
-            name='bank_account',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='transactions', to='budget.bankaccount', verbose_name='Compte associé'),
-        ),
-        migrations.AlterField(
-            model_name='transaction',
-            name='budget_month',
-            field=models.DateField(default=django.utils.timezone.localdate, help_text="A renseigner si une transaction habituelle pour un mois a été reçue sur un autre mois (ex : le salaire qui tombe sur le mois d'après, un abonnement qui doit tomber le 1er et qui tombe le 30 du mois précédent)", verbose_name='Mois associé'),
-        ),
-        migrations.AlterField(
-            model_name='transaction',
-            name='category',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='transactions', to='budget.category', verbose_name='Catégorie'),
-        ),
-        migrations.AlterField(
-            model_name='transaction',
-            name='comment',
-            field=models.CharField(blank=True, default='', max_length=255, verbose_name='Commentaire'),
-        ),
-        migrations.AlterField(
-            model_name='transaction',
-            name='created_by',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='%(class)s_created', to=settings.AUTH_USER_MODEL, verbose_name='Créé par'),
-        ),
-        migrations.AlterField(
-            model_name='transaction',
-            name='label',
-            field=models.CharField(blank=True, default='', max_length=100, verbose_name='Libellé'),
-        ),
-        migrations.AlterField(
-            model_name='transaction',
-            name='meal_voucher_amount',
-            field=models.DecimalField(decimal_places=2, default=Decimal('0.00'), max_digits=15, verbose_name='Montant en Tickets Resto'),
-        ),
-        migrations.AlterField(
-            model_name='transaction',
-            name='meal_voucher_bank_account',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='meal_voucher_transactions', to='budget.bankaccount', verbose_name='Compte Tickets Resto associé'),
-        ),
-        migrations.AlterField(
-            model_name='transaction',
-            name='recurring_expense',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='transactions', to='budget.recurringexpense', verbose_name='Charge fixe'),
-        ),
-        migrations.AlterField(
-            model_name='transaction',
-            name='total_amount',
-            field=models.DecimalField(decimal_places=2, max_digits=15, verbose_name='Montant'),
-        ),
-        migrations.AlterField(
-            model_name='transaction',
-            name='transaction_date',
-            field=models.DateField(default=django.utils.timezone.localdate, verbose_name='Date'),
-        ),
-        migrations.AlterField(
-            model_name='transaction',
-            name='transaction_type',
-            field=models.CharField(choices=[('INCOME', 'Revenu'), ('EXPENSE', 'Dépense')], default='EXPENSE', max_length=20, verbose_name='Type'),
-        ),
-        migrations.AlterField(
-            model_name='transaction',
-            name='updated_by',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='%(class)s_updated', to=settings.AUTH_USER_MODEL, verbose_name='Modifié par'),
-        ),
-        migrations.AlterField(
-            model_name='transfer',
-            name='amount',
-            field=models.DecimalField(decimal_places=2, max_digits=15, verbose_name='Montant'),
-        ),
-        migrations.AlterField(
-            model_name='transfer',
-            name='created_by',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='%(class)s_created', to=settings.AUTH_USER_MODEL, verbose_name='Créé par'),
-        ),
-        migrations.AlterField(
-            model_name='transfer',
-            name='date',
-            field=models.DateField(default=django.utils.timezone.localdate, verbose_name='Date'),
-        ),
-        migrations.AlterField(
-            model_name='transfer',
-            name='destination_account',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='transfers_received', to='budget.bankaccount', verbose_name='Compte récepteur'),
-        ),
-        migrations.AlterField(
-            model_name='transfer',
-            name='source_account',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='transfers_sent', to='budget.bankaccount', verbose_name='Compte émetteur'),
-        ),
-        migrations.AlterField(
-            model_name='transfer',
-            name='updated_by',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='%(class)s_updated', to=settings.AUTH_USER_MODEL, verbose_name='Modifié par'),
+            model_name="recurringexpense",
+            name="default_bank_account",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name="recurring_expenses",
+                to="budget.bankaccount",
+                verbose_name="Compte prélevé par défaut",
+            ),
+        ),
+        migrations.AlterField(
+            model_name="accountsnapshot",
+            name="balance",
+            field=models.DecimalField(
+                decimal_places=2, max_digits=15, verbose_name="Solde"
+            ),
+        ),
+        migrations.AlterField(
+            model_name="accountsnapshot",
+            name="bank_account",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="snapshots",
+                to="budget.bankaccount",
+                verbose_name="Compte associé",
+            ),
+        ),
+        migrations.AlterField(
+            model_name="accountsnapshot",
+            name="created_by",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name="%(class)s_created",
+                to=settings.AUTH_USER_MODEL,
+                verbose_name="Créé par",
+            ),
+        ),
+        migrations.AlterField(
+            model_name="accountsnapshot",
+            name="date",
+            field=models.DateField(
+                default=django.utils.timezone.localdate, verbose_name="Date"
+            ),
+        ),
+        migrations.AlterField(
+            model_name="accountsnapshot",
+            name="updated_by",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name="%(class)s_updated",
+                to=settings.AUTH_USER_MODEL,
+                verbose_name="Modifié par",
+            ),
+        ),
+        migrations.AlterField(
+            model_name="bankaccount",
+            name="account_type",
+            field=models.CharField(
+                choices=[
+                    ("CHECKING", "Compte courant"),
+                    ("SAVINGS", "Compte épargne"),
+                    ("BUSINESS", "Compte pro"),
+                    ("MEAL_VOUCHER", "Tickets resto"),
+                    ("OTHER", "Autre"),
+                ],
+                default="CHECKING",
+                max_length=20,
+                verbose_name="Type de compte",
+            ),
+        ),
+        migrations.AlterField(
+            model_name="bankaccount",
+            name="created_by",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name="%(class)s_created",
+                to=settings.AUTH_USER_MODEL,
+                verbose_name="Créé par",
+            ),
+        ),
+        migrations.AlterField(
+            model_name="bankaccount",
+            name="current_balance",
+            field=models.DecimalField(
+                decimal_places=2,
+                default=Decimal("0.0"),
+                max_digits=15,
+                verbose_name="Solde actuel",
+            ),
+        ),
+        migrations.AlterField(
+            model_name="bankaccount",
+            name="daily_meal_voucher_limit",
+            field=models.DecimalField(
+                blank=True,
+                decimal_places=2,
+                help_text="Si c'est un compte Tickets Resto, renseignez la limite quotidienne (ex : 25€)",
+                max_digits=6,
+                null=True,
+                verbose_name="Limite quotidienne de tickets resto",
+            ),
+        ),
+        migrations.AlterField(
+            model_name="bankaccount",
+            name="fallback_account",
+            field=models.ForeignKey(
+                blank=True,
+                help_text="Si ce compte est un compte Tickets Resto, alors vous pouvez renseigner un autre compte qui fait la bascule lors d'un paiement d'un montant supérieur à la limite quotidienne",
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name="fallback_for",
+                to="budget.bankaccount",
+                verbose_name="Compte de transition",
+            ),
+        ),
+        migrations.AlterField(
+            model_name="bankaccount",
+            name="is_active",
+            field=models.BooleanField(default=True, verbose_name="Actif"),
+        ),
+        migrations.AlterField(
+            model_name="bankaccount",
+            name="is_default",
+            field=models.BooleanField(default=False, verbose_name="Compte par défaut"),
+        ),
+        migrations.AlterField(
+            model_name="bankaccount",
+            name="name",
+            field=models.CharField(max_length=100, verbose_name="Nom du compte"),
+        ),
+        migrations.AlterField(
+            model_name="bankaccount",
+            name="owner",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="bank_accounts",
+                to="budget.householdmember",
+                verbose_name="Propriétaire du compte",
+            ),
+        ),
+        migrations.AlterField(
+            model_name="bankaccount",
+            name="updated_by",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name="%(class)s_updated",
+                to=settings.AUTH_USER_MODEL,
+                verbose_name="Modifié par",
+            ),
+        ),
+        migrations.AlterField(
+            model_name="category",
+            name="created_by",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name="%(class)s_created",
+                to=settings.AUTH_USER_MODEL,
+                verbose_name="Créé par",
+            ),
+        ),
+        migrations.AlterField(
+            model_name="category",
+            name="default_bank_account",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name="default_for_categories",
+                to="budget.bankaccount",
+                verbose_name="Compte par défaut pour la catégorie",
+            ),
+        ),
+        migrations.AlterField(
+            model_name="category",
+            name="is_active",
+            field=models.BooleanField(default=True, verbose_name="Actif"),
+        ),
+        migrations.AlterField(
+            model_name="category",
+            name="is_income",
+            field=models.BooleanField(
+                default=False, verbose_name="Catégorie de revenu"
+            ),
+        ),
+        migrations.AlterField(
+            model_name="category",
+            name="is_meal_voucher_eligible",
+            field=models.BooleanField(
+                default=False, verbose_name="Éligible aux Tickets Resto"
+            ),
+        ),
+        migrations.AlterField(
+            model_name="category",
+            name="name",
+            field=models.CharField(max_length=100, verbose_name="Nom de la catégorie"),
+        ),
+        migrations.AlterField(
+            model_name="category",
+            name="owner",
+            field=models.ForeignKey(
+                null=True,
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="categories",
+                to="budget.householdmember",
+                verbose_name="Utilisateur associé",
+            ),
+        ),
+        migrations.AlterField(
+            model_name="category",
+            name="updated_by",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name="%(class)s_updated",
+                to=settings.AUTH_USER_MODEL,
+                verbose_name="Modifié par",
+            ),
+        ),
+        migrations.AlterField(
+            model_name="householdmember",
+            name="created_by",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name="%(class)s_created",
+                to=settings.AUTH_USER_MODEL,
+                verbose_name="Créé par",
+            ),
+        ),
+        migrations.AlterField(
+            model_name="householdmember",
+            name="is_active",
+            field=models.BooleanField(default=True, verbose_name="Actif"),
+        ),
+        migrations.AlterField(
+            model_name="householdmember",
+            name="updated_by",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name="%(class)s_updated",
+                to=settings.AUTH_USER_MODEL,
+                verbose_name="Modifié par",
+            ),
+        ),
+        migrations.AlterField(
+            model_name="monthlyforecast",
+            name="category",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="forecasts",
+                to="budget.category",
+                verbose_name="Catégorie",
+            ),
+        ),
+        migrations.AlterField(
+            model_name="monthlyforecast",
+            name="created_by",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name="%(class)s_created",
+                to=settings.AUTH_USER_MODEL,
+                verbose_name="Créé par",
+            ),
+        ),
+        migrations.AlterField(
+            model_name="monthlyforecast",
+            name="is_active",
+            field=models.BooleanField(default=True, verbose_name="Actif"),
+        ),
+        migrations.AlterField(
+            model_name="monthlyforecast",
+            name="member",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="forecasts",
+                to="budget.householdmember",
+                verbose_name="Utilisateur associé",
+            ),
+        ),
+        migrations.AlterField(
+            model_name="monthlyforecast",
+            name="month",
+            field=models.DateField(
+                default=django.utils.timezone.localdate, verbose_name="Mois"
+            ),
+        ),
+        migrations.AlterField(
+            model_name="monthlyforecast",
+            name="total_amount",
+            field=models.DecimalField(
+                decimal_places=2, max_digits=15, verbose_name="Montant de la prévision"
+            ),
+        ),
+        migrations.AlterField(
+            model_name="monthlyforecast",
+            name="updated_by",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name="%(class)s_updated",
+                to=settings.AUTH_USER_MODEL,
+                verbose_name="Modifié par",
+            ),
+        ),
+        migrations.AlterField(
+            model_name="monthlyforecastshare",
+            name="amount",
+            field=models.DecimalField(
+                decimal_places=2, max_digits=15, verbose_name="Montant"
+            ),
+        ),
+        migrations.AlterField(
+            model_name="monthlyforecastshare",
+            name="bank_account",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="forecast_shares",
+                to="budget.bankaccount",
+                verbose_name="Compte associé",
+            ),
+        ),
+        migrations.AlterField(
+            model_name="monthlyforecastshare",
+            name="created_by",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name="%(class)s_created",
+                to=settings.AUTH_USER_MODEL,
+                verbose_name="Créé par",
+            ),
+        ),
+        migrations.AlterField(
+            model_name="monthlyforecastshare",
+            name="forecast",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="shares",
+                to="budget.monthlyforecast",
+                verbose_name="Prévision",
+            ),
+        ),
+        migrations.AlterField(
+            model_name="monthlyforecastshare",
+            name="is_active",
+            field=models.BooleanField(default=True, verbose_name="Actif"),
+        ),
+        migrations.AlterField(
+            model_name="monthlyforecastshare",
+            name="updated_by",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name="%(class)s_updated",
+                to=settings.AUTH_USER_MODEL,
+                verbose_name="Modifié par",
+            ),
+        ),
+        migrations.AlterField(
+            model_name="recurringexpense",
+            name="category",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name="recurring_expenses",
+                to="budget.category",
+                verbose_name="Catégorie",
+            ),
+        ),
+        migrations.AlterField(
+            model_name="recurringexpense",
+            name="created_by",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name="%(class)s_created",
+                to=settings.AUTH_USER_MODEL,
+                verbose_name="Créé par",
+            ),
+        ),
+        migrations.AlterField(
+            model_name="recurringexpense",
+            name="frequency_months",
+            field=models.PositiveIntegerField(
+                default=1, verbose_name="Fréquence (tous les X mois)"
+            ),
+        ),
+        migrations.AlterField(
+            model_name="recurringexpense",
+            name="is_active",
+            field=models.BooleanField(default=True, verbose_name="Actif"),
+        ),
+        migrations.AlterField(
+            model_name="recurringexpense",
+            name="is_variable",
+            field=models.BooleanField(
+                default=False,
+                help_text="Le montant peut-il varier d'un mois à l'autre ? (ex : Facture d'éléctricité)",
+                verbose_name="Variable",
+            ),
+        ),
+        migrations.AlterField(
+            model_name="recurringexpense",
+            name="label",
+            field=models.CharField(max_length=100, verbose_name="Nom"),
+        ),
+        migrations.AlterField(
+            model_name="recurringexpense",
+            name="total_amount",
+            field=models.DecimalField(
+                decimal_places=2, max_digits=15, verbose_name="Montant"
+            ),
+        ),
+        migrations.AlterField(
+            model_name="recurringexpense",
+            name="updated_by",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name="%(class)s_updated",
+                to=settings.AUTH_USER_MODEL,
+                verbose_name="Modifié par",
+            ),
+        ),
+        migrations.AlterField(
+            model_name="recurringexpense",
+            name="usual_due_day",
+            field=models.DateField(
+                blank=True, null=True, verbose_name="Date de prélèvement"
+            ),
+        ),
+        migrations.AlterField(
+            model_name="recurringexpenseshare",
+            name="amount",
+            field=models.DecimalField(
+                decimal_places=2, max_digits=15, verbose_name="Montant"
+            ),
+        ),
+        migrations.AlterField(
+            model_name="recurringexpenseshare",
+            name="bank_account",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="expense_shares",
+                to="budget.bankaccount",
+                verbose_name="Compte associé",
+            ),
+        ),
+        migrations.AlterField(
+            model_name="recurringexpenseshare",
+            name="created_by",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name="%(class)s_created",
+                to=settings.AUTH_USER_MODEL,
+                verbose_name="Créé par",
+            ),
+        ),
+        migrations.AlterField(
+            model_name="recurringexpenseshare",
+            name="is_active",
+            field=models.BooleanField(default=True, verbose_name="Actif"),
+        ),
+        migrations.AlterField(
+            model_name="recurringexpenseshare",
+            name="recurring_expense",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="shares",
+                to="budget.recurringexpense",
+                verbose_name="Charge fixe",
+            ),
+        ),
+        migrations.AlterField(
+            model_name="recurringexpenseshare",
+            name="updated_by",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name="%(class)s_updated",
+                to=settings.AUTH_USER_MODEL,
+                verbose_name="Modifié par",
+            ),
+        ),
+        migrations.AlterField(
+            model_name="transaction",
+            name="bank_account",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="transactions",
+                to="budget.bankaccount",
+                verbose_name="Compte associé",
+            ),
+        ),
+        migrations.AlterField(
+            model_name="transaction",
+            name="budget_month",
+            field=models.DateField(
+                default=django.utils.timezone.localdate,
+                help_text="A renseigner si une transaction habituelle pour un mois a été reçue sur un autre mois (ex : le salaire qui tombe sur le mois d'après, un abonnement qui doit tomber le 1er et qui tombe le 30 du mois précédent)",
+                verbose_name="Mois associé",
+            ),
+        ),
+        migrations.AlterField(
+            model_name="transaction",
+            name="category",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.PROTECT,
+                related_name="transactions",
+                to="budget.category",
+                verbose_name="Catégorie",
+            ),
+        ),
+        migrations.AlterField(
+            model_name="transaction",
+            name="comment",
+            field=models.CharField(
+                blank=True, default="", max_length=255, verbose_name="Commentaire"
+            ),
+        ),
+        migrations.AlterField(
+            model_name="transaction",
+            name="created_by",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name="%(class)s_created",
+                to=settings.AUTH_USER_MODEL,
+                verbose_name="Créé par",
+            ),
+        ),
+        migrations.AlterField(
+            model_name="transaction",
+            name="label",
+            field=models.CharField(
+                blank=True, default="", max_length=100, verbose_name="Libellé"
+            ),
+        ),
+        migrations.AlterField(
+            model_name="transaction",
+            name="meal_voucher_amount",
+            field=models.DecimalField(
+                decimal_places=2,
+                default=Decimal("0.00"),
+                max_digits=15,
+                verbose_name="Montant en Tickets Resto",
+            ),
+        ),
+        migrations.AlterField(
+            model_name="transaction",
+            name="meal_voucher_bank_account",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name="meal_voucher_transactions",
+                to="budget.bankaccount",
+                verbose_name="Compte Tickets Resto associé",
+            ),
+        ),
+        migrations.AlterField(
+            model_name="transaction",
+            name="recurring_expense",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name="transactions",
+                to="budget.recurringexpense",
+                verbose_name="Charge fixe",
+            ),
+        ),
+        migrations.AlterField(
+            model_name="transaction",
+            name="total_amount",
+            field=models.DecimalField(
+                decimal_places=2, max_digits=15, verbose_name="Montant"
+            ),
+        ),
+        migrations.AlterField(
+            model_name="transaction",
+            name="transaction_date",
+            field=models.DateField(
+                default=django.utils.timezone.localdate, verbose_name="Date"
+            ),
+        ),
+        migrations.AlterField(
+            model_name="transaction",
+            name="transaction_type",
+            field=models.CharField(
+                choices=[("INCOME", "Revenu"), ("EXPENSE", "Dépense")],
+                default="EXPENSE",
+                max_length=20,
+                verbose_name="Type",
+            ),
+        ),
+        migrations.AlterField(
+            model_name="transaction",
+            name="updated_by",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name="%(class)s_updated",
+                to=settings.AUTH_USER_MODEL,
+                verbose_name="Modifié par",
+            ),
+        ),
+        migrations.AlterField(
+            model_name="transfer",
+            name="amount",
+            field=models.DecimalField(
+                decimal_places=2, max_digits=15, verbose_name="Montant"
+            ),
+        ),
+        migrations.AlterField(
+            model_name="transfer",
+            name="created_by",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name="%(class)s_created",
+                to=settings.AUTH_USER_MODEL,
+                verbose_name="Créé par",
+            ),
+        ),
+        migrations.AlterField(
+            model_name="transfer",
+            name="date",
+            field=models.DateField(
+                default=django.utils.timezone.localdate, verbose_name="Date"
+            ),
+        ),
+        migrations.AlterField(
+            model_name="transfer",
+            name="destination_account",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.PROTECT,
+                related_name="transfers_received",
+                to="budget.bankaccount",
+                verbose_name="Compte récepteur",
+            ),
+        ),
+        migrations.AlterField(
+            model_name="transfer",
+            name="source_account",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.PROTECT,
+                related_name="transfers_sent",
+                to="budget.bankaccount",
+                verbose_name="Compte émetteur",
+            ),
+        ),
+        migrations.AlterField(
+            model_name="transfer",
+            name="updated_by",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name="%(class)s_updated",
+                to=settings.AUTH_USER_MODEL,
+                verbose_name="Modifié par",
+            ),
         ),
     ]

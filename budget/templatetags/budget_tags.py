@@ -38,3 +38,29 @@ def build_progress_data(spent, allocated):
         "bg_color": bg_color,
         "text_color": text_color,
     }
+
+
+@register.simple_tag
+def get_badge_classes(variant: str) -> str:
+    variant = (variant or "").lower()
+    base = (
+        "inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-semibold"
+    )
+
+    styles = {
+        "success": "border-budget-income/20 bg-budget-income/10 text-budget-income",
+        "income": "border-budget-income/20 bg-budget-income/10 text-budget-income",
+        "danger": "border-budget-recurring/20 bg-budget-recurring/10 text-budget-recurring",
+        "expense": "border-budget-recurring/20 bg-budget-recurring/10 text-budget-recurring",
+        "recurring": "border-budget-recurring/20 bg-budget-recurring/10 text-budget-recurring",
+        "warning": "border-budget-variable/20 bg-budget-variable/10 text-budget-variable",
+        "variable": "border-budget-variable/20 bg-budget-variable/10 text-budget-variable",
+        "checking": "border-account-checking/20 bg-account-checking/10 text-account-checking",
+        "savings": "border-account-savings/20 bg-account-savings/10 text-account-savings",
+        "business": "border-account-business/20 bg-account-business/10 text-account-business",
+        "meal_voucher": "border-account-meal/20 bg-account-meal/10 text-account-meal",
+        "other": "border-account-other/20 bg-account-other/10 text-account-other",
+    }
+
+    color = styles.get(variant, "border-brand-border bg-brand-border/50 text-slate-300")
+    return f"{base} {color}"

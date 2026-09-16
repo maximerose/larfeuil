@@ -4,15 +4,26 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('budget', '0029_alter_householdinvitation_token'),
+        ("budget", "0029_alter_householdinvitation_token"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='bankaccount',
-            name='account_type',
-            field=models.CharField(choices=[('CHECKING', 'Compte courant'), ('SAVINGS', 'Compte épargne'), ('CASH', 'Espèces'), ('BUSINESS', 'Compte pro'), ('MEAL_VOUCHER', 'Tickets resto'), ('OTHER', 'Autre')], default='CHECKING', max_length=20, verbose_name='Type de compte'),
+            model_name="bankaccount",
+            name="account_type",
+            field=models.CharField(
+                choices=[
+                    ("CHECKING", "Compte courant"),
+                    ("SAVINGS", "Compte épargne"),
+                    ("CASH", "Espèces"),
+                    ("BUSINESS", "Compte pro"),
+                    ("MEAL_VOUCHER", "Tickets resto"),
+                    ("OTHER", "Autre"),
+                ],
+                default="CHECKING",
+                max_length=20,
+                verbose_name="Type de compte",
+            ),
         ),
     ]

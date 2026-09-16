@@ -12,12 +12,16 @@
 
     <div>
       {% include "budget/components/input.html" with label="Nom d'utilisateur" name="username" autocomplete="username" placeholder="jean-dupont" value=form.username.value|default_if_none:"" required=True autofocus=True prefix="@" %}
-      {% if form.username.errors %}<p class="text-[11px] text-action-danger mt-1">{{ form.username.errors.0 }}</p>{% endif %}
+      {% if form.username.errors %}
+        <p class="text-[11px] text-action-danger mt-1">{{ form.username.errors.0 }}</p>
+      {% endif %}
     </div>
 
     <div>
       {% include "budget/components/input.html" with label="Nom d'affichage" name="display_name" autocomplete="name" placeholder="Jean Dupont" value=form.display_name.value|default_if_none:"" required=True %}
-      {% if form.display_name.errors %}<p class="text-[11px] text-action-danger mt-1">{{ form.display_name.errors.0 }}</p>{% endif %}
+      {% if form.display_name.errors %}
+        <p class="text-[11px] text-action-danger mt-1">{{ form.display_name.errors.0 }}</p>
+      {% endif %}
     </div>
 
     <div>
@@ -28,17 +32,23 @@
     <div>
       {% include "budget/components/input.html" with label="Mot de passe" type="password" name="password" autocomplete="new-password" passwordrules="minlength: 8; required: upper; required: lower; required: digit; required: special;" required=True %}
       {% include "budget/components/password_strength.html" with target_id="password" %}
-      {% if form.password.errors %}<p class="text-[11px] text-action-danger mt-1">{{ form.password.errors.0 }}</p>{% endif %}
+      {% if form.password.errors %}
+        <p class="text-[11px] text-action-danger mt-1">{{ form.password.errors.0 }}</p>
+      {% endif %}
     </div>
 
     <div>
       {% include "budget/components/input.html" with label="Confirmer le mot de passe" type="password" name="password_confirm" autocomplete="new-password" required=True %}
-      {% if form.password_confirm.errors %}<p class="text-[11px] text-action-danger mt-1">{{ form.password_confirm.errors.0 }}</p>{% endif %}
+      {% if form.password_confirm.errors %}
+        <p class="text-[11px] text-action-danger mt-1">{{ form.password_confirm.errors.0 }}</p>
+      {% endif %}
     </div>
 
     <div class="pt-2 border-t border-brand-border/50">
       {% include "budget/components/input.html" with label="Code Foyer (Optionnel)" name="household_code" value=form.household_code.value|default_if_none:"" autocomplete="off" placeholder="Ex: A7B9X2" help_text="Saisis le code du membre de ton foyer pour le rejoindre." %}
-      {% if form.household_code.errors %}<p class="text-[11px] text-action-danger mt-1">{{ form.household_code.errors.0 }}</p>{% endif %}
+      {% if form.household_code.errors %}
+        <p class="text-[11px] text-action-danger mt-1">{{ form.household_code.errors.0 }}</p>
+      {% endif %}
     </div>
 
     <div class="pt-4">

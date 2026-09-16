@@ -25,30 +25,19 @@
       <div class="absolute right-0 top-0 bottom-0 w-6 bg-linear-to-l from-brand-dark/90 to-transparent pointer-events-none z-10">
       </div>
 
-      <div class="flex overflow-x-auto gap-2 scrollbar-hide py-1 items-center snap-x"
-           id="month-scroll-container">
+      <div class="flex overflow-x-auto gap-2 scrollbar-hide py-1 items-center snap-x" id="month-scroll-container">
         {% for m in budget_months_list %}
-          <a hx-get="?month={{ m.url_value }}"
-             hx-target="body"
-             hx-indicator="#page-loader"
-             hx-swap="innerHTML show:none settle:100ms"
-             hx-push-url="true"
-             hx-trigger="click delay:250ms"
-             onclick="
-               this.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
-               document.querySelectorAll('#month-scroll-container a').forEach(el => {
-                  el.classList.remove('bg-brand', 'text-brand-dark', 'border-brand', 'shadow-md', 'shadow-brand/20');
-                  if(!el.classList.contains('bg-action-info/10')) {
-                      el.classList.add('bg-slate-800', 'text-slate-400', 'border-transparent');
-                  }
-               });
-               this.classList.remove('bg-slate-800', 'text-slate-400', 'border-transparent');
-               this.classList.add('bg-brand', 'text-brand-dark', 'border-brand', 'shadow-md', 'shadow-brand/20');
-             "
-             {% if m.is_active %}id="active-month-tab"{% endif %}
-             class="snap-center shrink-0 text-[11px] sm:text-xs font-semibold px-3 py-1 sm:px-4 sm:py-1.5 rounded-full border transition-colors cursor-pointer {% if m.is_active %} bg-brand text-brand-dark border-brand shadow-md shadow-brand/20 {% elif m.is_current %} bg-action-info/10 text-action-info border-action-info/30 hover:bg-action-info/20 hover:text-action-info {% else %} bg-slate-800 text-slate-400 border-transparent hover:text-slate-200 hover:border-slate-500 {% endif %}">
-            {{ m.label }}
-          </a>
+          <a hx-get="?month={{ m.url_value }}" hx-target="body" hx-indicator="#page-loader" hx-swap="innerHTML show:none settle:100ms" hx-push-url="true" hx-trigger="click delay:250ms" onclick=" this.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' }); document.querySelectorAll('#month-scroll-container a').forEach(el => { el.classList.remove('bg-brand', 'text-brand-dark', 'border-brand', 'shadow-md', 'shadow-brand/20'); if(!el.classList.contains('bg-action-info/10')) { el.classList.add('bg-slate-800', 'text-slate-400', 'border-transparent'); } }); this.classList.remove('bg-slate-800', 'text-slate-400', 'border-transparent'); this.classList.add('bg-brand', 'text-brand-dark', 'border-brand', 'shadow-md', 'shadow-brand/20'); "
+            {% if m.is_active %}id="active-month-tab"{% endif %}
+            class="snap-center shrink-0 text-[11px] sm:text-xs font-semibold px-3 py-1 sm:px-4 sm:py-1.5 rounded-full border transition-colors cursor-pointer
+            {% if m.is_active %}
+              bg-brand text-brand-dark border-brand shadow-md shadow-brand/20
+            {% elif m.is_current %}
+              bg-action-info/10 text-action-info border-action-info/30 hover:bg-action-info/20 hover:text-action-info
+            {% else %}
+              bg-slate-800 text-slate-400 border-transparent hover:text-slate-200 hover:border-slate-500
+            {% endif %}
+          ">{{ m.label }}</a>
         {% endfor %}
       </div>
     </div>

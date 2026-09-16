@@ -37,8 +37,7 @@
           <div class="text-brand">{% include "budget/components/icon.html" with name="bolt" %}</div>
           {% include "budget/components/heading.html" with level="2" title="Budget Dépenses Variables" %}
         </div>
-        <a href="{% url 'forecast_list' %}?month={{ today|date:'Y-m' }}"
-           class="text-xs font-semibold text-brand hover:underline">Ajuster →</a>
+        <a href="{% url 'forecast_list' %}?month={{ today|date:'Y-m' }}" class="text-xs font-semibold text-brand hover:underline">Ajuster →</a>
       </div>
 
       <div class="bg-brand-card border border-brand-border p-5 rounded-card shadow-sm space-y-4">

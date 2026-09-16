@@ -1,9 +1,9 @@
 <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-    {% for item in accounts_data %}
-        {% include "budget/partials/accounts/_account_card.html" with account=item.account view_context="dashboard" %}
-    {% empty %}
-        <div class="col-span-full">
-            {% include "budget/partials/shared/_empty_state.html" with message="Aucun compte bancaire actif." %}
-        </div>
-    {% endfor %}
+  {% for item in accounts_data %}
+    {% include "budget/partials/accounts/_account_card.html" with account=item.account view_context="dashboard" %}
+  {% empty %}
+    <div class="col-span-full">
+      {% include "budget/partials/shared/_empty_state.html" with message="Aucun compte bancaire actif." %}
+    </div>
+  {% endfor %}
 </div>

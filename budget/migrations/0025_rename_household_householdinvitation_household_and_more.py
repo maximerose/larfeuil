@@ -5,20 +5,24 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('budget', '0024_householdinvitation'),
+        ("budget", "0024_householdinvitation"),
     ]
 
     operations = [
         migrations.RenameField(
-            model_name='householdinvitation',
-            old_name='Household',
-            new_name='household',
+            model_name="householdinvitation",
+            old_name="Household",
+            new_name="household",
         ),
         migrations.AlterField(
-            model_name='householdinvitation',
-            name='token',
-            field=models.UUIDField(default=uuid.UUID('720e7206-ddf2-470d-861e-7f612289cfa6'), editable=False, unique=True, verbose_name='Jeton unique'),
+            model_name="householdinvitation",
+            name="token",
+            field=models.UUIDField(
+                default=uuid.UUID("720e7206-ddf2-470d-861e-7f612289cfa6"),
+                editable=False,
+                unique=True,
+                verbose_name="Jeton unique",
+            ),
         ),
     ]

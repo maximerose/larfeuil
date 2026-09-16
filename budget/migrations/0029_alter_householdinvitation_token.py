@@ -5,15 +5,20 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('budget', '0028_monthlyforecast_visibility_and_more'),
+        ("budget", "0028_monthlyforecast_visibility_and_more"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='householdinvitation',
-            name='token',
-            field=models.CharField(default=budget.models.account.generate_short_token, editable=False, max_length=10, unique=True, verbose_name='Code Foyer'),
+            model_name="householdinvitation",
+            name="token",
+            field=models.CharField(
+                default=budget.models.account.generate_short_token,
+                editable=False,
+                max_length=10,
+                unique=True,
+                verbose_name="Code Foyer",
+            ),
         ),
     ]

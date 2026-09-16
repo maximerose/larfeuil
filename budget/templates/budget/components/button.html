@@ -9,9 +9,9 @@
         hx-indicator="this"
         class="relative w-full inline-flex items-center justify-center font-semibold px-4 py-2.5 rounded-xl transition-all active:scale-95 text-sm cursor-pointer {% if variant == 'primary' %} bg-action-primary hover:bg-action-primary-hover text-brand-dark shadow-lg shadow-emerald-500/20 font-bold {% elif variant == 'danger' %} bg-action-danger/20 hover:bg-action-danger/30 text-action-danger border border-action-danger/30 {% elif variant == 'warning' %} bg-action-warning/20 hover:bg-action-warning/30 text-action-warning border border-action-warning/30 {% elif variant == 'ghost' %} bg-transparent hover:bg-brand-border text-slate-300 {% else %} bg-brand-border hover:bg-slate-700 text-slate-200 {% endif %}">
 
-    <!-- Icône de chargement -->
-    {% include "budget/components/icon.html" with name="spinner" class="animate-spin -ml-1 mr-2 h-4 w-4 htmx-show-flex text-current" %}
+  <!-- Icône de chargement -->
+  {% include "budget/components/icon.html" with name="spinner" class="animate-spin -ml-1 mr-2 h-4 w-4 htmx-show-flex text-current" %}
 
-    <span class="htmx-hide">{{ label }}</span>
-    <span class="htmx-show-inline ml-1">Enregistrement...</span>
+  <span class="htmx-hide">{{ label }}</span>
+  <span class="htmx-show-inline ml-1">Enregistrement...</span>
 </button>

@@ -5,25 +5,44 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('budget', '0022_category_default_bank_account'),
+        ("budget", "0022_category_default_bank_account"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='recurringexpense',
-            name='household',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='recurring_expenses', to='budget.household', verbose_name='Foyer'),
+            model_name="recurringexpense",
+            name="household",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="recurring_expenses",
+                to="budget.household",
+                verbose_name="Foyer",
+            ),
         ),
         migrations.AddField(
-            model_name='recurringexpense',
-            name='owner',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='personal_recurring_expenses', to='budget.householdmember', verbose_name='Propriétaire (Laisser vide si charge commune)'),
+            model_name="recurringexpense",
+            name="owner",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="personal_recurring_expenses",
+                to="budget.householdmember",
+                verbose_name="Propriétaire (Laisser vide si charge commune)",
+            ),
         ),
         migrations.AddField(
-            model_name='recurringexpense',
-            name='visibility',
-            field=models.CharField(choices=[('PRIVATE', 'Privé'), ('SHARED', 'Partagé')], default='SHARED', help_text='Une charge privée ne sera visible que par son propriétaire.', max_length=20, verbose_name='Visibilité'),
+            model_name="recurringexpense",
+            name="visibility",
+            field=models.CharField(
+                choices=[("PRIVATE", "Privé"), ("SHARED", "Partagé")],
+                default="SHARED",
+                help_text="Une charge privée ne sera visible que par son propriétaire.",
+                max_length=20,
+                verbose_name="Visibilité",
+            ),
         ),
     ]

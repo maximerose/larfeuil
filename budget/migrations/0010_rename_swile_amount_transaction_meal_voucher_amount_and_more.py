@@ -4,20 +4,21 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('budget', '0009_category_is_income_transaction_comment'),
+        ("budget", "0009_category_is_income_transaction_comment"),
     ]
 
     operations = [
         migrations.RenameField(
-            model_name='transaction',
-            old_name='swile_amount',
-            new_name='meal_voucher_amount',
+            model_name="transaction",
+            old_name="swile_amount",
+            new_name="meal_voucher_amount",
         ),
         migrations.AddField(
-            model_name='bankaccount',
-            name='daily_meal_voucher_limit',
-            field=models.DecimalField(blank=True, decimal_places=2, max_digits=6, null=True),
+            model_name="bankaccount",
+            name="daily_meal_voucher_limit",
+            field=models.DecimalField(
+                blank=True, decimal_places=2, max_digits=6, null=True
+            ),
         ),
     ]

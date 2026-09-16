@@ -7,27 +7,80 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('budget', '0023_recurringexpense_household_recurringexpense_owner_and_more'),
+        ("budget", "0023_recurringexpense_household_recurringexpense_owner_and_more"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='HouseholdInvitation',
+            name="HouseholdInvitation",
             fields=[
-                ('id', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('token', models.UUIDField(default=uuid.UUID('f886499f-3225-48e9-9862-1a037d455e1b'), editable=False, unique=True, verbose_name='Jeton unique')),
-                ('Household', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='invitations', to='budget.household', verbose_name='Foyer')),
-                ('accepted_by', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='accepted_invitations', to=settings.AUTH_USER_MODEL, verbose_name='Accepté par')),
-                ('created_by', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='%(class)s_created', to=settings.AUTH_USER_MODEL, verbose_name='Créé par')),
-                ('updated_by', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='%(class)s_updated', to=settings.AUTH_USER_MODEL, verbose_name='Modifié par')),
+                (
+                    "id",
+                    models.UUIDField(
+                        default=uuid.uuid4,
+                        editable=False,
+                        primary_key=True,
+                        serialize=False,
+                    ),
+                ),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                (
+                    "token",
+                    models.UUIDField(
+                        default=uuid.UUID("f886499f-3225-48e9-9862-1a037d455e1b"),
+                        editable=False,
+                        unique=True,
+                        verbose_name="Jeton unique",
+                    ),
+                ),
+                (
+                    "Household",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="invitations",
+                        to="budget.household",
+                        verbose_name="Foyer",
+                    ),
+                ),
+                (
+                    "accepted_by",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        related_name="accepted_invitations",
+                        to=settings.AUTH_USER_MODEL,
+                        verbose_name="Accepté par",
+                    ),
+                ),
+                (
+                    "created_by",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        related_name="%(class)s_created",
+                        to=settings.AUTH_USER_MODEL,
+                        verbose_name="Créé par",
+                    ),
+                ),
+                (
+                    "updated_by",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        related_name="%(class)s_updated",
+                        to=settings.AUTH_USER_MODEL,
+                        verbose_name="Modifié par",
+                    ),
+                ),
             ],
             options={
-                'abstract': False,
+                "abstract": False,
             },
         ),
     ]

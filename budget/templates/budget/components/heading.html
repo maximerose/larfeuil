@@ -1,8 +1,14 @@
 <div class="space-y-1">
-    <h{{ level|default:"2" }} class="font-bold tracking-tight text-slate-100 {% if level == '1' %}text-2xl sm:text-3xl{% elif level == '3' %}text-base sm:text-lg{% else %}text-lg sm:text-xl{% endif %}">
-    {{ title }}
-    </h{{ level|default:"2" }}>
-    {% if subtitle %}
-        <p class="text-xs sm:text-sm text-slate-400">{{ subtitle }}</p>
-    {% endif %}
+  <h {{ level|default:"2" }} class="font-bold tracking-tight text-slate-100
+  {% if level == '1' %}
+    text-2xl sm:text-3xl
+  {% elif level == '3' %}
+    text-base sm:text-lg
+  {% else %}
+    text-lg sm:text-xl
+  {% endif %}
+  ">
+  {{ title }}
+  </h {{ level|default:"2" }}>
+  {% if subtitle %}<p class="text-xs sm:text-sm text-slate-400">{{ subtitle }}</p>{% endif %}
 </div>

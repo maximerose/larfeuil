@@ -90,17 +90,17 @@ function initQuickTransactionForm() {
         const sourceSelect = document.querySelector('select[name="source_account"]');
         const destSelect = document.querySelector('select[name="destination_account"]');
         if (!sourceSelect || !destSelect) return;
-    
+
         const sourceVal = sourceSelect.value;
         const destVal = destSelect.value;
-    
+
         for (let opt of destSelect.options) {
             opt.disabled = (opt.value !== "" && opt.value === sourceVal);
         }
         for (let opt of sourceSelect.options) {
             opt.disabled = (opt.value !== "" && opt.value === destVal);
         }
-    
+
         // Synchronisation si TomSelect est utilisé
         if (sourceSelect.tomselect) sourceSelect.tomselect.sync();
         if (destSelect.tomselect) destSelect.tomselect.sync();
@@ -108,35 +108,35 @@ function initQuickTransactionForm() {
 
     window.swapTransferAccounts = function(e) {
         if (e && e.preventDefault) e.preventDefault();
-    
+
         const sourceSelect = document.querySelector('select[name="source_account"]');
         const destSelect = document.querySelector('select[name="destination_account"]');
         if (!sourceSelect || !destSelect) return;
-    
+
         const tempSourceVal = sourceSelect.value;
         const tempDestVal = destSelect.value;
-    
+
         // 1. Déblocage temporaire des options
         Array.from(sourceSelect.options).forEach(opt => opt.disabled = false);
         Array.from(destSelect.options).forEach(opt => opt.disabled = false);
-    
+
         // 2. Inversion (compatible native + TomSelect)
         if (sourceSelect.tomselect) {
             sourceSelect.tomselect.setValue(tempDestVal, true);
         } else {
             sourceSelect.value = tempDestVal;
         }
-    
+
         if (destSelect.tomselect) {
             destSelect.tomselect.setValue(tempSourceVal, true);
         } else {
             destSelect.value = tempSourceVal;
         }
-    
+
         // 3. Notification des changements
         sourceSelect.dispatchEvent(new Event('change', { bubbles: true }));
         destSelect.dispatchEvent(new Event('change', { bubbles: true }));
-    
+
         // 4. Verrouillage réciproque
         window.updateTransferAccounts();
     };

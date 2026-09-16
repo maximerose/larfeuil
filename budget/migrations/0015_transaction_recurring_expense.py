@@ -5,15 +5,20 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('budget', '0014_rename_degault_bank_account_category_default_bank_account'),
+        ("budget", "0014_rename_degault_bank_account_category_default_bank_account"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='transaction',
-            name='recurring_expense',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='transactions', to='budget.recurringexpense'),
+            model_name="transaction",
+            name="recurring_expense",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name="transactions",
+                to="budget.recurringexpense",
+            ),
         ),
     ]

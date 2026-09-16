@@ -4,20 +4,19 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('budget', '0008_transaction_budget_month'),
+        ("budget", "0008_transaction_budget_month"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='category',
-            name='is_income',
+            model_name="category",
+            name="is_income",
             field=models.BooleanField(default=False),
         ),
         migrations.AddField(
-            model_name='transaction',
-            name='comment',
-            field=models.CharField(blank=True, default='', max_length=255),
+            model_name="transaction",
+            name="comment",
+            field=models.CharField(blank=True, default="", max_length=255),
         ),
     ]

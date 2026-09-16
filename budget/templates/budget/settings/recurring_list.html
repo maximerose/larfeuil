@@ -46,7 +46,9 @@
                 {% if item.next_date %}
                   <p class="flex items-center gap-1 text-[11px] mt-0.5 font-medium {% if item.is_overdue %}text-action-danger{% else %}text-brand{% endif %}">
                     {% include "budget/components/icon.html" with name="calendar" class="w-3 h-3 shrink-0" %}
-                    <span>Prochaine échéance : {{ item.next_date|date:"d M Y" }} {% if item.is_overdue %}(En retard){% endif %}</span>
+                    <span>Prochaine échéance : {{ item.next_date|date:"d M Y" }}
+                      {% if item.is_overdue %}(En retard){% endif %}
+                    </span>
                   </p>
                 {% endif %}
               </div>

@@ -5,15 +5,21 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('budget', '0021_alter_bankaccount_options_alter_category_options_and_more'),
+        ("budget", "0021_alter_bankaccount_options_alter_category_options_and_more"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='category',
-            name='default_bank_account',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='default_for_categories', to='budget.bankaccount', verbose_name='Compte par défaut'),
+            model_name="category",
+            name="default_bank_account",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name="default_for_categories",
+                to="budget.bankaccount",
+                verbose_name="Compte par défaut",
+            ),
         ),
     ]

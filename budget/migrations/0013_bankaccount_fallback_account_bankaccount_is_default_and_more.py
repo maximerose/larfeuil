@@ -8,69 +8,163 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('budget', '0012_accountsnapshot'),
+        ("budget", "0012_accountsnapshot"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='bankaccount',
-            name='fallback_account',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='fallback_for', to='budget.bankaccount'),
+            model_name="bankaccount",
+            name="fallback_account",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name="fallback_for",
+                to="budget.bankaccount",
+            ),
         ),
         migrations.AddField(
-            model_name='bankaccount',
-            name='is_default',
+            model_name="bankaccount",
+            name="is_default",
             field=models.BooleanField(default=False),
         ),
         migrations.AddField(
-            model_name='category',
-            name='degault_bank_account',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='default_for_categories', to='budget.bankaccount'),
+            model_name="category",
+            name="degault_bank_account",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name="default_for_categories",
+                to="budget.bankaccount",
+            ),
         ),
         migrations.CreateModel(
-            name='MonthlyForecast',
+            name="MonthlyForecast",
             fields=[
-                ('id', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('is_active', models.BooleanField(default=True)),
-                ('month', models.DateField(default=django.utils.timezone.localdate)),
-                ('total_amount', models.DecimalField(decimal_places=2, max_digits=15)),
-                ('category', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='forecasts', to='budget.category')),
-                ('created_by', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='%(class)s_created', to=settings.AUTH_USER_MODEL)),
-                ('member', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='forecasts', to='budget.householdmember')),
-                ('updated_by', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='%(class)s_updated', to=settings.AUTH_USER_MODEL)),
+                (
+                    "id",
+                    models.UUIDField(
+                        default=uuid.uuid4,
+                        editable=False,
+                        primary_key=True,
+                        serialize=False,
+                    ),
+                ),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                ("is_active", models.BooleanField(default=True)),
+                ("month", models.DateField(default=django.utils.timezone.localdate)),
+                ("total_amount", models.DecimalField(decimal_places=2, max_digits=15)),
+                (
+                    "category",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="forecasts",
+                        to="budget.category",
+                    ),
+                ),
+                (
+                    "created_by",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        related_name="%(class)s_created",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
+                (
+                    "member",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="forecasts",
+                        to="budget.householdmember",
+                    ),
+                ),
+                (
+                    "updated_by",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        related_name="%(class)s_updated",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'Prévision mensuelle',
-                'verbose_name_plural': 'Prévisions mensuelles',
-                'abstract': False,
+                "verbose_name": "Prévision mensuelle",
+                "verbose_name_plural": "Prévisions mensuelles",
+                "abstract": False,
             },
         ),
         migrations.CreateModel(
-            name='MonthlyForecastShare',
+            name="MonthlyForecastShare",
             fields=[
-                ('id', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('is_active', models.BooleanField(default=True)),
-                ('amount', models.DecimalField(decimal_places=2, max_digits=15)),
-                ('bank_account', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='forecast_shares', to='budget.bankaccount')),
-                ('created_by', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='%(class)s_created', to=settings.AUTH_USER_MODEL)),
-                ('forecast', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='shares', to='budget.monthlyforecast')),
-                ('updated_by', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='%(class)s_updated', to=settings.AUTH_USER_MODEL)),
+                (
+                    "id",
+                    models.UUIDField(
+                        default=uuid.uuid4,
+                        editable=False,
+                        primary_key=True,
+                        serialize=False,
+                    ),
+                ),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                ("is_active", models.BooleanField(default=True)),
+                ("amount", models.DecimalField(decimal_places=2, max_digits=15)),
+                (
+                    "bank_account",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="forecast_shares",
+                        to="budget.bankaccount",
+                    ),
+                ),
+                (
+                    "created_by",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        related_name="%(class)s_created",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
+                (
+                    "forecast",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="shares",
+                        to="budget.monthlyforecast",
+                    ),
+                ),
+                (
+                    "updated_by",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        related_name="%(class)s_updated",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'Répartition de prévision',
-                'verbose_name_plural': 'Répartitions de prévisions',
-                'abstract': False,
+                "verbose_name": "Répartition de prévision",
+                "verbose_name_plural": "Répartitions de prévisions",
+                "abstract": False,
             },
         ),
         migrations.AddConstraint(
-            model_name='monthlyforecast',
-            constraint=models.UniqueConstraint(fields=('month', 'category', 'member'), name='unique_monthly_category_forecast_per_member'),
+            model_name="monthlyforecast",
+            constraint=models.UniqueConstraint(
+                fields=("month", "category", "member"),
+                name="unique_monthly_category_forecast_per_member",
+            ),
         ),
     ]

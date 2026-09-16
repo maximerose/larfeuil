@@ -1,64 +1,64 @@
 <div class="fixed inset-0 z-50 bg-brand-dark/80 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4 transition-opacity">
 
-    <!-- Conteneur principal (flex-col et max-h-[90vh]) -->
-    <div class="bg-brand-card border border-brand-border w-full sm:max-w-md rounded-t-3xl sm:rounded-modal p-6 shadow-2xl relative flex flex-col max-h-[90vh] sm:max-h-[85vh]">
+  <!-- Conteneur principal (flex-col et max-h-[90vh]) -->
+  <div class="bg-brand-card border border-brand-border w-full sm:max-w-md rounded-t-3xl sm:rounded-modal p-6 shadow-2xl relative flex flex-col max-h-[90vh] sm:max-h-[85vh]">
 
-        <!-- Header (shrink-0 pour ne pas être écrasé) -->
-        <div class="flex items-start justify-between border-b border-brand-border pb-3 mb-4 shrink-0">
-            <div class="flex items-center gap-3">
-                {% if modal_icon %}
-                    <div class="w-10 h-10 rounded-xl bg-brand/10 text-brand flex items-center justify-center shrink-0 shadow-inner">
-                        {% include "budget/components/icon.html" with name=modal_icon %}
-                    </div>
-                {% endif %}
-                <div>
-                    {% include "budget/components/heading.html" with level="3" title=modal_title|default:"Modal" subtitle=modal_subtitle %}
-                </div>
-            </div>
-            <button onclick="document.getElementById('modal-container').replaceChildren()"
-                    type="button"
-                    class="text-slate-400 hover:text-slate-200 p-1 rounded-lg cursor-pointer">
-                {% include "budget/components/icon.html" with name="x-mark" %}
-            </button>
-        </div>
-
-        <!-- Corps de la modale (overflow-y-auto pour permettre le scroll) -->
-        <div class="overflow-y-auto pr-1 scrollbar-hide">
-            <div class="space-y-4">{% include modal_content_template %}</div>
-        </div>
-
-        <!-- Footer Dynamique (shrink-0 pour rester figé en bas) -->
-        {% if has_cancel or has_save or has_ok %}
-            <div class="flex items-center gap-3 pt-4 mt-4 border-t border-brand-border/50 shrink-0">
-                {% if has_cancel %}
-                    <div class="flex-1">
-                        <button type="button"
-                                onclick="document.getElementById('modal-container').replaceChildren()"
-                                class="w-full inline-flex items-center justify-center font-semibold px-4 py-2.5 rounded-xl transition-all active:scale-95 text-sm cursor-pointer bg-transparent hover:bg-brand-border text-slate-300">
-                            {{ cancel_text|default:"Annuler" }}
-                        </button>
-                    </div>
-                {% endif %}
-                {% if has_save %}
-                    <div class="flex-1">
-                        <button type="submit"
-                                form="{{ form_id }}"
-                                class="w-full inline-flex items-center justify-center font-semibold px-4 py-2.5 rounded-xl transition-all active:scale-95 text-sm cursor-pointer bg-action-primary hover:bg-action-primary-hover text-brand-dark shadow-lg shadow-emerald-500/20">
-                            {{ save_text|default:"Enregistrer" }}
-                        </button>
-                    </div>
-                {% endif %}
-                {% if has_ok %}
-                    <div class="flex-1">
-                        <button type="button"
-                                onclick="document.getElementById('modal-container').replaceChildren()"
-                                class="w-full inline-flex items-center justify-center font-semibold px-4 py-2.5 rounded-xl transition-all active:scale-95 text-sm cursor-pointer bg-action-primary hover:bg-action-primary-hover text-brand-dark shadow-lg shadow-emerald-500/20">
-                            {{ ok_text|default:"OK" }}
-                        </button>
-                    </div>
-                {% endif %}
-            </div>
+    <!-- Header (shrink-0 pour ne pas être écrasé) -->
+    <div class="flex items-start justify-between border-b border-brand-border pb-3 mb-4 shrink-0">
+      <div class="flex items-center gap-3">
+        {% if modal_icon %}
+          <div class="w-10 h-10 rounded-xl bg-brand/10 text-brand flex items-center justify-center shrink-0 shadow-inner">
+            {% include "budget/components/icon.html" with name=modal_icon %}
+          </div>
         {% endif %}
-
+        <div>
+          {% include "budget/components/heading.html" with level="3" title=modal_title|default:"Modal" subtitle=modal_subtitle %}
+        </div>
+      </div>
+      <button onclick="document.getElementById('modal-container').replaceChildren()"
+              type="button"
+              class="text-slate-400 hover:text-slate-200 p-1 rounded-lg cursor-pointer">
+        {% include "budget/components/icon.html" with name="x-mark" %}
+      </button>
     </div>
+
+    <!-- Corps de la modale (overflow-y-auto pour permettre le scroll) -->
+    <div class="overflow-y-auto pr-1 scrollbar-hide">
+      <div class="space-y-4">{% include modal_content_template %}</div>
+    </div>
+
+    <!-- Footer Dynamique (shrink-0 pour rester figé en bas) -->
+    {% if has_cancel or has_save or has_ok %}
+      <div class="flex items-center gap-3 pt-4 mt-4 border-t border-brand-border/50 shrink-0">
+        {% if has_cancel %}
+          <div class="flex-1">
+            <button type="button"
+                    onclick="document.getElementById('modal-container').replaceChildren()"
+                    class="w-full inline-flex items-center justify-center font-semibold px-4 py-2.5 rounded-xl transition-all active:scale-95 text-sm cursor-pointer bg-transparent hover:bg-brand-border text-slate-300">
+              {{ cancel_text|default:"Annuler" }}
+            </button>
+          </div>
+        {% endif %}
+        {% if has_save %}
+          <div class="flex-1">
+            <button type="submit"
+                    form="{{ form_id }}"
+                    class="w-full inline-flex items-center justify-center font-semibold px-4 py-2.5 rounded-xl transition-all active:scale-95 text-sm cursor-pointer bg-action-primary hover:bg-action-primary-hover text-brand-dark shadow-lg shadow-emerald-500/20">
+              {{ save_text|default:"Enregistrer" }}
+            </button>
+          </div>
+        {% endif %}
+        {% if has_ok %}
+          <div class="flex-1">
+            <button type="button"
+                    onclick="document.getElementById('modal-container').replaceChildren()"
+                    class="w-full inline-flex items-center justify-center font-semibold px-4 py-2.5 rounded-xl transition-all active:scale-95 text-sm cursor-pointer bg-action-primary hover:bg-action-primary-hover text-brand-dark shadow-lg shadow-emerald-500/20">
+              {{ ok_text|default:"OK" }}
+            </button>
+          </div>
+        {% endif %}
+      </div>
+    {% endif %}
+
+  </div>
 </div>

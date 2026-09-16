@@ -5,15 +5,14 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('budget', '0007_alter_transaction_transaction_date_transfer'),
+        ("budget", "0007_alter_transaction_transaction_date_transfer"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='transaction',
-            name='budget_month',
+            model_name="transaction",
+            name="budget_month",
             field=models.DateField(default=django.utils.timezone.localdate),
         ),
     ]

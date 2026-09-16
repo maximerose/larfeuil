@@ -1,6 +1,10 @@
 {% extends "budget/components/card.html" %}
 {% block card_border %}
-  {% if account.owner.id != member.id %}border-dashed border-slate-600{% else %}border-brand-border{% endif %}
+  {% if account.owner.id != member.id %}
+    border-dashed border-slate-600
+  {% else %}
+    border-brand-border
+  {% endif %}
 {% endblock %}
 
 {% block card_classes %}
@@ -91,7 +95,7 @@
     (function() {
       const canvasId = 'lineChart-{{ account.id }}';
       const canvas = document.getElementById(canvasId);
-      
+
       // Sécurité : ne pas redessiner si le canvas n'existe pas ou est déjà dessiné
       if (!canvas || canvas.dataset.rendered === "true") return;
       canvas.dataset.rendered = "true";
@@ -119,25 +123,25 @@
               const chart = context.chart;
               const { ctx, chartArea, scales } = chart;
               if (!chartArea) return '#10b981';
-    
+
               const zeroY = scales.y.getPixelForValue(0);
               const topPixel = chartArea.top;
               const bottomPixel = chartArea.bottom;
-    
+
               // Si 0 est au-dessus du graphique (tout est négatif)
               if (zeroY <= topPixel) return '#f43f5e';
               // Si 0 est en dessous du graphique (tout est positif)
               if (zeroY >= bottomPixel) return '#10b981';
-    
+
               // Calcul de la position relative du 0 dans la zone de dessin
               const zeroOffset = (zeroY - topPixel) / (bottomPixel - topPixel);
-    
+
               const gradient = ctx.createLinearGradient(0, topPixel, 0, bottomPixel);
               gradient.addColorStop(0, '#10b981');          // Vert au-dessus
               gradient.addColorStop(zeroOffset, '#10b981');  // Vert jusqu'à la ligne 0
               gradient.addColorStop(zeroOffset, '#f43f5e');  // Rouge à partir de la ligne 0
               gradient.addColorStop(1, '#f43f5e');          // Rouge en dessous
-    
+
               return gradient;
             },
             backgroundColor: bgGradient,

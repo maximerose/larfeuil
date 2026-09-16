@@ -26,7 +26,9 @@
   <!-- Compte par défaut -->
   <div>
     {% include "budget/components/select.html" with label="Compte par défaut (Optionnel)" name="default_bank_account" options=form.fields.default_bank_account.queryset selected=form.default_bank_account.value placeholder="Aucun compte par défaut" %}
-    {% if form.default_bank_account.errors %}<p class="text-[11px] text-action-danger mt-1">{{ form.default_bank_account.errors.0 }}</p>{% endif %}
+    {% if form.default_bank_account.errors %}
+      <p class="text-[11px] text-action-danger mt-1">{{ form.default_bank_account.errors.0 }}</p>
+    {% endif %}
   </div>
 
   <!-- Case à cocher : Tickets Resto -->
@@ -40,7 +42,9 @@
              class="rounded border-slate-600 bg-slate-900 focus:ring-1 focus:ring-offset-0 focus:ring-offset-transparent text-brand" />
       <span class="text-sm font-medium text-slate-200">Éligible aux paiements en Tickets Resto</span>
     </label>
-    {% if form.is_meal_voucher_eligible.errors %}<p class="text-[11px] text-action-danger mt-1">{{ form.is_meal_voucher_eligible.errors.0 }}</p>{% endif %}
+    {% if form.is_meal_voucher_eligible.errors %}
+      <p class="text-[11px] text-action-danger mt-1">{{ form.is_meal_voucher_eligible.errors.0 }}</p>
+    {% endif %}
   </div>
 
   <!-- Script dynamique pour masquer la case Tickets Resto si Revenu / Epargne -->
@@ -49,7 +53,7 @@
       const typeSelect = document.querySelector('select[name="type"]');
       const mealVoucherContainer = document.getElementById('meal-voucher-container');
       const mealVoucherCheckbox = document.getElementById('is_meal_voucher_eligible');
-      
+
       if (typeSelect && mealVoucherContainer) {
         typeSelect.addEventListener('change', function(e) {
           if (e.target.value === 'INCOME' || e.target.value === 'SAVINGS') {

@@ -7,43 +7,96 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('budget', '0017_recurringexpense_default_bank_account_and_more'),
+        ("budget", "0017_recurringexpense_default_bank_account_and_more"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='bankaccount',
-            name='visibility',
-            field=models.CharField(choices=[('PRIVATE', 'Privé'), ('SHARED', 'Partagé')], default='SHARED', help_text='Un compte privé ne sera visible que par son propriétaire.', max_length=20, verbose_name='Visibilité'),
+            model_name="bankaccount",
+            name="visibility",
+            field=models.CharField(
+                choices=[("PRIVATE", "Privé"), ("SHARED", "Partagé")],
+                default="SHARED",
+                help_text="Un compte privé ne sera visible que par son propriétaire.",
+                max_length=20,
+                verbose_name="Visibilité",
+            ),
         ),
         migrations.AlterField(
-            model_name='bankaccount',
-            name='fallback_account',
-            field=models.ForeignKey(blank=True, help_text="Si ce compte est un compte Tickets Resto, alors vous pouvez renseigner un autre compte qui fait la bascule lors d'un paiement d'un montant supérieur à la limite quotidienne", null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='fallback_for', to='budget.bankaccount', verbose_name='Compte relais'),
+            model_name="bankaccount",
+            name="fallback_account",
+            field=models.ForeignKey(
+                blank=True,
+                help_text="Si ce compte est un compte Tickets Resto, alors vous pouvez renseigner un autre compte qui fait la bascule lors d'un paiement d'un montant supérieur à la limite quotidienne",
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name="fallback_for",
+                to="budget.bankaccount",
+                verbose_name="Compte relais",
+            ),
         ),
         migrations.CreateModel(
-            name='Household',
+            name="Household",
             fields=[
-                ('id', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('is_active', models.BooleanField(default=True, verbose_name='Actif')),
-                ('name', models.CharField(default='Mon foyer', max_length=100, verbose_name='Nom du foyer')),
-                ('created_by', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='%(class)s_created', to=settings.AUTH_USER_MODEL, verbose_name='Créé par')),
-                ('updated_by', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='%(class)s_updated', to=settings.AUTH_USER_MODEL, verbose_name='Modifié par')),
+                (
+                    "id",
+                    models.UUIDField(
+                        default=uuid.uuid4,
+                        editable=False,
+                        primary_key=True,
+                        serialize=False,
+                    ),
+                ),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                ("is_active", models.BooleanField(default=True, verbose_name="Actif")),
+                (
+                    "name",
+                    models.CharField(
+                        default="Mon foyer", max_length=100, verbose_name="Nom du foyer"
+                    ),
+                ),
+                (
+                    "created_by",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        related_name="%(class)s_created",
+                        to=settings.AUTH_USER_MODEL,
+                        verbose_name="Créé par",
+                    ),
+                ),
+                (
+                    "updated_by",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        related_name="%(class)s_updated",
+                        to=settings.AUTH_USER_MODEL,
+                        verbose_name="Modifié par",
+                    ),
+                ),
             ],
             options={
-                'verbose_name': ('Foyer',),
-                'verbose_name_plural': 'Foyers',
-                'abstract': False,
+                "verbose_name": ("Foyer",),
+                "verbose_name_plural": "Foyers",
+                "abstract": False,
             },
         ),
         migrations.AddField(
-            model_name='householdmember',
-            name='household',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='members', to='budget.household', verbose_name='Foyer'),
+            model_name="householdmember",
+            name="household",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="members",
+                to="budget.household",
+                verbose_name="Foyer",
+            ),
         ),
     ]

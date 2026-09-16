@@ -1,16 +1,3 @@
-<!-- djlint:off -->
-<span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold border 
-    {% if variant == 'success' or variant == 'income' %} bg-budget-income/10 text-budget-income border-budget-income/20 
-    {% elif variant == 'danger' or variant == 'expense' or variant == 'recurring' %} bg-budget-recurring/10 text-budget-recurring border-budget-recurring/20 
-    {% elif variant == 'warning' or variant == 'variable' %} bg-budget-variable/10 text-budget-variable border-budget-variable/20 
-    
-    {# -- COMPTES BANCAIRES -- #}
-    {% elif variant == 'checking' %} bg-account-checking/10 text-account-checking border-account-checking/20
-    {% elif variant == 'savings' %} bg-account-savings/10 text-account-savings border-account-savings/20 
-    {% elif variant == 'business' %} bg-account-business/10 text-account-business border-account-business/20
-    {% elif variant == 'meal_voucher' %} bg-account-meal/10 text-account-meal border-account-meal/20
-    {% elif variant == 'other' %} bg-account-other/10 text-account-other border-account-other/20
-    
-    {% else %} bg-brand-border/50 text-slate-300 border-brand-border {% endif %}">
-    {{ text }}
-</span>
+{% load budget_tags %}
+
+<span class="{% get_badge_classes variant %}">{{ text }}</span>

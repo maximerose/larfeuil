@@ -1,28 +1,26 @@
 <div class="space-y-1">
-    {% if label %}
-        <label for="{{ name }}" class="block text-xs font-semibold text-slate-400 uppercase tracking-wider">{{ label }}</label>
+  {% if label %}
+    <label for="{{ name }}" class="block text-xs font-semibold text-slate-400 uppercase tracking-wider">{{ label }}</label>
+  {% endif %}
+
+  <div class="relative">
+    {% if prefix %}
+      <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 font-bold text-sm pointer-events-none select-none">
+        {{ prefix }}
+      </span>
     {% endif %}
 
-    <div class="relative">
-        {% if prefix %}
-            <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 font-bold text-sm pointer-events-none select-none">
-                {{ prefix }}
-            </span>
-        {% endif %}
+    <input id="{{ name }}"
+           type="{{ type|default:'text' }}"
+           name="{{ name }}"
+           {% if value %}value="{{ value }}"{% endif %}
+           {% if placeholder %}placeholder="{{ placeholder }}"{% endif %}
+           {% if required %}required{% endif %}
+           {% if autofocus %}autofocus{% endif %}
+           {% if autocomplete %}autocomplete="{{ autocomplete }}"{% endif %}
+           {% if passwordrules %}passwordrules="{{ passwordrules }}"{% endif %}
+           class="input-base px-4 py-2.5 {% if prefix %}pl-8{% endif %}" />
+  </div>
 
-        <input id="{{ name }}"
-               type="{{ type|default:'text' }}"
-               name="{{ name }}"
-               {% if value %}value="{{ value }}"{% endif %}
-               {% if placeholder %}placeholder="{{ placeholder }}"{% endif %}
-               {% if required %}required{% endif %}
-               {% if autofocus %}autofocus{% endif %}
-               {% if autocomplete %}autocomplete="{{ autocomplete }}"{% endif %}
-               {% if passwordrules %}passwordrules="{{ passwordrules }}"{% endif %}
-               class="input-base px-4 py-2.5 {% if prefix %}pl-8{% endif %}" />
-    </div>
-
-    {% if help_text %}
-        <p class="text-[11px] text-slate-500">{{ help_text }}</p>
-    {% endif %}
+  {% if help_text %}<p class="text-[11px] text-slate-500">{{ help_text }}</p>{% endif %}
 </div>
