@@ -34,7 +34,14 @@ def deploy_webhook(request):
             check=True,
         )
 
-        # 4. Recharger Phusion Passenger
+        # 4. Rassembler le CSS Tailwind / Fichiers statiques (AJOUT)
+        subprocess.run(
+            [python_bin, "manage.py", "collectstatic", "--noinput"],
+            cwd=base_dir,
+            check=True,
+        )
+
+        # 5. Recharger Phusion Passenger
         subprocess.run(["touch", "tmp/restart.txt"], cwd=base_dir, check=True)
 
         return HttpResponse("Déploiement réussi !", status=200)
