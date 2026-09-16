@@ -3,8 +3,8 @@ from .account import (
     AccountType,
     BankAccount,
     Household,
-    HouseholdMember,
     HouseholdInvitation,
+    HouseholdMember,
 )
 from .category import Category, CategoryType
 from .forecast import MonthlyForecast

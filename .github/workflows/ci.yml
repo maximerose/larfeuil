@@ -24,7 +24,7 @@ jobs:
       - name: Configuration de Node.js (pour Tailwind)
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "22"
           cache: "npm"
 
       - name: Installation des dépendances Node.js

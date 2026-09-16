@@ -1,0 +1,7 @@
+[tool.ruff]
+# Exclut complètement les fichiers de migrations de l'analyse Ruff
+extend-exclude = ["**/migrations/*"]
+
+[tool.ruff.lint.per-file-ignores]
+# Alternative : ignorer uniquement la règle RUF012 dans les migrations
+"**/migrations/*" = ["RUF012"]
