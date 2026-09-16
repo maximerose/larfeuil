@@ -1,4 +1,4 @@
-name: CD / Debug Connection
+name: CD / Deploy to o2switch
 
 on:
   workflow_run:
@@ -7,23 +7,12 @@ on:
     types: [completed]
 
 jobs:
-  debug:
-    name: Diagnostic Réseau SSH
+  deploy:
+    name: Déploiement Webhook o2switch
     runs-on: ubuntu-latest
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
 
     steps:
-      - name: 1. Inspection des variables
+      - name: Déclencher le déploiement
         run: |
-          echo "--- Verification des formats ---"
-          echo "Host : '[${{ secrets.O2SWITCH_HOST }}]'"
-          echo "User : '[${{ secrets.O2SWITCH_USER }}]'"
-          echo "Port : '[${{ secrets.O2SWITCH_PORT }}]'"
-          echo "Longueur clé SSH : ${#SSH_KEY} caractères"
-        env:
-          SSH_KEY: ${{ secrets.O2SWITCH_SSH_KEY }}
-
-      - name: 2. Test de résolution DNS et ping TCP (Netcat)
-        run: |
-          echo "--- Test de port TCP avec netcat ---"
-          nc -zv -w 10 ${{ secrets.O2SWITCH_HOST }} ${{ secrets.O2SWITCH_PORT }}
+          curl -f -X POST "https://larfeuil.maximerose.com/api/deploy-webhook/?token=${{ secrets.SECRET_KEY }}"
