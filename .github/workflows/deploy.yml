@@ -19,7 +19,7 @@ jobs:
           host: ${{ secrets.O2SWITCH_HOST }}
           username: ${{ secrets.O2SWITCH_USER }}
           key: ${{ secrets.O2SWITCH_SSH_KEY }}
-          port: ${{ secrets.O2SWITCH_PORT || 22 }}
+          port: ${{ secrets.O2SWITCH_PORT }}
           script: |
             cd ${{ secrets.O2SWITCH_APP_DIR }}
             git pull origin main
