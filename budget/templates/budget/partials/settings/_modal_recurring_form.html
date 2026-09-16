@@ -61,7 +61,7 @@
 
       <!-- Wrapper Date Complète (affiché si fréquence > 1) -->
       <div id="date-wrapper" class="hidden">
-        {% include "budget/components/input.html" with label="Prochaine échéance (Optionnelle)" type="date" name="usual_due_day" value=form.usual_due_day.value|date:'Y-m-d' %}
+        {% include "budget/components/input.html" with label="Prochaine échéance (Optionnelle)" type="date" name="usual_due_day" value=form.usual_due_day.value|date:"Y-m-d" %}
         {% if form.usual_due_day.errors %}
           <p class="text-[11px] text-action-danger mt-1">{{ form.usual_due_day.errors.0 }}</p>
         {% endif %}

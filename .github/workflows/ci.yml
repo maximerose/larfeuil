@@ -37,13 +37,10 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          pip install ruff djlint
+          pip install pre-commit
 
-      - name: Contrôle de la qualité du code (Ruff)
-        run: ruff check .
-
-      - name: Contrôle des templates Django (djLint)
-        run: djlint budget/templates --check
+      - name: Contrôle de qualité global (pre-commit)
+        run: pre-commit run --all-files
 
       - name: Exécution des tests unitaires Django
         env:
