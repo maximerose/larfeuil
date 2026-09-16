@@ -61,7 +61,7 @@ def calculate_monthly_projected_balances(
     recurring_overrides = {
         f.recurring_expense_id: f.amount
         for f in MonthlyForecast.objects.filter(
-            member__household=household,
+            member=member,
             month__year=target_month.year,
             month__month=target_month.month,
             recurring_expense__isnull=False,
@@ -159,7 +159,7 @@ def calculate_monthly_projected_balances(
 
     category_forecasts = defaultdict(Decimal)
     for f in MonthlyForecast.objects.filter(
-        member__household=household,
+        member=member,
         month__year=target_month.year,
         month__month=target_month.month,
         category__isnull=False,
@@ -222,7 +222,7 @@ def calculate_monthly_projected_balances(
     savings_totals = defaultdict(Decimal)
 
     for f in MonthlyForecast.objects.filter(
-        member__household=household,
+        member=member,
         month__year=target_month.year,
         month__month=target_month.month,
         bank_account__isnull=False,
@@ -316,7 +316,7 @@ def get_recurring_expenses_with_status(
     recurring_overrides = {
         f.recurring_expense_id: f.amount
         for f in MonthlyForecast.objects.filter(
-            member__household=household,
+            member=member,
             month__year=target_month.year,
             month__month=target_month.month,
             recurring_expense__isnull=False,
