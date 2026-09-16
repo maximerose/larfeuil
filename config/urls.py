@@ -1,6 +1,7 @@
 from django.contrib import admin
 from django.contrib.auth import views as auth_views
 from django.urls import path, reverse_lazy
+from django.views.generic import TemplateView
 
 from budget.forms.auth import CustomSetPasswordForm
 from budget.views import dashboard_view, quick_transaction_form_view
@@ -46,6 +47,13 @@ from core.views import deploy_webhook
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("api/deploy-webhook/", deploy_webhook, name="deploy_webhook"),
+    path(
+        "sw.js",
+        TemplateView.as_view(
+            template_name="sw.js", content_type="application/javascript"
+        ),
+        name="sw.js",
+    ),
     # --- Authentification ---
     path(
         "login/",

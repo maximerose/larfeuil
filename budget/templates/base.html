@@ -32,6 +32,19 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="{% static 'budget/js/app.js' %}" defer></script>
     <script src="{% static 'budget/js/quick_transaction.js' %}"></script>
+
+    <!-- Lien vers ton webmanifest existant -->
+    <link rel="manifest" href="{% static 'budget/img/larfeuil_logo/site.webmanifest' %}" />
+    <meta name="theme-color" content="#0f172a" />
+
+    <!-- Enregistrement du Service Worker -->
+    <script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js');
+    });
+  }
+    </script>
   </head>
 
   <body class="font-sans min-h-screen flex flex-col antialiased selection:bg-brand selection:text-white overflow-x-clip"

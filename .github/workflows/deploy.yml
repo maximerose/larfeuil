@@ -8,11 +8,22 @@ on:
 
 jobs:
   deploy:
-    name: Déploiement Webhook o2switch
+    name: Déploiement automatique SSH
     runs-on: ubuntu-latest
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
 
     steps:
-      - name: Déclencher le déploiement
-        run: |
-          curl -k -f -X POST "https://larfeuil.maximerose.com/api/deploy-webhook/?token=${{ secrets.SECRET_KEY }}"
+      - name: Connexion o2switch et exécution
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: larfeuil.maximerose.com
+          username: yehe6737
+          key: ${{ secrets.O2SWITCH_SSH_KEY }}
+          script: |
+            cd /home2/yehe6737/larfeuil.maximerose.com
+            source /home2/yehe6737/virtualenv/larfeuil.maximerose.com/3.11/bin/activate
+            git pull origin main
+            pip install -r requirements.txt
+            python manage.py migrate --noinput
+            python manage.py collectstatic --noinput --ignore input.css
+            touch tmp/restart.txt

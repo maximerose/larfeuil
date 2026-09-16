@@ -144,21 +144,22 @@ if "test" in sys.argv:
 # Email
 # https://docs.djangoproject.com/en/6.1/topics/email/#topic-email-configuration
 
-# Récupération du backend (Console par défaut en dev, SMTP en prod)
-EMAIL_BACKEND_CHOICE = os.getenv(
-    "DJANGO_EMAIL_BACKEND", "django.core.mail.backends.console.EmailBackend"
+# Email
+# https://docs.djangoproject.com/en/6.1/topics/email/#topic-email-configuration
+
+# En prod on utilisera le SMTP, en local tu peux forcer "django.core.mail.backends.console.EmailBackend" dans ton .env
+EMAIL_BACKEND = os.getenv(
+    "EMAIL_BACKEND", "django.core.mail.backends.smtp.EmailBackend"
 )
+EMAIL_HOST = os.getenv("EMAIL_HOST", "mail.larfeuil.maximerose.com")
+EMAIL_PORT = int(os.getenv("EMAIL_PORT", "465"))
+EMAIL_USE_SSL = os.getenv("EMAIL_USE_SSL", "True") == "True"
+EMAIL_HOST_USER = os.getenv("EMAIL_USER", "no-reply@larfeuil.maximerose.com")
+EMAIL_HOST_PASSWORD = os.getenv("EMAIL_PASSWORD", "")
 
-MAILERS = {
-    "default": {
-        "BACKEND": "django.core.mail.backends.filebased.EmailBackend",
-        "OPTIONS": {
-            "file_path": BASE_DIR / "emails_dev",
-        },
-    },
-}
-
-DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "Larfeuil <noreply@larfeuil.app>")
+DEFAULT_FROM_EMAIL = os.getenv(
+    "DEFAULT_FROM_EMAIL", "Larfeuil <no-reply@larfeuil.maximerose.com>"
+)
 
 # Authentication
 LOGIN_REDIRECT_URL = "/"

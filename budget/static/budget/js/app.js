@@ -198,3 +198,14 @@ function initTomSelects() {
 
 document.addEventListener("DOMContentLoaded", initTomSelects);
 document.body.addEventListener('htmx:afterSettle', initTomSelects);
+
+document.addEventListener('focusin', (e) => {
+    const target = e.target;
+    // On cible uniquement les champs de formulaire
+    if (['INPUT', 'SELECT', 'TEXTAREA'].includes(target.tagName)) {
+        // Le délai de 300ms laisse le temps au clavier du téléphone de s'ouvrir
+        setTimeout(() => {
+            target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 300);
+    }
+});
