@@ -1,3 +1,4 @@
+exclude: '^(node_modules/|staticfiles/|.*\.min\.css)'
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.6.0
