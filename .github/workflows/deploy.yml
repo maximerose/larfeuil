@@ -15,4 +15,4 @@ jobs:
     steps:
       - name: Déclencher le déploiement
         run: |
-          curl -f -X POST "https://larfeuil.maximerose.com/api/deploy-webhook/?token=${{ secrets.SECRET_KEY }}"
+          curl -k -f -X POST "https://larfeuil.maximerose.com/api/deploy-webhook/?token=${{ secrets.SECRET_KEY }}"
