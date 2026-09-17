@@ -1,21 +1,26 @@
 {
+  "id": "/",
   "name": "Larfeuil",
   "short_name": "Larfeuil",
+  "description": "Gestion de budget de foyer",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "theme_color": "#0f172a",
+  "background_color": "#0f172a",
   "icons": [
     {
-      "src": "/web-app-manifest-192x192.png?v=20260914",
+      "src": "/static/budget/img/larfeuil_logo/web-app-manifest-192x192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "maskable"
+      "purpose": "any"
     },
     {
-      "src": "/web-app-manifest-512x512.png?v=20260914",
+      "src": "/static/budget/img/larfeuil_logo/web-app-manifest-512x512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
     }
-  ],
-  "theme_color": "0f172a",
-  "background_color": "0f172a",
-  "display": "standalone"
+  ]
 }

@@ -209,3 +209,75 @@ document.addEventListener('focusin', (e) => {
         }, 300);
     }
 });
+
+document.addEventListener("DOMContentLoaded", () => {
+    const floatingBanner = document.getElementById("pwa-install-banner");
+    const floatingCloseBtn = document.getElementById("pwa-close-btn");
+    const profileCard = document.getElementById("pwa-profile-card");
+    const installBtns = document.querySelectorAll(".pwa-install-btn"); // Cible les deux boutons
+
+    let deferredPrompt;
+
+    // 1. DÉTECTION : L'app est-elle déjà installée ?
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+
+    if (isStandalone) {
+        // On supprime purement et simplement les appels à l'installation du DOM
+        if (floatingBanner) floatingBanner.remove();
+        if (profileCard) profileCard.remove();
+        return;
+    }
+
+    // 2. GESTION DE LA BANNIÈRE FLOTTANTE
+    if (floatingBanner && localStorage.getItem("pwa-prompt-dismissed") !== "true") {
+        floatingBanner.classList.remove("hidden");
+        setTimeout(() => floatingBanner.classList.remove("translate-y-32", "opacity-0"), 50);
+    }
+
+    if (floatingCloseBtn) {
+        floatingCloseBtn.addEventListener("click", () => {
+            floatingBanner.classList.add("translate-y-32", "opacity-0");
+            setTimeout(() => floatingBanner.classList.add("hidden"), 300);
+            localStorage.setItem("pwa-prompt-dismissed", "true"); // Masque la bannière flottante, mais la carte profil restera visible !
+        });
+    }
+
+    // 3. LOGIQUE D'INSTALLATION
+    window.addEventListener("beforeinstallprompt", (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+    });
+
+    const isIos = () => /iphone|ipad|ipod/.test(window.navigator.userAgent.toLowerCase());
+
+    installBtns.forEach(btn => {
+        if (isIos()) {
+            btn.textContent = "Comment faire ?";
+            btn.addEventListener("click", () => {
+                Swal.fire({
+                    title: 'Installation iOS',
+                    html: "<div class='text-left mt-2 space-y-4'><p><b>1.</b> Touchez l'icône <b>Partager</b> en bas de Safari (le carré avec une flèche).</p><p><b>2.</b> Descendez dans le menu et choisissez <b>Sur l'écran d'accueil</b>.</p></div>",
+                    icon: 'info',
+                    confirmButtonColor: '#10b981',
+                    background: '#0f172a',
+                    color: '#f1f5f9',
+                    customClass: { popup: 'border border-slate-700 rounded-[1.5rem]', confirmButton: 'font-bold rounded-xl px-5 py-2.5' }
+                });
+            });
+        } else {
+            btn.addEventListener("click", async () => {
+                if (deferredPrompt) {
+                    deferredPrompt.prompt();
+                    const { outcome } = await deferredPrompt.userChoice;
+                    if (outcome === 'accepted') {
+                        if (floatingBanner) floatingBanner.remove();
+                        if (profileCard) profileCard.remove();
+                    }
+                    deferredPrompt = null;
+                } else {
+                    showToast("L'installation automatique n'est pas disponible sur ce navigateur. Utilisez le menu de votre navigateur pour l'ajouter à l'écran d'accueil.", true);
+                }
+            });
+        }
+    });
+});

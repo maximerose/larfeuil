@@ -87,6 +87,24 @@
       </div>
     </section>
 
+    <!-- Carte d'installation PWA (Masquée automatiquement par JS si déjà installée) -->
+    <div id="pwa-profile-card"
+         class="bg-brand-card border border-brand-border rounded-xl p-5 mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div class="flex items-center gap-4">
+        <img src="{% static 'budget/img/larfeuil_logo/apple-touch-icon.png' %}" class="w-12 h-12 rounded-lg" alt="Logo" />
+        <div>
+          <h3 class="font-bold text-slate-100 text-lg">Installer l'application</h3>
+          <p class="text-slate-400 text-sm">
+            Retrouvez Larfeuil directement sur votre écran d'accueil pour une expérience plein écran.
+          </p>
+        </div>
+      </div>
+      <button type="button"
+              class="pwa-install-btn shrink-0 w-full sm:w-auto px-4 py-2.5 bg-brand text-brand-dark font-bold rounded-lg hover:bg-emerald-400 transition-colors">
+        Installer Larfeuil
+      </button>
+    </div>
+
     <div class="pt-6 border-t border-brand-border/50">
       <form method="post" action="{% url 'logout' %}">
         {% csrf_token %}

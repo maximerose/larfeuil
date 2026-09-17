@@ -5,6 +5,10 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="Application de gestion de budget personnel et prévisionnel." />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Larfeuil" />
     <title>
       {% block title %}{% endblock %}
     | Larfeuil</title>
@@ -128,5 +132,24 @@
         {% for message in messages %}<div data-message="{{ message }}" data-tag="{{ message.tags }}"></div>{% endfor %}
       </div>
     {% endif %}
+
+    <!-- Bannière d'installation PWA centrée -->
+    <div id="pwa-install-banner"
+         class="fixed bottom-6 left-4 right-4 mx-auto max-w-md z-50 bg-brand-card border border-brand-border p-4 rounded-xl shadow-2xl flex items-center justify-between transition-all duration-300 translate-y-32 opacity-0">
+      <div class="flex items-center gap-3">
+        <img src="{% static 'budget/img/larfeuil_logo/apple-touch-icon.png' %}" class="w-10 h-10 rounded-md" alt="Logo" />
+        <div class="text-sm">
+          <p class="font-bold text-slate-100">Installer Larfeuil</p>
+          <p class="text-slate-400 text-xs">Accès rapide en plein écran</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-2">
+        <button type="button" id="pwa-close-btn" class="p-2 text-slate-400 hover:text-white transition-colors">✕</button>
+        <button type="button"
+                class="pwa-install-btn px-3 py-1.5 bg-brand text-brand-dark font-bold text-sm rounded-md hover:bg-emerald-400 transition-colors">
+          Installer
+        </button>
+      </div>
+    </div>
   </body>
 </html>
