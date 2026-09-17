@@ -15,7 +15,7 @@ def deploy_webhook(request):
     # 2. Lancement du script détaché
     try:
         subprocess.Popen(
-            ["bin/bash", "/home2/yehe6737/larfeuil.maximerose.com/deploy.sh"],
+            ["/bin/bash", "/home2/yehe6737/larfeuil.maximerose.com/deploy.sh"],
             cwd="/home2/yehe6737/larfeuil.maximerose.com",
             start_new_session=True,
         )
