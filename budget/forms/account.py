@@ -43,23 +43,34 @@ class BankAccountForm(forms.ModelForm):
 
         name = name.strip()
 
-        existing_accounts = BankAccount.objects.filter(
-            owner__household=self.household, name__iexact=name
-        )
+        if self.instance and self.instance.pk and self.instance.name == name:
+            return name
+
+        existing_accounts = BankAccount.objects.filter(owner=self, name__iexact=name)
 
         if self.instance and self.instance.pk:
             existing_accounts = existing_accounts.exclude(pk=self.instance.pk)
 
-        existing = existing_accounts.first()
+        owner = self.instance.owner if hasattr(self.instance, "owner") else None
 
-        if existing:
-            if existing.is_active:
-                raise forms.ValidationError(
-                    "Un compte bancaire avec ce nom existe déjà dans votre foyer."
-                )
-            else:
-                raise forms.ValidationError(
-                    "Ce compte existe déjà mais a été supprimé. Choisissez un autre nom ou modifiez l'ancien."
-                )
+        if owner:
+            existing_accounts = BankAccount.objects.filter(
+                owner=owner, name__iexact=name
+            )
+
+            if self.instance and self.instance.pk:
+                existing_accounts = existing_accounts.exclude(pk=self.instance.pk)
+
+            existing = existing_accounts.first()
+
+            if existing:
+                if existing.is_active:
+                    raise forms.ValidationError(
+                        "Vous possédez déjà un compte bancaire avec ce nom."
+                    )
+                else:
+                    raise forms.ValidationError(
+                        "Ce compte existe déjà mais a été supprimé. Choisissez un autre nom ou modifiez l'ancien."
+                    )
 
         return name
