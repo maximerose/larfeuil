@@ -54,6 +54,12 @@ urlpatterns = [
         ),
         name="sw.js",
     ),
+    path(
+        "manifest.json",
+        TemplateView.as_view(
+            template_name="manifest.json", content_type="application/manifest+json"
+        ),
+    ),
     # --- Authentification ---
     path(
         "login/",

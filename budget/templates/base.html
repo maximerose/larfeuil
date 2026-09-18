@@ -20,9 +20,8 @@
 
     <link rel="apple-touch-icon" sizes="180x180" href="{% static 'budget/img/larfeuil_logo/apple-touch-icon.png' %}?v=2" />
     <link rel="icon" type="image/png" sizes="96x96" href="{% static 'budget/img/larfeuil_logo/favicon-96x96.png' %}?v=2" />
-    <link rel="manifest" href="{% static 'budget/img/larfeuil_logo/site.webmanifest' %}?v=2" />
-    <meta name="theme-color" content="#020617" />
-
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#0f172a" />
     <link rel="stylesheet" href="{% static 'budget/css/output.css' %}" />
 
     <!-- CDN TOMSELECT -->
@@ -36,10 +35,6 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="{% static 'budget/js/app.js' %}" defer></script>
     <script src="{% static 'budget/js/quick_transaction.js' %}"></script>
-
-    <!-- Lien vers ton webmanifest existant -->
-    <link rel="manifest" href="{% static 'budget/img/larfeuil_logo/site.webmanifest' %}" />
-    <meta name="theme-color" content="#0f172a" />
 
     <!-- Enregistrement du Service Worker -->
     <script>
