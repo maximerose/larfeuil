@@ -57,19 +57,15 @@ class SettingsCategoriesTestCase(TestCase):
             "name": "Salaire",
             "type": CategoryType.INCOME,
             "is_meal_voucher_eligible": False,
-            "default_bank_account": self.account.id,
         }
         response = self.client.post(url, data)
 
-        # HTMX doit nous renvoyer un header de rafraîchissement
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.headers.get("HX-Refresh"), "true")
 
-        # La catégorie doit bien avoir été créée et rattachée au foyer
         self.assertEqual(Category.objects.count(), 2)
         new_category = Category.objects.get(name="Salaire")
         self.assertEqual(new_category.household, self.household)
-        self.assertEqual(new_category.default_bank_account, self.account)
 
     def test_category_update_get(self) -> None:
         """Vérifie l'affichage du formulaire de modification."""
@@ -89,7 +85,6 @@ class SettingsCategoriesTestCase(TestCase):
             "name": "Courses Modifiées",
             "type": CategoryType.VARIABLE,
             "is_meal_voucher_eligible": True,
-            "default_bank_account": "",
         }
         response = self.client.post(url, data)
 
@@ -99,7 +94,6 @@ class SettingsCategoriesTestCase(TestCase):
         self.category.refresh_from_db()
         self.assertEqual(self.category.name, "Courses Modifiées")
         self.assertTrue(self.category.is_meal_voucher_eligible)
-        self.assertIsNone(self.category.default_bank_account)
 
     def test_category_delete_post(self) -> None:
         """Vérifie le soft-delete d'une catégorie."""

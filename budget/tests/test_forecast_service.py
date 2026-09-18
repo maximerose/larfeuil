@@ -89,6 +89,7 @@ class ForecastServiceTestCase(TestCase):
             amount=Decimal("600.00"),
         )
 
+        # On ne définit pas transaction_account pour tester le fallback automatique (TR -> Compte Courant)
         MonthlyForecast.objects.create(
             month=self.today,
             category=self.cat_groceries,
@@ -118,6 +119,7 @@ class ForecastServiceTestCase(TestCase):
         self.assertEqual(
             steps["after_recurring"][self.checking_account.id], Decimal("900.00")
         )
+        # 100.00€ pris sur Swile (tr_account) et 200.00€ restants sur le compte courant : 900 - 200 = 700
         self.assertEqual(
             steps["after_variables"][self.checking_account.id], Decimal("700.00")
         )

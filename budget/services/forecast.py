@@ -160,7 +160,6 @@ def calculate_monthly_projected_balances(
         acc for acc in accounts if acc.account_type == AccountType.MEAL_VOUCHER
     ]
 
-    # Recherche robuste du compte par défaut
     default_account = next(
         (acc for acc in accounts if acc.is_default and acc.owner_id == member.id), None
     )
@@ -179,7 +178,6 @@ def calculate_monthly_projected_balances(
             (acc for acc in accounts if acc.owner_id == member.id), None
         )
 
-    # Lecture du compte forcé pour les catégories
     category_forecasts = {}
     for f in MonthlyForecast.objects.filter(
         member=member,
@@ -200,7 +198,6 @@ def calculate_monthly_projected_balances(
         total_amount = data["amount"]
         tx_acc_id = data["account_id"]
 
-        # Prise en compte des remboursements (Dépenses - Revenus de la même catégorie)
         realized_data = Transaction.objects.filter(
             bank_account__in=accounts,
             category=category,
@@ -223,16 +220,11 @@ def calculate_monthly_projected_balances(
         remaining = max(Decimal("0.00"), total_amount - realized)
 
         if remaining > Decimal("0.00"):
-            target_acc_id = (
-                tx_acc_id
-                if tx_acc_id
-                else (default_account.id if default_account else None)
-            )
-
-            if target_acc_id and target_acc_id in after_variables:
-                after_variables[target_acc_id] -= remaining
+            # A. Si un compte spécifique a été sélectionné pour cette prévision
+            if tx_acc_id and tx_acc_id in after_variables:
+                after_variables[tx_acc_id] -= remaining
             else:
-                # Priorité au compte Tickets Resto si éligible
+                # B. Sinon, priorité au compte Tickets Resto si la catégorie est éligible
                 if category.is_meal_voucher_eligible and tr_accounts:
                     for tr_acc in tr_accounts:
                         if remaining <= Decimal("0.00"):
@@ -246,7 +238,7 @@ def calculate_monthly_projected_balances(
                             after_variables[tr_acc.id] -= tr_deduction
                             remaining -= tr_deduction
 
-                # Le reste s'impute sur le compte courant
+                # C. Le reliquat non couvert par les Tickets Resto s'impute sur le compte courant
                 if remaining > Decimal("0.00") and default_account:
                     after_variables[default_account.id] -= remaining
 
