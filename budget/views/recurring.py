@@ -22,7 +22,9 @@ def settings_recurring_list_view(request: Request) -> HttpResponse:
     member = request.member
     today = get_target_month_from_request(request)
 
-    recurring_expenses = get_recurring_expenses_with_status(member, today)
+    recurring_expenses = get_recurring_expenses_with_status(
+        member, today, include_all=True
+    )
 
     has_multiple_members = member.household.members.filter(is_active=True).count() > 1
 
@@ -53,10 +55,14 @@ def settings_recurring_form_view(
 
     if request.method == "POST":
         form = RecurringExpenseForm(
-            request.POST, instance=expense, household=member.household
+            request.POST,
+            instance=expense,
+            household=member.household,
+            member=member,
         )
         if form.is_valid():
             new_expense = form.save(commit=False)
+
             if not expense_id:
                 new_expense.household = member.household
                 new_expense.owner = member
@@ -66,7 +72,11 @@ def settings_recurring_form_view(
             response["HX-Refresh"] = "true"
             return response
     else:
-        form = RecurringExpenseForm(instance=expense, household=member.household)
+        form = RecurringExpenseForm(
+            instance=expense,
+            household=member.household,
+            member=member,
+        )
 
     return render(
         request,

@@ -20,7 +20,9 @@
                 <div class="flex items-center gap-2">
                   <p class="text-base font-bold text-slate-100">{{ item.expense.label }}</p>
                   {% if item.expense.visibility == "PRIVATE" %}
-                    <span title="Charge Privée">{% include "budget/components/icon.html" with name="lock-closed" %}</span>
+                    <span title="Charge Privée" class="flex items-center cursor-help">
+                      {% include "budget/components/icon.html" with name="lock-closed" class="w-4 h-4 text-amber-400/90 hover:text-amber-300 transition-colors" %}
+                    </span>
                   {% endif %}
                 </div>
 

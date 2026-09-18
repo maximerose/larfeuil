@@ -14,8 +14,9 @@ class CategoryForm(forms.ModelForm):
             "is_meal_voucher_eligible",
         ]
 
-    def __init__(self, *args, household, **kwargs) -> None:
+    def __init__(self, *args, household, member=None, **kwargs) -> None:
         self.household = household
+        self.member = member
         super().__init__(*args, **kwargs)
 
     def clean_name(self):

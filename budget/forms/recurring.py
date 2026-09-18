@@ -3,7 +3,7 @@ from typing import ClassVar
 from django import forms
 
 from budget.models import BankAccount, Category, RecurringExpense
-from budget.models.account import Household
+from budget.models.account import Household, HouseholdMember
 from budget.models.category import CategoryType
 from budget.models.recurring import RecurringExpenseShare
 
@@ -22,8 +22,11 @@ class RecurringExpenseForm(forms.ModelForm):
             "usual_due_day",
         ]
 
-    def __init__(self, *args, household: Household, **kwargs) -> None:
+    def __init__(
+        self, *args, household: Household, member: HouseholdMember, **kwargs
+    ) -> None:
         self.household = household
+        self.member = member
         super().__init__(*args, **kwargs)
 
         # Restreindre aux catégories "Récurrentes" du foyer
@@ -50,7 +53,9 @@ class RecurringExpenseForm(forms.ModelForm):
         label = label.strip()
 
         existing_expenses = RecurringExpense.objects.filter(
-            household=self.household, label__iexact=label
+            household=self.household,
+            owner=self.member,
+            label__iexact=label,
         )
 
         if self.instance and self.instance.pk:
@@ -61,7 +66,7 @@ class RecurringExpenseForm(forms.ModelForm):
         if existing:
             if existing.is_active:
                 raise forms.ValidationError(
-                    "Une charge fixe avec ce nom existe déjà dans votre foyer."
+                    "Vous avez déjà une charge fixe avec ce nom."
                 )
             else:
                 raise forms.ValidationError(

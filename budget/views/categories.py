@@ -40,11 +40,18 @@ def settings_category_form_view(
         )
 
     if request.method == "POST":
-        form = CategoryForm(request.POST, instance=category, household=member.household)
+        form = CategoryForm(
+            request.POST,
+            instance=category,
+            household=member.household,
+            member=member,
+        )
         if form.is_valid():
             new_category = form.save(commit=False)
             if not category_id:
                 new_category.household = member.household
+                if member.user:
+                    new_category.created_by = member.user
             new_category.save()
 
             messages.success(
@@ -56,7 +63,11 @@ def settings_category_form_view(
 
             return response
     else:
-        form = CategoryForm(instance=category, household=member.household)
+        form = CategoryForm(
+            instance=category,
+            household=member.household,
+            member=member,
+        )
 
     return render(
         request,
@@ -137,7 +148,7 @@ def settings_category_merge_view(request: Request, category_id: str) -> HttpResp
         request,
         "budget/components/modal.html",
         {
-            "modal_title": f"Fusionner '{source_category.name}",
+            "modal_title": f"Fusionner '{source_category.name}'",
             "modal_icon": "link",
             "has_cancel": True,
             "has_save": True,

@@ -344,7 +344,9 @@ def calculate_monthly_projected_balances(
 
 
 def get_recurring_expenses_with_status(
-    member: HouseholdMember, month: datetime.date
+    member: HouseholdMember,
+    month: datetime.date,
+    include_all: bool = False,
 ) -> list[dict]:
     household = member.household
     target_month = month.replace(day=1)
@@ -414,11 +416,12 @@ def get_recurring_expenses_with_status(
                         target_month.year, target_month.month, day
                     )
 
-        if not is_due_this_month and not has_override:
-            continue
+        if not include_all:
+            if not is_due_this_month and not has_override:
+                continue
 
-        if expected_total <= Decimal("0.00") and realized == Decimal("0.00"):
-            continue
+            if expected_total <= Decimal("0.00") and realized == Decimal("0.00"):
+                continue
 
         is_past_month = target_month < today.replace(day=1)
 
