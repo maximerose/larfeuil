@@ -43,25 +43,20 @@ class BankAccountForm(forms.ModelForm):
 
         name = name.strip()
 
+        # 1. Coupe-circuit : on ne valide pas si le nom n'a pas été modifié
         if self.instance and self.instance.pk and self.instance.name == name:
             return name
 
-        existing_accounts = BankAccount.objects.filter(owner=self, name__iexact=name)
+        # 2. Récupération sécurisée de l'ID du propriétaire (inexistant lors d'une création pure)
+        owner_id = getattr(self.instance, "owner_id", None)
 
-        if self.instance and self.instance.pk:
-            existing_accounts = existing_accounts.exclude(pk=self.instance.pk)
-
-        owner = self.instance.owner if hasattr(self.instance, "owner") else None
-
-        if owner:
-            existing_accounts = BankAccount.objects.filter(
-                owner=owner, name__iexact=name
+        # 3. Validation de l'unicité ciblée sur le membre
+        if owner_id:
+            existing = (
+                BankAccount.objects.filter(owner_id=owner_id, name__iexact=name)
+                .exclude(pk=self.instance.pk)
+                .first()
             )
-
-            if self.instance and self.instance.pk:
-                existing_accounts = existing_accounts.exclude(pk=self.instance.pk)
-
-            existing = existing_accounts.first()
 
             if existing:
                 if existing.is_active:
