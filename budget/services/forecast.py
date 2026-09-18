@@ -508,12 +508,7 @@ def get_recurring_expenses_with_status(
             }
         )
 
-    results.sort(
-        key=lambda x: (
-            not (x["is_due_this_month"] and x["expense"].frequency_months > 1),
-            remove_accents(x["expense"].label.lower()),
-        )
-    )
+    results.sort(key=lambda x: remove_accents(x["expense"].label.lower()))
 
     return results
 

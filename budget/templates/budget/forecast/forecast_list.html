@@ -50,8 +50,23 @@
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           {% for item in fix_data %}
             <div class="p-4 bg-slate-900 rounded-xl flex flex-col gap-3 transition-all {% if item.is_due_this_month and item.frequency_months > 1 %} border border-brand-border/60 border-l-4 border-l-action-warning {% else %} border border-brand-border/60 {% endif %}">
-              <div class="truncate">
-                <span class="text-sm font-semibold text-slate-300 block truncate">{{ item.name }}</span>
+              <div class="truncate flex flex-col justify-center gap-0.5">
+                <div class="flex items-center gap-2">
+                  <span class="text-sm font-semibold text-slate-300 truncate">{{ item.name }}</span>
+
+                  <!-- Badges d'échéance -->
+                  {% if item.frequency_months == 1 and item.due_day %}
+                    <span class="shrink-0 inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-[10px] font-bold shadow-sm transition-colors bg-slate-800 text-slate-400 border-slate-700">
+                      {% include "budget/components/icon.html" with name="calendar" class="w-2.5 h-2.5" %}
+                      Le {{ item.due_day }}
+                    </span>
+                  {% elif item.frequency_months > 1 and item.next_date %}
+                    <span class="shrink-0 inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-[10px] font-bold shadow-sm transition-colors {% if item.is_due_this_month %}bg-action-warning/10 text-action-warning border-action-warning/30 {% else %}bg-slate-800 text-slate-400 border-slate-700{% endif %}">
+                      {% include "budget/components/icon.html" with name="calendar" class="w-2.5 h-2.5" %}
+                      {{ item.next_date|date:"d/m/y" }}
+                    </span>
+                  {% endif %}
+                </div>
                 <span class="text-[10px] transition-colors {% if item.is_due_this_month and item.frequency_months > 1 %}text-action-warning font-bold{% else %}text-slate-500{% endif %}">
                   Par défaut : {{ item.default_amount|stringformat:".2f" }} €
                 </span>

@@ -41,6 +41,41 @@ def build_progress_data(spent, allocated):
 
 
 @register.simple_tag
+def build_income_progress_data(realized, expected):
+    try:
+        realized_dec = Decimal(str(realized or 0))
+        expected_dec = Decimal(str(expected or 0))
+    except (ValueError, TypeError):
+        realized_dec = Decimal("0.00")
+        expected_dec = Decimal("0.00")
+
+    if expected_dec <= 0:
+        ratio = 100 if realized_dec > 0 else 0
+    else:
+        ratio = float((realized_dec / expected_dec) * 100)
+
+    percentage = min(100.0, max(0.0, ratio))
+
+    # Progression inversée (Le but est de remplir la jauge)
+    if ratio < 50:
+        bg_color = "bg-action-danger"
+        text_color = "text-action-danger"
+    elif ratio < 100:
+        bg_color = "bg-action-warning"
+        text_color = "text-action-warning"
+    else:
+        bg_color = "bg-budget-income"
+        text_color = "text-budget-income"
+
+    return {
+        "percentage": round(percentage, 1),
+        "ratio_raw": round(ratio, 1),
+        "bg_color": bg_color,
+        "text_color": text_color,
+    }
+
+
+@register.simple_tag
 def get_badge_classes(variant: str) -> str:
     variant = (variant or "").lower()
     base = (

@@ -15,10 +15,24 @@
       {% if recurring_expenses %}
         <div class="bg-brand-card border border-brand-border rounded-card shadow-sm overflow-hidden divide-y divide-brand-border/60">
           {% for item in recurring_expenses %}
-            <div class="p-4 sm:px-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-slate-900/40 transition-colors">
+            <div class="p-4 sm:px-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-slate-900/40 transition-colors {% if item.is_due_this_month and item.expense.frequency_months > 1 %}border-l-4 border-l-action-warning{% endif %}">
               <div class="flex-1">
-                <div class="flex items-center gap-2">
+                <div class="flex items-center gap-2 flex-wrap">
                   <p class="text-base font-bold text-slate-100">{{ item.expense.label }}</p>
+
+                  <!-- Badges d'échéance -->
+                  {% if item.expense.frequency_months == 1 and item.expense.usual_due_day %}
+                    <span class="shrink-0 inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-[10px] font-bold shadow-sm transition-colors {% if item.is_overdue %}bg-action-danger/10 text-action-danger border-action-danger/30{% else %}bg-slate-800 text-slate-400 border-slate-700{% endif %}">
+                      {% include "budget/components/icon.html" with name="calendar" class="w-2.5 h-2.5" %}
+                      Le {{ item.expense.usual_due_day|date:"d" }}
+                    </span>
+                  {% elif item.next_date %}
+                    <span class="shrink-0 inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-[10px] font-bold shadow-sm transition-colors {% if item.is_overdue %}bg-action-danger/10 text-action-danger border-action-danger/30{% elif item.is_due_this_month %}bg-action-warning/10 text-action-warning border-action-warning/30{% else %}bg-slate-800 text-slate-400 border-slate-700{% endif %}">
+                      {% include "budget/components/icon.html" with name="calendar" class="w-2.5 h-2.5" %}
+                      {{ item.next_date|date:"d/m/y" }}
+                    </span>
+                  {% endif %}
+
                   {% if item.expense.visibility == "PRIVATE" %}
                     <span title="Charge Privée" class="flex items-center cursor-help">
                       {% include "budget/components/icon.html" with name="lock-closed" class="w-4 h-4 text-amber-400/90 hover:text-amber-300 transition-colors" %}
@@ -45,12 +59,10 @@
 
                 <p class="text-[11px] text-slate-500 mt-0.5">Prélevé sur : {{ item.bank_account_name }}</p>
 
-                {% if item.next_date %}
-                  <p class="flex items-center gap-1 text-[11px] mt-0.5 font-medium {% if item.is_overdue %}text-action-danger{% else %}text-brand{% endif %}">
+                {% if item.expense.frequency_months == 1 and item.expense.usual_due_day %}
+                  <p class="flex items-center gap-1 text-[11px] mt-0.5 font-medium text-slate-400">
                     {% include "budget/components/icon.html" with name="calendar" class="w-3 h-3 shrink-0" %}
-                    <span>Prochaine échéance : {{ item.next_date|date:"d M Y" }}
-                      {% if item.is_overdue %}(En retard){% endif %}
-                    </span>
+                    <span>Vers le {{ item.expense.usual_due_day|date:"d" }} du mois</span>
                   </p>
                 {% endif %}
               </div>

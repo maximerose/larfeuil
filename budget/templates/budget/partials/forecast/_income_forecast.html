@@ -1,4 +1,5 @@
 {% extends "budget/components/card.html" %}
+{% load budget_tags %}
 
 {% block card_body %}
   <div class="pb-3 border-b border-brand-border">
@@ -7,19 +8,26 @@
 
   <div class="divide-y divide-brand-border/60">
     {% for inc in income_forecasts %}
-      <div class="py-2.5 flex items-center justify-between text-sm">
-        <div>
-          <p class="font-semibold text-slate-200">
+      <div class="py-3 space-y-1.5">
+        {% build_income_progress_data inc.realized_amount inc.budget_amount as pd %}
+
+        <div class="flex items-center justify-between text-xs">
+          <span class="font-semibold text-slate-200 truncate">
             {{ inc.category.name }}
             {% if inc.member.id != member.id %}
               <span class="text-[10px] text-slate-400 font-normal ml-1">({{ inc.member.name }})</span>
             {% endif %}
-          </p>
-          <p class="text-[11px] text-slate-500">
-            Reçu : {{ inc.realized_amount|floatformat:"2g" }} € / {{ inc.budget_amount|floatformat:"2g" }} €
-          </p>
+          </span>
+          <div class="text-right shrink-0">
+            <span class="font-extrabold {{ pd.text_color }}">{{ inc.realized_amount|floatformat:"2g" }} €</span>
+            <span class="text-slate-500 font-medium">/ {{ inc.budget_amount|floatformat:"2g" }} €</span>
+          </div>
         </div>
-        <span class="text-sm font-bold text-budget-income">+{{ inc.remaining_amount|floatformat:"2g" }} €</span>
+
+        <div class="w-full h-2 bg-slate-800 rounded-full overflow-hidden shadow-inner">
+          <div class="progress-bar-fill h-full transition-all duration-500 rounded-full {{ pd.bg_color }}"
+               data-progress="{{ pd.percentage|stringformat:'f' }}"></div>
+        </div>
       </div>
     {% empty %}
       <p class="text-xs text-slate-500 py-3 text-center">Aucun revenu prévu ce mois-ci.</p>

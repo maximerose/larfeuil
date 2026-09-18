@@ -17,6 +17,7 @@ from budget.models import (
 )
 from budget.models.account import AccountType
 from budget.models.category import CategoryType
+from budget.utils import advance_date
 from core.models import Visibility
 
 
@@ -44,22 +45,27 @@ def forecast_list_view(request: Request) -> HttpResponse:
     # Calcul des montants par défaut attendus pour le mois sélectionné
     default_rec_amounts = {}
     due_status_map = {}
+    next_date_map = {}
 
     for r in recurring_items:
         is_due = False
+        next_date = None
+
         if r.frequency_months == 1:
             is_due = True
         elif r.usual_due_day:
-            start_month = r.usual_due_day.replace(day=1)
-            if selected_date >= start_month:
-                diff_months = (selected_date.year - start_month.year) * 12 + (
-                    selected_date.month - start_month.month
+            next_date = r.usual_due_day
+            if next_date.replace(day=1) <= selected_date:
+                while next_date.replace(day=1) < selected_date:
+                    next_date = advance_date(next_date, r.frequency_months)
+                is_due = (
+                    next_date.year == selected_date.year
+                    and next_date.month == selected_date.month
                 )
-                if diff_months % r.frequency_months == 0:
-                    is_due = True
 
         default_rec_amounts[str(r.id)] = r.total_amount if is_due else Decimal("0.00")
         due_status_map[str(r.id)] = is_due
+        next_date_map[str(r.id)] = next_date
 
     # 1. Sauvegarde des prévisions (POST)
     if request.method == "POST":
@@ -283,7 +289,9 @@ def forecast_list_view(request: Request) -> HttpResponse:
                 "default_acc_id": def_acc_id,
                 "placeholder": f"Par défaut ({def_acc_name})",
                 "is_due_this_month": due_status_map[str(r.id)],
+                "next_date": next_date_map[str(r.id)],
                 "frequency_months": r.frequency_months,
+                "due_day": r.usual_due_day.day if r.usual_due_day else None,
             }
         )
 
