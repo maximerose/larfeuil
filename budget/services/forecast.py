@@ -1,6 +1,5 @@
 import calendar
 import datetime
-from collections import defaultdict
 from decimal import Decimal
 
 from django.db.models import Case, F, Q, Sum, Value, When
@@ -26,8 +25,6 @@ def get_target_account_for_expense(
 ) -> BankAccount | None:
     if expense.default_bank_account:
         return expense.default_bank_account
-    if expense.category and expense.category.default_bank_account:
-        return expense.category.default_bank_account
 
     owner = expense.owner or member
     return BankAccount.objects.filter(
@@ -58,8 +55,12 @@ def calculate_monthly_projected_balances(
             "after_incomes": initial.copy(),
         }
 
+    # Modification : On stocke un dictionnaire avec le montant ET le compte ciblé
     recurring_overrides = {
-        f.recurring_expense_id: f.amount
+        f.recurring_expense_id: {
+            "amount": f.amount,
+            "account_id": f.transaction_account_id,
+        }
         for f in MonthlyForecast.objects.filter(
             member=member,
             month__year=target_month.year,
@@ -97,10 +98,29 @@ def calculate_monthly_projected_balances(
         if not is_due_this_month and not has_override:
             continue
 
-        expected_amount = recurring_overrides.get(expense.id, expense.total_amount)
+        if has_override:
+            expected_amount = recurring_overrides[expense.id]["amount"]
+            override_acc_id = recurring_overrides[expense.id]["account_id"]
+        else:
+            expected_amount = expense.total_amount
+            override_acc_id = None
+
         shares = expense.shares.filter(is_active=True)
 
-        if shares.exists():
+        # A. Priorité absolue au compte forcé par la prévision
+        if override_acc_id and override_acc_id in after_recurring:
+            real_transactions = Transaction.objects.filter(
+                bank_account_id=override_acc_id,
+                recurring_expense=expense,
+                budget_month__year=target_month.year,
+                budget_month__month=target_month.month,
+                transaction_type=TransactionType.EXPENSE,
+            )
+            if not real_transactions.exists():
+                after_recurring[override_acc_id] -= expected_amount
+
+        # B. Sinon, on répartit selon les parts
+        elif shares.exists():
             for share in shares:
                 if share.bank_account_id not in after_recurring:
                     continue
@@ -119,6 +139,8 @@ def calculate_monthly_projected_balances(
                     )
                     adjusted_share_amount = round(expected_amount * ratio, 2)
                     after_recurring[share.bank_account_id] -= adjusted_share_amount
+
+        # C. Sinon, on prend le compte par défaut
         else:
             target_account = get_target_account_for_expense(expense, member)
             if target_account and target_account.id in after_recurring:
@@ -157,7 +179,8 @@ def calculate_monthly_projected_balances(
             (acc for acc in accounts if acc.owner_id == member.id), None
         )
 
-    category_forecasts = defaultdict(Decimal)
+    # Lecture du compte forcé pour les catégories
+    category_forecasts = {}
     for f in MonthlyForecast.objects.filter(
         member=member,
         month__year=target_month.year,
@@ -165,11 +188,17 @@ def calculate_monthly_projected_balances(
         category__isnull=False,
         is_active=True,
     ).select_related("category"):
-        category_forecasts[f.category] += f.amount
+        category_forecasts[f.category] = {
+            "amount": f.amount,
+            "account_id": f.transaction_account_id,
+        }
 
-    for category, total_amount in category_forecasts.items():
+    for category, data in category_forecasts.items():
         if category.type in [CategoryType.INCOME, CategoryType.SAVINGS]:
             continue
+
+        total_amount = data["amount"]
+        tx_acc_id = data["account_id"]
 
         # Prise en compte des remboursements (Dépenses - Revenus de la même catégorie)
         realized_data = Transaction.objects.filter(
@@ -194,10 +223,14 @@ def calculate_monthly_projected_balances(
         remaining = max(Decimal("0.00"), total_amount - realized)
 
         if remaining > Decimal("0.00"):
-            target_acc = category.default_bank_account
+            target_acc_id = (
+                tx_acc_id
+                if tx_acc_id
+                else (default_account.id if default_account else None)
+            )
 
-            if target_acc and target_acc.id in after_variables:
-                after_variables[target_acc.id] -= remaining
+            if target_acc_id and target_acc_id in after_variables:
+                after_variables[target_acc_id] -= remaining
             else:
                 # Priorité au compte Tickets Resto si éligible
                 if category.is_meal_voucher_eligible and tr_accounts:
@@ -219,7 +252,7 @@ def calculate_monthly_projected_balances(
 
     # 3. Épargne
     after_savings = after_variables.copy()
-    savings_totals = defaultdict(Decimal)
+    savings_totals = {}
 
     for f in MonthlyForecast.objects.filter(
         member=member,
@@ -229,9 +262,15 @@ def calculate_monthly_projected_balances(
         bank_account__account_type=AccountType.SAVINGS,
         is_active=True,
     ).select_related("bank_account"):
-        savings_totals[f.bank_account] += f.amount
+        savings_totals[f.bank_account] = {
+            "amount": f.amount,
+            "source_acc_id": f.transaction_account_id,
+        }
 
-    for target_account, total_amount in savings_totals.items():
+    for target_account, data in savings_totals.items():
+        total_amount = data["amount"]
+        src_acc_id = data["source_acc_id"]
+
         realized_transfers = Transfer.objects.filter(
             destination_account=target_account,
             source_account__in=accounts,
@@ -251,16 +290,24 @@ def calculate_monthly_projected_balances(
         )
 
         if remaining > Decimal("0.00"):
-            if default_account:
-                after_savings[default_account.id] -= remaining
+            fallback_src_id = (
+                src_acc_id
+                if src_acc_id
+                else (default_account.id if default_account else None)
+            )
+            if fallback_src_id and fallback_src_id in after_savings:
+                after_savings[fallback_src_id] -= remaining
             if target_account.id in after_savings:
                 after_savings[target_account.id] += remaining
 
     # 4. Revenus
     after_incomes = after_savings.copy()
-    for category, total_amount in category_forecasts.items():
+    for category, data in category_forecasts.items():
         if category.type != CategoryType.INCOME:
             continue
+
+        total_amount = data["amount"]
+        tx_acc_id = data["account_id"]
 
         realized_data = Transaction.objects.filter(
             bank_account__in=accounts,
@@ -286,9 +333,14 @@ def calculate_monthly_projected_balances(
         remaining_to_receive = max(Decimal("0.00"), total_amount - realized)
 
         if remaining_to_receive > Decimal("0.00"):
-            target_acc = category.default_bank_account or default_account
-            if target_acc and target_acc.id in after_incomes:
-                after_incomes[target_acc.id] += remaining_to_receive
+            target_acc_id = (
+                tx_acc_id
+                if tx_acc_id
+                else (default_account.id if default_account else None)
+            )
+
+            if target_acc_id and target_acc_id in after_incomes:
+                after_incomes[target_acc_id] += remaining_to_receive
 
     return {
         "initial": initial,
@@ -452,6 +504,7 @@ def get_recurring_expenses_with_status(
                 "realized_amount": realized,
                 "status": status,
                 "next_date": next_date,
+                "is_due_this_month": is_due_this_month,
                 "is_overdue": is_overdue,
                 "my_expected_share": my_expected_share,
                 "my_remaining": my_remaining,
@@ -460,7 +513,12 @@ def get_recurring_expenses_with_status(
             }
         )
 
-    results.sort(key=lambda x: remove_accents(x["expense"].label))
+    results.sort(
+        key=lambda x: (
+            not (x["is_due_this_month"] and x["expense"].frequency_months > 1),
+            remove_accents(x["expense"].label.lower()),
+        )
+    )
 
     return results
 

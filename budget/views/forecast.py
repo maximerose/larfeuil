@@ -34,7 +34,7 @@ def forecast_list_view(request: Request) -> HttpResponse:
         except ValueError:
             pass
 
-    # Récupération de toutes les charges fixes (sans masquer celles qui ne sont pas dues)
+    # Récupération de toutes les charges fixes
     recurring_items = RecurringExpense.objects.filter(
         Q(owner=member) | Q(visibility=Visibility.SHARED),
         household=household,
@@ -43,6 +43,8 @@ def forecast_list_view(request: Request) -> HttpResponse:
 
     # Calcul des montants par défaut attendus pour le mois sélectionné
     default_rec_amounts = {}
+    due_status_map = {}
+
     for r in recurring_items:
         is_due = False
         if r.frequency_months == 1:
@@ -57,6 +59,7 @@ def forecast_list_view(request: Request) -> HttpResponse:
                     is_due = True
 
         default_rec_amounts[str(r.id)] = r.total_amount if is_due else Decimal("0.00")
+        due_status_map[str(r.id)] = is_due
 
     # 1. Sauvegarde des prévisions (POST)
     if request.method == "POST":
@@ -80,6 +83,10 @@ def forecast_list_view(request: Request) -> HttpResponse:
 
                     if key.startswith("forecast_cat_"):
                         cat_id = key.replace("forecast_cat_", "")
+                        tx_acc_id = (
+                            request.POST.get(f"forecast_tx_acc_cat_{cat_id}") or None
+                        )
+
                         if amount == Decimal("0.00"):
                             MonthlyForecast.objects.filter(
                                 month=selected_date, member=member, category_id=cat_id
@@ -89,11 +96,18 @@ def forecast_list_view(request: Request) -> HttpResponse:
                                 month=selected_date,
                                 member=member,
                                 category_id=cat_id,
-                                defaults={"amount": amount},
+                                defaults={
+                                    "amount": amount,
+                                    "transaction_account_id": tx_acc_id,
+                                },
                             )
 
                     elif key.startswith("forecast_acc_"):
                         acc_id = key.replace("forecast_acc_", "")
+                        tx_acc_id = (
+                            request.POST.get(f"forecast_tx_acc_acc_{acc_id}") or None
+                        )
+
                         if amount == Decimal("0.00"):
                             MonthlyForecast.objects.filter(
                                 month=selected_date,
@@ -105,15 +119,21 @@ def forecast_list_view(request: Request) -> HttpResponse:
                                 month=selected_date,
                                 member=member,
                                 bank_account_id=acc_id,
-                                defaults={"amount": amount},
+                                defaults={
+                                    "amount": amount,
+                                    "transaction_account_id": tx_acc_id,
+                                },
                             )
 
                     elif key.startswith("forecast_rec_"):
                         rec_id = key.replace("forecast_rec_", "")
+                        tx_acc_id = (
+                            request.POST.get(f"forecast_tx_acc_rec_{rec_id}") or None
+                        )
                         default_val = default_rec_amounts.get(rec_id, Decimal("0.00"))
 
-                        # Si on valide le montant exact prévu par défaut, on nettoie la base (pas besoin d'exception)
-                        if amount == default_val:
+                        # Si on valide le montant exact prévu par défaut et aucun compte d'exception, on nettoie
+                        if amount == default_val and not tx_acc_id:
                             MonthlyForecast.objects.filter(
                                 month=selected_date,
                                 member=member,
@@ -124,7 +144,10 @@ def forecast_list_view(request: Request) -> HttpResponse:
                                 month=selected_date,
                                 member=member,
                                 recurring_expense_id=rec_id,
-                                defaults={"amount": amount},
+                                defaults={
+                                    "amount": amount,
+                                    "transaction_account_id": tx_acc_id,
+                                },
                             )
 
             elif action == "replicate":
@@ -150,22 +173,77 @@ def forecast_list_view(request: Request) -> HttpResponse:
                             category=f.category,
                             bank_account=f.bank_account,
                             recurring_expense=f.recurring_expense,
-                            defaults={"amount": f.amount, "visibility": f.visibility},
+                            defaults={
+                                "amount": f.amount,
+                                "visibility": f.visibility,
+                                "transaction_account": f.transaction_account,
+                            },
                         )
 
         return redirect(f"{request.path}?month={selected_date.strftime('%Y-%m')}")
 
-    # 2. Chargement des données existantes (Filtrées sur le membre actif)
+    # 2. Options de sélection pour les menus déroulants de comptes
+    accounts = (
+        BankAccount.objects.filter(
+            Q(owner=member)
+            | Q(owner__household=household, visibility=Visibility.SHARED),
+            is_active=True,
+        )
+        .select_related("owner")
+        .distinct()
+    )
+
+    # Détermination du compte de repli global pour l'utilisateur
+    default_account = next(
+        (acc for acc in accounts if acc.is_default and acc.owner_id == member.id), None
+    )
+    if not default_account:
+        default_account = next(
+            (
+                acc
+                for acc in accounts
+                if acc.account_type == AccountType.CHECKING
+                and acc.owner_id == member.id
+            ),
+            None,
+        )
+    if not default_account:
+        default_account = next(
+            (acc for acc in accounts if acc.owner_id == member.id), None
+        )
+
+    global_default_acc_id = str(default_account.id) if default_account else ""
+    global_default_acc_name = (
+        default_account.name if default_account else "Aucun compte"
+    )
+
+    account_options = [
+        {
+            "id": str(acc.id),
+            "name": f"{acc.name} ({acc.owner.name})"
+            if acc.owner_id != member.id
+            else acc.name,
+        }
+        for acc in accounts
+    ]
+
+    # 3. Chargement des données existantes
     existing_forecasts = MonthlyForecast.objects.filter(
         member=member, month=selected_date, is_active=True
     )
 
-    cat_map = {f.category_id: f.amount for f in existing_forecasts if f.category_id}
+    cat_map = {
+        f.category_id: {"amount": f.amount, "acc_id": f.transaction_account_id}
+        for f in existing_forecasts
+        if f.category_id
+    }
     acc_map = {
-        f.bank_account_id: f.amount for f in existing_forecasts if f.bank_account_id
+        f.bank_account_id: {"amount": f.amount, "acc_id": f.transaction_account_id}
+        for f in existing_forecasts
+        if f.bank_account_id
     }
     rec_map = {
-        f.recurring_expense_id: f.amount
+        f.recurring_expense_id: {"amount": f.amount, "acc_id": f.transaction_account_id}
         for f in existing_forecasts
         if f.recurring_expense_id
     }
@@ -175,24 +253,46 @@ def forecast_list_view(request: Request) -> HttpResponse:
         household=household, type=CategoryType.VARIABLE, is_active=True
     )
     var_data = [
-        {"id": c.id, "name": c.name, "amount": cat_map.get(c.id, Decimal("0.00"))}
+        {
+            "id": str(c.id),
+            "name": c.name,
+            "amount": cat_map.get(c.id, {}).get("amount", Decimal("0.00")),
+            "acc_id": str(cat_map.get(c.id, {}).get("acc_id") or ""),
+            "default_acc_id": global_default_acc_id,
+            "placeholder": f"Par défaut ({global_default_acc_name})",
+        }
         for c in var_categories
     ]
 
-    # --- SECTION 2 : Charges Fixes (Toutes affichées avec leur montant dynamique) ---
+    # --- SECTION 2 : Charges Fixes ---
     fix_data = []
     for r in recurring_items:
-        # Soit on a une exception en base, soit on prend le montant calculé par défaut
-        allocated = rec_map.get(r.id, default_rec_amounts[str(r.id)])
+        allocated = rec_map.get(r.id, {}).get("amount", default_rec_amounts[str(r.id)])
+        # Pour les charges fixes, on conserve le compte par défaut lié à la charge, sinon on retombe sur le compte global
+        def_acc = r.default_bank_account or default_account
+        def_acc_id = str(def_acc.id) if def_acc else ""
+        def_acc_name = def_acc.name if def_acc else "Aucun compte"
 
         fix_data.append(
             {
-                "id": r.id,
+                "id": str(r.id),
                 "name": r.label,
                 "amount": allocated,
+                "acc_id": str(rec_map.get(r.id, {}).get("acc_id") or ""),
                 "default_amount": r.total_amount,
+                "default_acc_id": def_acc_id,
+                "placeholder": f"Par défaut ({def_acc_name})",
+                "is_due_this_month": due_status_map[str(r.id)],
+                "frequency_months": r.frequency_months,
             }
         )
+
+    fix_data.sort(
+        key=lambda x: (
+            not (x["is_due_this_month"] and x["frequency_months"] > 1),
+            x["name"].lower(),
+        )
+    )
 
     # --- SECTION 3 : Épargne ---
     savings_accounts = BankAccount.objects.filter(
@@ -202,7 +302,14 @@ def forecast_list_view(request: Request) -> HttpResponse:
         is_active=True,
     )
     savings_data = [
-        {"id": a.id, "name": a.name, "amount": acc_map.get(a.id, Decimal("0.00"))}
+        {
+            "id": str(a.id),
+            "name": a.name,
+            "amount": acc_map.get(a.id, {}).get("amount", Decimal("0.00")),
+            "acc_id": str(acc_map.get(a.id, {}).get("acc_id") or ""),
+            "default_acc_id": global_default_acc_id,
+            "placeholder": f"Par défaut ({global_default_acc_name})",
+        }
         for a in savings_accounts
     ]
 
@@ -211,7 +318,14 @@ def forecast_list_view(request: Request) -> HttpResponse:
         household=household, type=CategoryType.INCOME, is_active=True
     )
     income_data = [
-        {"id": c.id, "name": c.name, "amount": cat_map.get(c.id, Decimal("0.00"))}
+        {
+            "id": str(c.id),
+            "name": c.name,
+            "amount": cat_map.get(c.id, {}).get("amount", Decimal("0.00")),
+            "acc_id": str(cat_map.get(c.id, {}).get("acc_id") or ""),
+            "default_acc_id": global_default_acc_id,
+            "placeholder": f"Par défaut ({global_default_acc_name})",
+        }
         for c in income_categories
     ]
 
@@ -224,6 +338,7 @@ def forecast_list_view(request: Request) -> HttpResponse:
             "fix_data": fix_data,
             "savings_data": savings_data,
             "income_data": income_data,
+            "account_options": account_options,
             "breadcrumbs": ["Prévisions budgétaires"],
         },
     )

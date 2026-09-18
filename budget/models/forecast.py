@@ -59,6 +59,16 @@ class MonthlyForecast(BaseModel, SoftDeleteModel):
         blank=True,
         verbose_name="Charge fixe (Exception mensuelle)",
     )
+
+    # Compte sur lequel l'opération (débit ou crédit) va se réaliser ce mois-ci
+    transaction_account = models.ForeignKey(
+        "BankAccount",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="forecast_transactions",
+        verbose_name="Compte ciblé (Optionnel)",
+    )
     visibility = models.CharField(
         max_length=20,
         choices=Visibility.choices,

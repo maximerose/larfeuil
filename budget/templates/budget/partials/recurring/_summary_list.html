@@ -2,8 +2,8 @@
 {% block card_body %}
   <div class="divide-y divide-brand-border">
     {% for item in recurring_expenses %}
-      <!-- Bloc principal -->
-      <div class="py-3 flex flex-col gap-2">
+      <!-- Bloc principal avec ajout du padding (pl-3) et de la bordure si échéance -->
+      <div class="py-3 flex flex-col gap-2 transition-all {% if item.is_due_this_month and item.expense.frequency_months > 1 %}pl-3 border-l-4 border-l-action-warning{% endif %}">
         <div class="flex items-center justify-between">
           <div>
             <p class="text-sm font-semibold text-slate-200">{{ item.expense.label }}</p>
@@ -15,16 +15,22 @@
             <div class="text-right">
               {% if item.realized_amount > 0 %}
                 {% include "budget/components/amount.html" with amount=item.realized_amount custom_class="text-sm block" %}
-                <span class="text-[10px] text-slate-500 font-semibold uppercase tracking-wider block">sur {{ item.expected_amount|floatformat:2 }} €</span>
+
+                <!-- Couleur dynamique sur le montant de référence -->
+                <span class="text-[10px] {% if item.is_due_this_month and item.expense.frequency_months > 1 %}text-action-warning font-extrabold{% else %}text-slate-500 font-semibold{% endif %} uppercase tracking-wider block">
+                  sur {{ item.expected_amount|floatformat:2 }} €
+                </span>
+
               {% else %}
                 <span class="text-sm font-bold text-slate-100">{{ item.expected_amount|floatformat:2 }} €</span>
               {% endif %}
             </div>
+
+            <!-- (Le reste de tes boutons Soldé / Payer / Ajuster reste identique) -->
             {% if item.status == "COMPLETED" %}
               {% include "budget/components/badge.html" with text="Soldé" variant="success" %}
             {% elif item.status == "PARTIAL" %}
               {% include "budget/components/badge.html" with text="Partiel" variant="warning" %}
-              <!-- Si c'est partiel ET qu'il reste à payer MA part, j'affiche le bouton Payer -->
               {% if item.my_remaining > 0 %}
                 <button type="button"
                         hx-get="{% url 'pay_recurring_expense' item.expense.id %}"
@@ -51,7 +57,7 @@
           </div>
         </div>
 
-        <!-- Détail de l'historique pour les paiements partiels -->
+        <!-- (Détail de l'historique inchangé) -->
         {% if item.status == "PARTIAL" and item.transactions %}
           <div class="pl-3 border-l-2 border-brand-border/60 space-y-1 mt-1">
             <p class="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Déjà versé :</p>

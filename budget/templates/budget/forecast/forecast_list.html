@@ -19,18 +19,17 @@
           </h3>
         </div>
 
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           {% for cat in var_data %}
-            <div class="p-3 bg-slate-900 rounded-xl border border-brand-border/60 flex items-center justify-between gap-2">
-              <span class="text-xs font-semibold text-slate-300 truncate">{{ cat.name }}</span>
-              <div class="relative shrink-0 w-28">
-                <input type="number"
-                       step="0.01"
-                       min="0"
-                       name="forecast_cat_{{ cat.id }}"
-                       value="{{ cat.amount|stringformat:'.2f' }}"
-                       class="input-base px-3 py-1.5 pr-6 text-right font-bold text-xs" />
-                <span class="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-slate-500 font-bold pointer-events-none">€</span>
+            <div class="p-4 bg-slate-900 rounded-xl border border-brand-border/60 flex flex-col gap-3">
+              <span class="text-sm font-semibold text-slate-300 truncate">{{ cat.name }}</span>
+              <div class="flex items-start gap-3">
+                <div class="flex-1 min-w-0">
+                  {% include "budget/components/select.html" with name="forecast_tx_acc_cat_"|add:cat.id options=account_options selected=cat.acc_id placeholder=cat.placeholder exclude_value=cat.default_acc_id %}
+                </div>
+                <div class="w-32 shrink-0">
+                  {% include "budget/components/currency_input.html" with name="forecast_cat_"|add:cat.id value=cat.amount %}
+                </div>
               </div>
             </div>
           {% empty %}
@@ -48,21 +47,22 @@
           </h3>
         </div>
 
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           {% for item in fix_data %}
-            <div class="p-3 bg-slate-900 rounded-xl border border-brand-border/60 flex items-center justify-between gap-2">
+            <div class="p-4 bg-slate-900 rounded-xl flex flex-col gap-3 transition-all {% if item.is_due_this_month and item.frequency_months > 1 %} border border-brand-border/60 border-l-4 border-l-action-warning {% else %} border border-brand-border/60 {% endif %}">
               <div class="truncate">
-                <span class="text-xs font-semibold text-slate-300 block truncate">{{ item.name }}</span>
-                <span class="text-[10px] text-slate-500">Par défaut : {{ item.default_amount|stringformat:".2f" }} €</span>
+                <span class="text-sm font-semibold text-slate-300 block truncate">{{ item.name }}</span>
+                <span class="text-[10px] transition-colors {% if item.is_due_this_month and item.frequency_months > 1 %}text-action-warning font-bold{% else %}text-slate-500{% endif %}">
+                  Par défaut : {{ item.default_amount|stringformat:".2f" }} €
+                </span>
               </div>
-              <div class="relative shrink-0 w-28">
-                <input type="number"
-                       step="0.01"
-                       min="0"
-                       name="forecast_rec_{{ item.id }}"
-                       value="{{ item.amount|stringformat:'.2f' }}"
-                       class="input-base px-3 py-1.5 pr-6 text-right font-bold text-xs" />
-                <span class="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-slate-500 font-bold pointer-events-none">€</span>
+              <div class="flex items-start gap-3">
+                <div class="flex-1 min-w-0">
+                  {% include "budget/components/select.html" with name="forecast_tx_acc_rec_"|add:item.id options=account_options selected=item.acc_id placeholder=item.placeholder exclude_value=item.default_acc_id %}
+                </div>
+                <div class="w-32 shrink-0">
+                  {% include "budget/components/currency_input.html" with name="forecast_rec_"|add:item.id value=item.amount %}
+                </div>
               </div>
             </div>
           {% empty %}
@@ -82,18 +82,17 @@
               Épargne
             </h3>
           </div>
-          <div class="space-y-2">
+          <div class="space-y-3">
             {% for acc in savings_data %}
-              <div class="p-2.5 bg-slate-900 rounded-xl border border-brand-border/60 flex items-center justify-between gap-2">
-                <span class="text-xs font-semibold text-slate-300 truncate">{{ acc.name }}</span>
-                <div class="relative shrink-0 w-24">
-                  <input type="number"
-                         step="0.01"
-                         min="0"
-                         name="forecast_acc_{{ acc.id }}"
-                         value="{{ acc.amount|stringformat:'.2f' }}"
-                         class="input-base px-2.5 py-1 pr-6 text-right font-bold text-xs" />
-                  <span class="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-slate-500 font-bold pointer-events-none">€</span>
+              <div class="p-4 bg-slate-900 rounded-xl border border-brand-border/60 flex flex-col gap-3">
+                <span class="text-sm font-semibold text-slate-300 truncate">{{ acc.name }}</span>
+                <div class="flex items-start gap-3">
+                  <div class="flex-1 min-w-0">
+                    {% include "budget/components/select.html" with name="forecast_tx_acc_acc_"|add:acc.id options=account_options selected=acc.acc_id placeholder=acc.placeholder exclude_value=acc.default_acc_id %}
+                  </div>
+                  <div class="w-32 shrink-0">
+                    {% include "budget/components/currency_input.html" with name="forecast_acc_"|add:acc.id value=acc.amount %}
+                  </div>
                 </div>
               </div>
             {% empty %}
@@ -110,18 +109,17 @@
               Revenus prévus
             </h3>
           </div>
-          <div class="space-y-2">
+          <div class="space-y-3">
             {% for cat in income_data %}
-              <div class="p-2.5 bg-slate-900 rounded-xl border border-brand-border/60 flex items-center justify-between gap-2">
-                <span class="text-xs font-semibold text-slate-300 truncate">{{ cat.name }}</span>
-                <div class="relative shrink-0 w-24">
-                  <input type="number"
-                         step="0.01"
-                         min="0"
-                         name="forecast_cat_{{ cat.id }}"
-                         value="{{ cat.amount|stringformat:'.2f' }}"
-                         class="input-base px-2.5 py-1 pr-6 text-right font-bold text-xs" />
-                  <span class="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-slate-500 font-bold pointer-events-none">€</span>
+              <div class="p-4 bg-slate-900 rounded-xl border border-brand-border/60 flex flex-col gap-3">
+                <span class="text-sm font-semibold text-slate-300 truncate">{{ cat.name }}</span>
+                <div class="flex items-start gap-3">
+                  <div class="flex-1 min-w-0">
+                    {% include "budget/components/select.html" with name="forecast_tx_acc_cat_"|add:cat.id options=account_options selected=cat.acc_id placeholder=cat.placeholder exclude_value=cat.default_acc_id %}
+                  </div>
+                  <div class="w-32 shrink-0">
+                    {% include "budget/components/currency_input.html" with name="forecast_cat_"|add:cat.id value=cat.amount %}
+                  </div>
                 </div>
               </div>
             {% empty %}

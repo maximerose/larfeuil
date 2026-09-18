@@ -1,4 +1,30 @@
 // Quick Transaction Form Handler
+function updateRequiredFields() {
+    ['block-expense', 'block-income', 'block-transfer'].forEach(blockId => {
+        const block = document.getElementById(blockId);
+        if (!block) return;
+
+        const isHidden = block.classList.contains('hidden');
+        const fields = block.querySelectorAll('select, input');
+
+        fields.forEach(field => {
+            if (isHidden) {
+                // On retire le required des blocs masqués pour la validation HTML5
+                if (field.hasAttribute('required')) {
+                    field.removeAttribute('required');
+                    field.setAttribute('data-was-required', 'true');
+                }
+            } else {
+                // On réassocie le required aux champs du bloc actif
+                if (field.getAttribute('data-was-required') === 'true') {
+                    field.setAttribute('required', 'required');
+                    field.removeAttribute('data-was-required');
+                }
+            }
+        });
+    });
+}
+
 function initQuickTransactionForm() {
     const configEl = document.getElementById('quick-tx-modal-config');
     const isEditMode = configEl ? configEl.dataset.isEdit === 'true' : false;
@@ -101,7 +127,6 @@ function initQuickTransactionForm() {
             opt.disabled = (opt.value !== "" && opt.value === destVal);
         }
 
-        // Synchronisation si TomSelect est utilisé
         if (sourceSelect.tomselect) sourceSelect.tomselect.sync();
         if (destSelect.tomselect) destSelect.tomselect.sync();
     };
@@ -116,11 +141,9 @@ function initQuickTransactionForm() {
         const tempSourceVal = sourceSelect.value;
         const tempDestVal = destSelect.value;
 
-        // 1. Déblocage temporaire des options
         Array.from(sourceSelect.options).forEach(opt => opt.disabled = false);
         Array.from(destSelect.options).forEach(opt => opt.disabled = false);
 
-        // 2. Inversion (compatible native + TomSelect)
         if (sourceSelect.tomselect) {
             sourceSelect.tomselect.setValue(tempDestVal, true);
         } else {
@@ -133,11 +156,9 @@ function initQuickTransactionForm() {
             destSelect.value = tempSourceVal;
         }
 
-        // 3. Notification des changements
         sourceSelect.dispatchEvent(new Event('change', { bubbles: true }));
         destSelect.dispatchEvent(new Event('change', { bubbles: true }));
 
-        // 4. Verrouillage réciproque
         window.updateTransferAccounts();
     };
 
@@ -163,6 +184,7 @@ function initQuickTransactionForm() {
         }
 
         updateTrVisibility();
+        updateRequiredFields(); // Mise à jour des attributs 'required' lors du changement d'onglet
     };
 
     const sourceSelect = document.querySelector('select[name="source_account"]');
@@ -214,4 +236,6 @@ function initQuickTransactionForm() {
     } else {
         window.toggleTxType();
     }
+
+    updateRequiredFields(); // Purge initiale des attributs 'required' des onglets masqués
 }

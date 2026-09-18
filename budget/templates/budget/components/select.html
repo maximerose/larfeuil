@@ -15,9 +15,17 @@
 
     {% for item in options %}
       {% if item.name %}
-        <option value="{{ item.id }}" {% if item.id|slugify == selected|slugify %}selected{% endif %}>{{ item.name }}</option>
+        {% if item.id|stringformat:"s" != exclude_value|stringformat:"s" %}
+          <option value="{{ item.id }}" {% if item.id|stringformat:"s" == selected|stringformat:"s" %}selected{% endif %}>
+            {{ item.name }}
+          </option>
+        {% endif %}
       {% else %}
-        <option value="{{ item.0 }}" {% if item.0|slugify == selected|slugify %}selected{% endif %}>{{ item.1 }}</option>
+        {% if item.0|stringformat:"s" != exclude_value|stringformat:"s" %}
+          <option value="{{ item.0 }}" {% if item.0|stringformat:"s" == selected|stringformat:"s" %}selected{% endif %}>
+            {{ item.1 }}
+          </option>
+        {% endif %}
       {% endif %}
     {% endfor %}
   </select>

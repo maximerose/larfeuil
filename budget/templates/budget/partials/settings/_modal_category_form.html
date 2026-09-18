@@ -23,14 +23,6 @@
     </div>
   </div>
 
-  <!-- Compte par défaut -->
-  <div>
-    {% include "budget/components/select.html" with label="Compte par défaut (Optionnel)" name="default_bank_account" options=form.fields.default_bank_account.queryset selected=form.default_bank_account.value placeholder="Aucun compte par défaut" %}
-    {% if form.default_bank_account.errors %}
-      <p class="text-[11px] text-action-danger mt-1">{{ form.default_bank_account.errors.0 }}</p>
-    {% endif %}
-  </div>
-
   <!-- Case à cocher : Tickets Resto -->
   <div id="meal-voucher-container"
        class="pt-2 {% if form.type.value == 'INCOME' or form.type.value == 'SAVINGS' %}hidden{% endif %}">
