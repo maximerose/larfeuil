@@ -183,7 +183,15 @@ def quick_transaction_form_view(request: Request) -> HttpResponse:
             for acc in accounts
             if acc.owner_id == current_member.id and acc.is_default
         ),
-        None,
+        next(
+            (
+                acc
+                for acc in accounts
+                if acc.owner_id == current_member.id
+                and acc.account_type == AccountType.CHECKING
+            ),
+            None,
+        ),
     )
     selected_account_id = default_account.id if default_account else None
 

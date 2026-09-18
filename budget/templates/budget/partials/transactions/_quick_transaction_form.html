@@ -69,8 +69,8 @@
   <!-- 3. Blocs de champs dynamiques -->
   <div id="block-expense">
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-      {% include "budget/components/select.html" with label="Catégorie" name="expense_category" options=categories_expense selected=selected_category_id allow_create=True create_type="category" %}
-      {% include "budget/components/select.html" with label="Compte Débité" name="expense_account" options=accounts selected=selected_account_id %}
+      {% include "budget/components/select.html" with label="Catégorie" name="expense_category" options=categories_expense selected=selected_category_id allow_create=True create_type="category" required=True placeholder="Sélectionnez une catégorie..." %}
+      {% include "budget/components/select.html" with label="Compte Débité" name="expense_account" options=accounts selected=selected_account_id required=True %}
 
       {% if tr_accounts_info %}
         <div id="meal-voucher-wrapper" class="hidden mt-4 p-3 bg-slate-900/50 rounded-xl border border-brand-border">
@@ -112,8 +112,8 @@
 
   <div id="block-income" class="hidden">
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-      {% include "budget/components/select.html" with label="Catégorie" name="income_category" options=categories_income selected=selected_category_id allow_create=True create_type="category" %}
-      {% include "budget/components/select.html" with label="Compte Crédité" name="income_account" options=accounts selected=selected_account_id %}
+      {% include "budget/components/select.html" with label="Catégorie" name="income_category" options=categories_income selected=selected_category_id allow_create=True create_type="category" required=True placeholder="Sélectionnez une catégorie..." %}
+      {% include "budget/components/select.html" with label="Compte Crédité" name="income_account" options=accounts selected=selected_account_id required=True %}
     </div>
   </div>
 
@@ -121,7 +121,7 @@
   <div id="block-transfer" class="hidden space-y-3">
     <div class="flex flex-col sm:flex-row sm:items-end gap-3">
       <div class="w-full sm:flex-1">
-        {% include "budget/components/select.html" with label="Depuis le compte" name="source_account" options=accounts selected=transfer.source_account_id|default:selected_account_id %}
+        {% include "budget/components/select.html" with label="Depuis le compte" name="source_account" options=accounts selected=transfer.source_account_id|default:selected_account_id required=True %}
       </div>
 
       <div class="flex justify-center shrink-0 sm:pb-0.5 relative z-10 -my-2 sm:my-0">
@@ -134,7 +134,7 @@
       </div>
 
       <div class="w-full sm:flex-1">
-        {% include "budget/components/select.html" with label="Vers le compte" name="destination_account" options=accounts selected=transfer.destination_account_id %}
+        {% include "budget/components/select.html" with label="Vers le compte" name="destination_account" options=accounts selected=transfer.destination_account_id required=True placeholder="Sélectionnez un compte..." %}
       </div>
     </div>
 

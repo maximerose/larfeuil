@@ -9,9 +9,9 @@
           {% if allow_create %} data-api-create-url="{% url 'api_create_element' %}" data-create-type="{{ create_type }}" {% endif %}
           class="input-base px-3 py-2.5">
 
-    {% if not required or placeholder %}
-      <option value="" {% if not selected %}selected{% endif %}>{{ placeholder|default:"Aucune sélection" }}</option>
-    {% endif %}
+    <option value="" {% if required %}disabled{% endif %} {% if not selected %}selected{% endif %}>
+      {{ placeholder|default:"Sélectionnez une option..." }}
+    </option>
 
     {% for item in options %}
       {% if item.name %}
