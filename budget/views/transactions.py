@@ -204,6 +204,22 @@ def quick_transaction_form_view(request: Request) -> HttpResponse:
         for acc in accounts
     ]
 
+    all_household_accounts = (
+        BankAccount.objects.filter(owner__household=household, is_active=True)
+        .select_related("owner")
+        .order_by("name")
+    )
+
+    household_account_options = [
+        {
+            "id": str(acc.id),
+            "name": f"{acc.name} ({acc.owner.name})"
+            if acc.owner_id != current_member.id
+            else acc.name,
+        }
+        for acc in all_household_accounts
+    ]
+
     today = timezone.localdate()
 
     tr_accounts = [
@@ -260,6 +276,7 @@ def quick_transaction_form_view(request: Request) -> HttpResponse:
             "categories_expense": categories_expense,
             "categories_income": categories_income,
             "accounts": account_options,
+            "household_account_options": household_account_options,
             "selected_account_id": selected_account_id,
             "today": today,
             "tr_accounts_info": tr_accounts_info,
@@ -381,6 +398,22 @@ def transaction_update_view(request: Request, transaction_id: str) -> HttpRespon
         for acc in accounts
     ]
 
+    all_household_accounts = (
+        BankAccount.objects.filter(owner__household=household, is_active=True)
+        .select_related("owner")
+        .order_by("name")
+    )
+
+    household_account_options = [
+        {
+            "id": str(acc.id),
+            "name": f"{acc.name} ({acc.owner.name})"
+            if acc.owner_id != current_member.id
+            else acc.name,
+        }
+        for acc in all_household_accounts
+    ]
+
     tr_accounts = [
         acc for acc in accounts if acc.account_type == AccountType.MEAL_VOUCHER
     ]
@@ -423,6 +456,7 @@ def transaction_update_view(request: Request, transaction_id: str) -> HttpRespon
             "categories_expense": categories_expense,
             "categories_income": categories_income,
             "accounts": account_options,
+            "household_account_options": household_account_options,
             "selected_account_id": tx.bank_account_id,
             "today": tx.transaction_date,
             "tr_accounts_info": tr_accounts_info,
@@ -509,6 +543,22 @@ def transfer_update_view(request: Request, transfer_id: str) -> HttpResponse:
         for acc in accounts
     ]
 
+    all_household_accounts = (
+        BankAccount.objects.filter(owner__household=household, is_active=True)
+        .select_related("owner")
+        .order_by("name")
+    )
+
+    household_account_options = [
+        {
+            "id": str(acc.id),
+            "name": f"{acc.name} ({acc.owner.name})"
+            if acc.owner_id != current_member.id
+            else acc.name,
+        }
+        for acc in all_household_accounts
+    ]
+
     tr_accounts = [
         acc for acc in accounts if acc.account_type == AccountType.MEAL_VOUCHER
     ]
@@ -538,6 +588,7 @@ def transfer_update_view(request: Request, transfer_id: str) -> HttpResponse:
             "categories_expense": categories_expense,
             "categories_income": categories_income,
             "accounts": account_options,
+            "household_account_options": household_account_options,
             "today": transfer.date,
             "tr_accounts_info": tr_accounts_info,
             "tr_accounts_info_json": json.dumps(tr_accounts_info),
@@ -588,7 +639,6 @@ def monthly_history_view(request: Request) -> HttpResponse:
     selected_tx_type = request.GET.get("tx_type", "")
 
     # --- 2. REQUÊTE DE BASE (SÉCURISÉE) ---
-    # On ne récupère que NOS comptes OU les comptes PARTAGÉS du foyer
     base_txs = Transaction.objects.filter(
         Q(bank_account__owner=member) | Q(bank_account__visibility=Visibility.SHARED),
         bank_account__owner__household=household,
@@ -638,21 +688,6 @@ def monthly_history_view(request: Request) -> HttpResponse:
         cat_name = b["category__name"] or "Sans catégorie"
         chart_labels.append(cat_name)
         chart_data.append(float(b["total"]))
-
-    # for i, b in enumerate(breakdown_qs):
-    #     cat_name = b["category__name"] or "Sans catégorie"
-    #     amt = float(b["total"])
-
-    #     if i < 5:
-    #         chart_labels.append(cat_name)
-    #         chart_data.append(amt)
-    #     else:
-    #         # S'il y a plus de 5 catégories, on groupe le reste dans "Autres"
-    #         if len(chart_labels) == 5:
-    #             chart_labels.append("Autres")
-    #             chart_data.append(amt)
-    #         else:
-    #             chart_data[5] += amt
 
     chart_dict = {"labels": chart_labels, "data": chart_data} if chart_labels else None
 

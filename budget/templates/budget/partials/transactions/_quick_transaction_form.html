@@ -121,7 +121,7 @@
   <div id="block-transfer" class="hidden space-y-3">
     <div class="flex flex-col sm:flex-row sm:items-end gap-3">
       <div class="w-full sm:flex-1">
-        {% include "budget/components/select.html" with label="Depuis le compte" name="source_account" options=accounts selected=transfer.source_account_id|default:selected_account_id required=True %}
+        {% include "budget/components/select.html" with label="Depuis le compte" name="source_account" options=household_account_options selected=transfer.source_account_id|default:selected_account_id required=True %}
       </div>
 
       <div class="flex justify-center shrink-0 sm:pb-0.5 relative z-10 -my-2 sm:my-0">
@@ -134,7 +134,7 @@
       </div>
 
       <div class="w-full sm:flex-1">
-        {% include "budget/components/select.html" with label="Vers le compte" name="destination_account" options=accounts selected=transfer.destination_account_id required=True placeholder="Sélectionnez un compte..." %}
+        {% include "budget/components/select.html" with label="Vers le compte" name="destination_account" options=household_account_options selected=transfer.destination_account_id required=True placeholder="Sélectionnez un compte..." %}
       </div>
     </div>
 

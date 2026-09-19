@@ -120,6 +120,7 @@ function initQuickTransactionForm() {
         const sourceVal = sourceSelect.value;
         const destVal = destSelect.value;
 
+        // 1. Mise à jour du HTML Natif
         for (let opt of destSelect.options) {
             opt.disabled = (opt.value !== "" && opt.value === sourceVal);
         }
@@ -127,8 +128,20 @@ function initQuickTransactionForm() {
             opt.disabled = (opt.value !== "" && opt.value === destVal);
         }
 
-        if (sourceSelect.tomselect) sourceSelect.tomselect.sync();
-        if (destSelect.tomselect) destSelect.tomselect.sync();
+        // 2. Mise à jour de l'API TomSelect (si initialisé)
+        if (destSelect.tomselect) {
+            Object.keys(destSelect.tomselect.options).forEach(val => {
+                destSelect.tomselect.options[val].disabled = (val !== "" && val === sourceVal);
+            });
+            destSelect.tomselect.refreshOptions(false);
+        }
+
+        if (sourceSelect.tomselect) {
+            Object.keys(sourceSelect.tomselect.options).forEach(val => {
+                sourceSelect.tomselect.options[val].disabled = (val !== "" && val === destVal);
+            });
+            sourceSelect.tomselect.refreshOptions(false);
+        }
     };
 
     window.swapTransferAccounts = function(e) {
@@ -141,25 +154,30 @@ function initQuickTransactionForm() {
         const tempSourceVal = sourceSelect.value;
         const tempDestVal = destSelect.value;
 
+        // Débloquer temporairement pour permettre le croisement sans blocage
         Array.from(sourceSelect.options).forEach(opt => opt.disabled = false);
         Array.from(destSelect.options).forEach(opt => opt.disabled = false);
 
         if (sourceSelect.tomselect) {
-            sourceSelect.tomselect.setValue(tempDestVal, true);
+            Object.keys(sourceSelect.tomselect.options).forEach(val => {
+                sourceSelect.tomselect.options[val].disabled = false;
+            });
+            sourceSelect.tomselect.setValue(tempDestVal, true); // true = silent (pas d'event)
         } else {
             sourceSelect.value = tempDestVal;
         }
 
         if (destSelect.tomselect) {
-            destSelect.tomselect.setValue(tempSourceVal, true);
+            Object.keys(destSelect.tomselect.options).forEach(val => {
+                destSelect.tomselect.options[val].disabled = false;
+            });
+            destSelect.tomselect.setValue(tempSourceVal, true); // true = silent
         } else {
             destSelect.value = tempSourceVal;
         }
 
+        // Déclenchement unique de la mise à jour (qui va redisabler les bonnes options)
         sourceSelect.dispatchEvent(new Event('change', { bubbles: true }));
-        destSelect.dispatchEvent(new Event('change', { bubbles: true }));
-
-        window.updateTransferAccounts();
     };
 
     window.toggleTxType = function() {
