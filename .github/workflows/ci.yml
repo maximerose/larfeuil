@@ -11,6 +11,16 @@ jobs:
     name: Linting & Unit Tests
     runs-on: ubuntu-latest
 
+    # 1. On déclare les variables d'environnement au niveau global du job
+    env:
+      DJANGO_SUPERUSER_USERNAME: testadmin
+      DJANGO_SUPERUSER_EMAIL: admin@test.local
+      DJANGO_SUPERUSER_PASSWORD: TestPassword123!
+      DJANGO_LAURIE_USERNAME: testlaurie
+      DJANGO_LAURIE_EMAIL: laurie@test.local
+      DJANGO_LAURIE_PASSWORD: TestPassword123!
+      SECRET_KEY: ci-secret-key-testing
+
     steps:
       - name: Checkout du code
         uses: actions/checkout@v4
@@ -36,26 +46,17 @@ jobs:
           pip install -r requirements.txt
           pip install pre-commit
 
+      # 2. pre-commit va maintenant lancer le linting ET les tests avec les bonnes variables
       - name: Contrôle de qualité global (pre-commit)
         run: pre-commit run --all-files
 
       - name: Construction des assets CSS (Tailwind)
         run: npm run tailwind:build
 
-      - name: Exécution des tests unitaires Django
-        env:
-          DJANGO_SUPERUSER_USERNAME: testadmin
-          DJANGO_SUPERUSER_EMAIL: admin@test.local
-          DJANGO_SUPERUSER_PASSWORD: TestPassword123!
-          DJANGO_LAURIE_USERNAME: testlaurie
-          DJANGO_LAURIE_EMAIL: laurie@test.local
-          DJANGO_LAURIE_PASSWORD: TestPassword123!
-          SECRET_KEY: ci-secret-key-testing
-        run: python manage.py test
+      # 3. Plus besoin de l'étape "Exécution des tests unitaires Django" isolée
+      # puisqu'ils viennent de tourner dans le pre-commit juste au-dessus.
 
       - name: Vérification de la configuration Django (Check & Static)
-        env:
-          SECRET_KEY: ci-secret-key-testing
         run: |
           python manage.py check
           python manage.py collectstatic --noinput --ignore input.css
