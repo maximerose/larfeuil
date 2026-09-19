@@ -1,45 +1,80 @@
 {% extends "base.html" %}
 
-{% block title %}Historique des transactions{% endblock %}
-
-{% block header_title %}
-  <span class="text-slate-300">Historique de</span>
-  <span class="text-brand ml-1">{{ selected_month|date:'F Y'|capfirst }}</span>
-{% endblock %}
+{% block title %}Historique{% endblock %}
 
 {% block content %}
   <div class="max-w-5xl mx-auto space-y-6">
 
-    <!-- 1. SÉLECTEUR DE MOIS (Standardisé et Sticky) -->
-    {% include "budget/components/month_selector.html" %}
-
-    <!-- 2. RÉSUMÉ DU MOIS -->
-    <div class="bg-brand-card border border-brand-border p-4 sm:p-5 rounded-card shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-      <div>
-        <h1 class="text-xl font-bold text-slate-100 flex items-center gap-2">
-          <span class="w-2.5 h-2.5 rounded-full bg-brand"></span>
-          Bilan du mois
-        </h1>
-        <p class="text-xs text-slate-400">Toutes les opérations de {{ selected_month|date:'F Y'|capfirst }}.</p>
+    <!-- EN-TÊTE & FILTRES -->
+    <div class="bg-brand-card border border-brand-border rounded-card p-4 sm:p-6 space-y-4 shadow-sm">
+      <div class="flex items-center justify-between border-b border-brand-border/60 pb-3">
+        <h2 class="text-lg font-bold text-slate-100 flex items-center gap-2">
+          {% include "budget/components/icon.html" with name="clock" class="w-5 h-5 text-brand" %}
+          Historique & Analyse
+        </h2>
       </div>
 
-      <div class="flex items-center gap-3 text-xs bg-slate-900/50 p-2 sm:p-3 rounded-xl border border-brand-border/60">
-        <span class="text-budget-income font-bold">+{{ total_income|floatformat:"2g" }} €</span>
-        <span class="text-slate-600">•</span>
-        <span class="text-action-danger font-bold">-{{ total_expense|floatformat:"2g" }} €</span>
-        <span class="text-slate-600">•</span>
-        <span class="font-extrabold px-2 py-0.5 rounded-md {% if net_balance >= 0 %}bg-budget-income/10 text-budget-income border border-budget-income/20{% else %}bg-action-danger/10 text-action-danger border border-action-danger/20{% endif %}">
-          {{ net_balance|floatformat:"2g" }} €
-        </span>
-      </div>
+      <form hx-get="{% url 'monthly_history' %}"
+            hx-target="#history-results"
+            hx-trigger="change"
+            class="grid grid-cols-2 lg:grid-cols-5 gap-4">
+
+        <div class="col-span-2 lg:col-span-1">
+          <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Période</label>
+          <input type="month"
+                 name="month"
+                 value="{{ target_month|date:'Y-m' }}"
+                 class="input-base px-3 py-2 w-full text-sm font-medium capitalize" />
+        </div>
+
+        <div>
+          <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Membre</label>
+          <select name="member" class="input-base px-3 py-2 w-full text-sm">
+            <option value="">Tous</option>
+            {% for m in members %}
+              <option value="{{ m.id }}" {% if selected_member == m.id|stringformat:"s" %}selected{% endif %}>{{ m.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Compte</label>
+          <select name="account" class="input-base px-3 py-2 w-full text-sm">
+            <option value="">Tous les comptes</option>
+            {% for a in accounts %}
+              <option value="{{ a.id }}" {% if selected_account == a.id %}selected{% endif %}>{{ a.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Type</label>
+          <select name="tx_type" class="input-base px-3 py-2 w-full text-sm">
+            <option value="">Tous les types</option>
+            <option value="VARIABLE" {% if selected_tx_type == "VARIABLE" %}selected{% endif %}>Variables</option>
+            <option value="RECURRING" {% if selected_tx_type == "RECURRING" %}selected{% endif %}>Fixes</option>
+            <option value="INCOME" {% if selected_tx_type == "INCOME" %}selected{% endif %}>Revenus</option>
+            <option value="SAVINGS" {% if selected_tx_type == "SAVINGS" %}selected{% endif %}>Épargne</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Catégorie</label>
+          <select name="category" class="input-base px-3 py-2 w-full text-sm" data-tomselect="true">
+            <option value="">Toutes</option>
+            <option value="none" {% if selected_category == "none" %}selected{% endif %}>Sans catégorie</option>
+            {% for c in categories %}
+              <option value="{{ c.id }}" {% if selected_category == c.id|stringformat:"s" %}selected{% endif %}>{{ c.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </form>
     </div>
 
-    <!-- 3. LISTE DES TRANSACTIONS -->
-    <section class="bg-brand-card border border-brand-border rounded-card shadow-sm overflow-hidden">
-      <div class="p-4 divide-y divide-brand-border/60">
-        {% include "budget/partials/transactions/_monthly_history_list.html" with monthly_transactions=transactions %}
-      </div>
-    </section>
+    <!-- RÉSULTATS DYNAMIQUES (Cible HTMX) -->
+    <div id="history-results" class="space-y-6 transition-opacity duration-200 htmx-request:opacity-50">
+      {% include "budget/transactions/_history_results.html" %}
+    </div>
 
   </div>
 {% endblock %}

@@ -1,15 +1,15 @@
 import datetime
 import json
 from decimal import Decimal
-from itertools import chain
 from urllib.request import Request
 
 from django.contrib import messages
 from django.db.models import Q
+from django.db.models.aggregates import Sum
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, render
 from django.utils import timezone
-from django.views.decorators.http import require_http_methods
+from django.views.decorators.http import require_GET, require_http_methods
 
 from budget.models import (
     BankAccount,
@@ -24,7 +24,6 @@ from budget.utils import (
     advance_date,
     calculate_budget_month,
     get_remaining_meal_voucher_ceiling,
-    get_target_month_from_request,
     htmx_login_required,
 )
 
@@ -568,65 +567,162 @@ def transfer_delete_view(request: Request, transfer_id: str) -> HttpResponse:
 
 
 @htmx_login_required
-def monthly_history_view(request):
+@require_GET
+def monthly_history_view(request: Request) -> HttpResponse:
     member = request.member
-    household = request.household
+    household = member.household
 
-    target_month = get_target_month_from_request(request)
+    # --- 1. GESTION DES FILTRES ---
+    month_str = request.GET.get("month")
+    if month_str:
+        try:
+            target_month = datetime.date.fromisoformat(f"{month_str}-01")
+        except ValueError:
+            target_month = timezone.localdate().replace(day=1)
+    else:
+        target_month = timezone.localdate().replace(day=1)
 
-    accounts = BankAccount.objects.filter(
-        Q(owner=member) | Q(owner__household=household, visibility=Visibility.SHARED),
-        is_active=True,
-    ).distinct()
+    selected_member_id = request.GET.get("member", "")
+    selected_category_id = request.GET.get("category", "")
+    selected_account_id = request.GET.get("account", "")
+    selected_tx_type = request.GET.get("tx_type", "")
 
-    recent_txs = list(
-        Transaction.objects.filter(
-            bank_account__in=accounts,
-            budget_month__year=target_month.year,
-            budget_month__month=target_month.month,
-        ).select_related(
-            "category",
-            "bank_account",
-            "bank_account__owner",
-            "meal_voucher_bank_account",
-            "recurring_expense",
+    # --- 2. REQUÊTE DE BASE (SÉCURISÉE) ---
+    # On ne récupère que NOS comptes OU les comptes PARTAGÉS du foyer
+    base_txs = Transaction.objects.filter(
+        Q(bank_account__owner=member) | Q(bank_account__visibility=Visibility.SHARED),
+        bank_account__owner__household=household,
+        budget_month__year=target_month.year,
+        budget_month__month=target_month.month,
+    ).select_related(
+        "category", "bank_account", "bank_account__owner", "recurring_expense"
+    )
+
+    if selected_member_id:
+        base_txs = base_txs.filter(bank_account__owner_id=selected_member_id)
+    if selected_account_id:
+        base_txs = base_txs.filter(bank_account_id=selected_account_id)
+
+    # --- 3. CALCUL SÉCURISÉ DES KPIS ---
+    income_kpi = base_txs.filter(transaction_type="INCOME").aggregate(
+        s=Sum("total_amount")
+    )["s"] or Decimal("0.00")
+
+    fixed_kpi = base_txs.filter(transaction_type="EXPENSE").filter(
+        Q(category__type="RECURRING") | Q(recurring_expense__isnull=False)
+    ).aggregate(s=Sum("total_amount"))["s"] or Decimal("0.00")
+
+    savings_kpi = base_txs.filter(
+        transaction_type="EXPENSE", category__type="SAVINGS"
+    ).aggregate(s=Sum("total_amount"))["s"] or Decimal("0.00")
+
+    variable_kpi = base_txs.filter(transaction_type="EXPENSE").exclude(
+        Q(category__type="RECURRING")
+        | Q(recurring_expense__isnull=False)
+        | Q(category__type="SAVINGS")
+    ).aggregate(s=Sum("total_amount"))["s"] or Decimal("0.00")
+
+    # --- 4. RÉPARTITION (GRAPHIQUE DOUGHNUT) ---
+    breakdown_qs = (
+        base_txs.filter(transaction_type="EXPENSE")
+        .exclude(category__type="SAVINGS")
+        .values("category__name")
+        .annotate(total=Sum("total_amount"))
+        .order_by("-total")
+    )
+
+    chart_labels = []
+    chart_data = []
+
+    for b in breakdown_qs:
+        cat_name = b["category__name"] or "Sans catégorie"
+        chart_labels.append(cat_name)
+        chart_data.append(float(b["total"]))
+
+    # for i, b in enumerate(breakdown_qs):
+    #     cat_name = b["category__name"] or "Sans catégorie"
+    #     amt = float(b["total"])
+
+    #     if i < 5:
+    #         chart_labels.append(cat_name)
+    #         chart_data.append(amt)
+    #     else:
+    #         # S'il y a plus de 5 catégories, on groupe le reste dans "Autres"
+    #         if len(chart_labels) == 5:
+    #             chart_labels.append("Autres")
+    #             chart_data.append(amt)
+    #         else:
+    #             chart_data[5] += amt
+
+    chart_dict = {"labels": chart_labels, "data": chart_data} if chart_labels else None
+
+    # --- 5. APPLICATION DES FILTRES À LA LISTE ---
+    txs = base_txs
+    if selected_category_id == "none":
+        txs = txs.filter(category__isnull=True)
+    elif selected_category_id:
+        txs = txs.filter(category_id=selected_category_id)
+
+    if selected_tx_type == "VARIABLE":
+        txs = txs.filter(transaction_type="EXPENSE").exclude(
+            Q(category__type="RECURRING")
+            | Q(recurring_expense__isnull=False)
+            | Q(category__type="SAVINGS")
         )
+    elif selected_tx_type == "RECURRING":
+        txs = txs.filter(transaction_type="EXPENSE").filter(
+            Q(category__type="RECURRING") | Q(recurring_expense__isnull=False)
+        )
+    elif selected_tx_type == "INCOME":
+        txs = txs.filter(transaction_type="INCOME")
+    elif selected_tx_type == "SAVINGS":
+        txs = txs.filter(transaction_type="EXPENSE", category__type="SAVINGS")
+
+    txs = txs.order_by("-transaction_date", "-created_at")
+
+    # --- 6. FORMATAGE DES COMPTES POUR LE SÉLECTEUR ---
+    visible_accounts = (
+        BankAccount.objects.filter(
+            Q(owner=member) | Q(visibility=Visibility.SHARED),
+            owner__household=household,
+            is_active=True,
+        )
+        .select_related("owner")
+        .order_by("name")
     )
 
-    recent_transfers = list(
-        Transfer.objects.filter(
-            Q(source_account__in=accounts) | Q(destination_account__in=accounts),
-            date__year=target_month.year,
-            date__month=target_month.month,
-        ).select_related("source_account", "destination_account")
-    )
-
-    all_activity = sorted(
-        chain(recent_txs, recent_transfers),
-        key=lambda x: getattr(
-            x, "transaction_date", getattr(x, "date", datetime.date.min)
-        ),
-        reverse=True,
-    )
-
-    total_income = sum(
-        tx.total_amount for tx in recent_txs if tx.transaction_type == "INCOME"
-    )
-    total_expense = sum(
-        tx.total_amount for tx in recent_txs if tx.transaction_type == "EXPENSE"
-    )
-    net_balance = total_income - total_expense
-
-    return render(
-        request,
-        "budget/transactions/history_list.html",
+    account_options = [
         {
-            "selected_month": target_month,
-            "member": member,
-            "transactions": all_activity,
-            "total_income": total_income,
-            "total_expense": total_expense,
-            "net_balance": net_balance,
-            "breadcrumbs": ["Historique des transactions"],
-        },
-    )
+            "id": str(acc.id),
+            "name": f"{acc.name} ({acc.owner.name})"
+            if acc.owner_id != member.id
+            else acc.name,
+        }
+        for acc in visible_accounts
+    ]
+
+    # --- 7. PRÉPARATION DU CONTEXTE ---
+    context = {
+        "member": member,
+        "transactions": txs,
+        "target_month": target_month,
+        "income_kpi": income_kpi,
+        "fixed_kpi": fixed_kpi,
+        "variable_kpi": variable_kpi,
+        "savings_kpi": savings_kpi,
+        "chart_json": chart_dict,
+        "members": household.members.filter(is_active=True),
+        "categories": Category.objects.filter(
+            household=household, is_active=True
+        ).order_by("name"),
+        "accounts": account_options,
+        "selected_member": selected_member_id,
+        "selected_category": selected_category_id,
+        "selected_account": selected_account_id,
+        "selected_tx_type": selected_tx_type,
+    }
+
+    if request.headers.get("HX-Target") == "history-results":
+        return render(request, "budget/transactions/_history_results.html", context)
+
+    return render(request, "budget/transactions/history_list.html", context)

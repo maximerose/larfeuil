@@ -1,0 +1,139 @@
+<!-- 1. CARTES KPIs -->
+<div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+  <div class="bg-brand-card border border-brand-border rounded-xl p-4 flex flex-col gap-1 shadow-sm">
+    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+      <span class="w-2 h-2 rounded-full bg-budget-income"></span>Revenus
+    </span>
+    <span class="text-lg font-extrabold text-slate-100">{{ income_kpi|floatformat:2 }} €</span>
+  </div>
+
+  <div class="bg-brand-card border border-brand-border rounded-xl p-4 flex flex-col gap-1 shadow-sm">
+    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+      <span class="w-2 h-2 rounded-full bg-budget-recurring"></span>Fixes
+    </span>
+    <span class="text-lg font-extrabold text-slate-100">{{ fixed_kpi|floatformat:2 }} €</span>
+  </div>
+
+  <div class="bg-brand-card border border-brand-border rounded-xl p-4 flex flex-col gap-1 shadow-sm">
+    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+      <span class="w-2 h-2 rounded-full bg-budget-variable"></span>Variables
+    </span>
+    <span class="text-lg font-extrabold text-slate-100">{{ variable_kpi|floatformat:2 }} €</span>
+  </div>
+
+  <div class="bg-brand-card border border-brand-border rounded-xl p-4 flex flex-col gap-1 shadow-sm">
+    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+      <span class="w-2 h-2 rounded-full bg-budget-savings"></span>Épargne
+    </span>
+    <span class="text-lg font-extrabold text-slate-100">{{ savings_kpi|floatformat:2 }} €</span>
+  </div>
+</div>
+
+<!-- 2. RÉPARTITION (GRAPHIQUE) -->
+{% if chart_json %}
+  <div class="bg-brand-card border border-brand-border rounded-card p-4 sm:p-5 space-y-4 shadow-sm">
+    <h3 class="text-sm font-bold text-slate-100">Répartition des Dépenses</h3>
+
+    <!-- FIX 1 : Suppression de "flex justify-center" qui écrase la largeur du canvas -->
+    <div class="relative h-56 w-full">
+      <canvas id="historyBreakdownChart"></canvas>
+    </div>
+
+    <!-- Injection sécurisée des données JSON pour JS -->
+    {{ chart_json|json_script:"chart-data-json" }}
+
+    <script>
+    (function() {
+      const canvas = document.getElementById('historyBreakdownChart');
+      if (!canvas || canvas.dataset.rendered === "true") return;
+      canvas.dataset.rendered = "true";
+
+      const rawDataEl = document.getElementById('chart-data-json');
+      if (!rawDataEl) return;
+
+      const parsedData = JSON.parse(rawDataEl.textContent);
+        const ctx = canvas.getContext('2d');
+
+        // On détruit l'ancien graphique si HTMX recharge la zone
+        if (window.historyChartInstance) {
+          window.historyChartInstance.destroy();
+        }
+
+        // Calcul de la hauteur dynamique : 35px par catégorie, minimum 250px
+        const containerHeight = Math.max(250, parsedData.labels.length * 35);
+        canvas.parentElement.style.height = `${containerHeight}px`;
+
+        window.historyChartInstance = new Chart(ctx, {
+          type: 'bar',
+          data: {
+              labels: parsedData.labels,
+              datasets: [{
+                data: parsedData.data,
+                backgroundColor: '#10b981',
+                borderRadius: 4,
+                maxBarThickness: 24
+            }]
+          },
+          options: {
+            indexAxis: 'y',
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { display: false },
+              tooltip: {
+                backgroundColor: '#0f172a',
+                titleColor: '#f1f5f9',
+                bodyColor: '#f1f5f9',
+                borderColor: '#334155',
+                borderWidth: 1,
+                callbacks: {
+                  label: function(context) {
+                    return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(context.parsed.x);
+                  }
+                }
+              },
+              scales: {
+                x: {
+                    grid: { color: '#1e293b' },
+                    ticks: {
+                        color: '#64748b',
+                        callback: function(value) {
+                            return value + ' €';
+                        }
+                    }
+                },
+                y: {
+                    grid: { display: false },
+                    ticks: {
+                        color: '#e2e8f0',
+                        font: { family: "'Outfit', sans-serif", size: 12 }
+                    }
+                }
+              }
+            },
+            cutout: '75%'
+          }
+        });
+      })();
+    </script>
+  </div>
+{% else %}
+  <script>
+     // Nettoyage de la mémoire si la nouvelle requête ne contient pas de données
+     if (window.historyChartInstance) {
+         window.historyChartInstance.destroy();
+         window.historyChartInstance = null;
+     }
+  </script>
+{% endif %}
+
+<!-- 3. LISTE DES TRANSACTIONS -->
+<div class="bg-brand-card border border-brand-border rounded-card overflow-hidden shadow-sm">
+  <div class="divide-y divide-brand-border/60">
+    {% include "budget/partials/transactions/_monthly_history_list.html" with monthly_transactions=transactions %}
+
+    {% if not transactions %}
+      <div class="p-8 text-center text-sm font-medium text-slate-500">Aucune opération ne correspond à vos filtres.</div>
+    {% endif %}
+  </div>
+</div>
