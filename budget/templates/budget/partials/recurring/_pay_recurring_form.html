@@ -30,6 +30,7 @@
   </div>
   {% include "budget/components/select.html" with label="Compte prélevé" name="account_id" options=accounts selected=account.id required=True %}
   {% include "budget/components/currency_input.html" with label="Montant réel prélevé (€)" name="amount" value=amount_to_pay required=True autofocus=True %}
+  {% include "budget/components/input.html" with label="Date de prélèvement" type="date" name="transaction_date" value=today|date:"Y-m-d" required=True %}
   <div id="diff-alert" class="hidden p-3 rounded-xl space-y-2 mt-2 transition-all">
     <p id="diff-alert-title" class="text-xs font-bold uppercase tracking-wider"></p>
     <label class="flex items-start gap-2 cursor-pointer">

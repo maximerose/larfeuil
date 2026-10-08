@@ -70,6 +70,23 @@ class TransactionAndTransferTestCase(TestCase):
         self.assertEqual(income_tx.transaction_type, TransactionType.INCOME)
         self.assertEqual(income_tx.comment, "")
 
+    def test_transaction_delete_readjusts_balance(self) -> None:
+        initial_balance = self.bank_account.current_balance
+        tx = Transaction.objects.create(
+            total_amount=Decimal("50.00"),
+            category=self.category,
+            bank_account=self.bank_account,
+            transaction_type=TransactionType.EXPENSE,
+        )
+        self.bank_account.refresh_from_db()
+        self.assertEqual(
+            self.bank_account.current_balance, initial_balance - Decimal("50.00")
+        )
+
+        tx.delete()
+        self.bank_account.refresh_from_db()
+        self.assertEqual(self.bank_account.current_balance, initial_balance)
+
     def test_transfer_creation_and_str(self) -> None:
         destination_account = BankAccount.objects.create(
             name="Livret A",

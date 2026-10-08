@@ -558,9 +558,11 @@ def create_transaction_from_recurring_expense(
     amount: Decimal | None = None,
     budget_month: datetime.date | None = None,
     label: str | None = None,
+    transaction_date: datetime.date | None = None,
 ) -> Transaction:
     today = timezone.localdate()
     month = budget_month.replace(day=1) if budget_month else today.replace(day=1)
+    tx_date = transaction_date or today
 
     return Transaction.objects.create(
         bank_account=bank_account,
@@ -568,7 +570,7 @@ def create_transaction_from_recurring_expense(
         recurring_expense=expense,
         total_amount=amount if amount is not None else expense.total_amount,
         label=label or expense.label,
-        transaction_date=today,
+        transaction_date=tx_date,
         budget_month=month,
         transaction_type=TransactionType.EXPENSE,
     )

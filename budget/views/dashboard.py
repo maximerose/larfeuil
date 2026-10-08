@@ -372,6 +372,14 @@ def pay_recurring_expense_view(
         amount = Decimal(request.POST.get("amount", str(amount_to_pay)))
         account_id = request.POST.get("account_id")
         update_default = request.POST.get("update_default") == "on"
+        tx_date_str = request.POST.get("transaction_date")
+
+        tx_date = None
+        if tx_date_str:
+            try:
+                tx_date = datetime.date.fromisoformat(tx_date_str)
+            except ValueError:
+                tx_date = None
 
         if account_id:
             target_account = get_object_or_404(
@@ -389,6 +397,7 @@ def pay_recurring_expense_view(
             bank_account=target_account,
             amount=amount,
             budget_month=target_month.replace(day=1),
+            transaction_date=tx_date,
         )
 
         if update_default:
@@ -420,5 +429,6 @@ def pay_recurring_expense_view(
             "expected_total": expected_total,
             "remaining_to_pay": remaining_to_pay,
             "shares_details": shares_details,
+            "today": timezone.localdate(),
         },
     )
