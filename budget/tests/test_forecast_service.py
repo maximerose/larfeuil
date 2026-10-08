@@ -203,6 +203,7 @@ class ForecastServiceTestCase(TestCase):
             amount=Decimal("600.00"),
         )
 
+        # Loyer du mois passé déjà payé (580€)
         Transaction.objects.create(
             transaction_date=past_month,
             budget_month=past_month,
@@ -213,6 +214,7 @@ class ForecastServiceTestCase(TestCase):
             recurring_expense=rent,
         )
 
+        # 1. Mois passé : renvoie le solde théorique actuel (1500€ - 580€ = 920€)
         past_steps = calculate_monthly_projected_balances(
             member=self.member, month=past_month
         )
@@ -221,14 +223,21 @@ class ForecastServiceTestCase(TestCase):
             Decimal("920.00"),
         )
 
+        # 2. Mois futur : le solde initial hérite de la fin du mois courant (920€ - 600€ = 320€)
+        # Et après la charge du mois futur : 320€ - 600€ = -280€
         future_steps = calculate_monthly_projected_balances(
             member=self.member, month=future_month
         )
         self.assertEqual(
-            future_steps["after_recurring"][str(self.checking_account.id)],
+            future_steps["initial"][str(self.checking_account.id)],
             Decimal("320.00"),
         )
+        self.assertEqual(
+            future_steps["after_recurring"][str(self.checking_account.id)],
+            Decimal("-280.00"),
+        )
 
+        # 3. Paiement du loyer du mois courant
         Transaction.objects.create(
             transaction_date=current_month,
             budget_month=current_month,
@@ -238,12 +247,27 @@ class ForecastServiceTestCase(TestCase):
             transaction_type=TransactionType.EXPENSE,
             recurring_expense=rent,
         )
+
+        # Le solde courant passe à 320€. Pour le mois courant, le loyer est réglé.
         current_steps = calculate_monthly_projected_balances(
             member=self.member, month=current_month
         )
         self.assertEqual(
             current_steps["after_recurring"][str(self.checking_account.id)],
             Decimal("320.00"),
+        )
+
+        # Pour le mois futur, le solde initial reste 320€ et après loyer futur il reste -280€
+        future_steps_after_pay = calculate_monthly_projected_balances(
+            member=self.member, month=future_month
+        )
+        self.assertEqual(
+            future_steps_after_pay["initial"][str(self.checking_account.id)],
+            Decimal("320.00"),
+        )
+        self.assertEqual(
+            future_steps_after_pay["after_recurring"][str(self.checking_account.id)],
+            Decimal("-280.00"),
         )
 
     def test_get_recurring_expenses_with_status(self) -> None:

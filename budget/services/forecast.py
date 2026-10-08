@@ -36,31 +36,15 @@ def get_target_account_for_expense(
     ).first()
 
 
-def calculate_monthly_projected_balances(
-    member: HouseholdMember, month: datetime.date
+def _calculate_single_month_projected_balances(
+    member: HouseholdMember,
+    accounts,
+    target_month: datetime.date,
+    initial: dict[str, Decimal],
 ) -> dict[str, dict[str, Decimal]]:
     household = member.household
-    accounts = BankAccount.objects.filter(
-        Q(owner=member) | Q(owner__household=household, visibility=Visibility.SHARED),
-        is_active=True,
-    ).distinct()
 
-    today = timezone.localdate().replace(day=1)
-    target_month = month.replace(day=1)
-
-    # Convertit les UUID en str pour respecter la signature dict[str, dict[str, Decimal]]
-    initial: dict[str, Decimal] = {str(acc.id): acc.current_balance for acc in accounts}
-
-    if target_month < today:
-        return {
-            "initial": initial,
-            "after_recurring": initial.copy(),
-            "after_variables": initial.copy(),
-            "after_savings": initial.copy(),
-            "after_incomes": initial.copy(),
-        }
-
-    # Utilisation de getattr pour sécuriser les accès virtuels
+    # Convertit les accès virtuels
     recurring_overrides = {}
     for f in MonthlyForecast.objects.filter(
         member=member,
@@ -111,7 +95,6 @@ def calculate_monthly_projected_balances(
             expected_amount = expense.total_amount
             override_acc_id = None
 
-        # Replaced expense.shares by explicit query
         shares = RecurringExpenseShare.objects.filter(
             recurring_expense=expense, is_active=True
         )
@@ -357,6 +340,43 @@ def calculate_monthly_projected_balances(
         "after_savings": after_savings,
         "after_incomes": after_incomes,
     }
+
+
+def calculate_monthly_projected_balances(
+    member: HouseholdMember, month: datetime.date
+) -> dict[str, dict[str, Decimal]]:
+    household = member.household
+    accounts = BankAccount.objects.filter(
+        Q(owner=member) | Q(owner__household=household, visibility=Visibility.SHARED),
+        is_active=True,
+    ).distinct()
+
+    today = timezone.localdate().replace(day=1)
+    target_month = month.replace(day=1)
+
+    initial: dict[str, Decimal] = {str(acc.id): acc.current_balance for acc in accounts}
+
+    if target_month < today:
+        return {
+            "initial": initial,
+            "after_recurring": initial.copy(),
+            "after_variables": initial.copy(),
+            "after_savings": initial.copy(),
+            "after_incomes": initial.copy(),
+        }
+
+    curr_month = today
+    running_initial = initial.copy()
+    result = {}
+
+    while curr_month <= target_month:
+        result = _calculate_single_month_projected_balances(
+            member, accounts, curr_month, running_initial
+        )
+        running_initial = result["after_incomes"].copy()
+        curr_month = advance_date(curr_month, 1)
+
+    return result
 
 
 def get_recurring_expenses_with_status(
