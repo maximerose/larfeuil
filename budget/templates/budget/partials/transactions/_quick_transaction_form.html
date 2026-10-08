@@ -43,7 +43,14 @@
 
   <!-- 2. Saisie du Montant -->
   <div class="mb-6 border-b border-brand-border/60 pb-6">
-    <div class="flex items-center justify-center gap-1.5 w-full">
+    <div class="flex items-center justify-center gap-2 w-full">
+      <!-- Bouton +/- pour inverser le signe -->
+      <button type="button"
+              tabindex="-1"
+              onclick="toggleAmountSign()"
+              class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 active:scale-95 text-slate-300 rounded-lg text-sm font-bold border border-brand-border/60 transition-all select-none cursor-pointer"
+              title="Inverser le signe (+/-)">±</button>
+
       <input type="text"
              inputmode="decimal"
              id="total_amount_display"
@@ -51,7 +58,7 @@
              class="w-[4.5ch] bg-transparent text-center text-5xl font-extrabold text-slate-100 placeholder-slate-700 focus:outline-none transition-all duration-75"
              placeholder="0.00"
              autofocus
-             oninput="formatCurrency(this, 'total_amount'); autoResizeAmount();"
+             oninput="formatCurrency(this, 'total_amount'); autoResizeAmount(); updateRefundHint();"
              onblur="formatCurrencyOnBlur(this, 'total_amount')" />
 
       <input type="hidden"
@@ -60,9 +67,13 @@
              value="{% if transfer %}{{ transfer.amount|stringformat:'.2f' }}{% elif transaction %}{{ transaction.total_amount|stringformat:'.2f' }}{% endif %}" />
       <span class="text-4xl font-extrabold text-slate-500 mt-1">€</span>
     </div>
-    <div id="refund-hint" class="flex items-center justify-center gap-1.5 text-xs text-slate-500 mt-2 transition-colors">
+
+    <!-- Indication cliquable dynamique -->
+    <div id="refund-hint"
+         onclick="toggleAmountSign()"
+         class="flex items-center justify-center gap-1.5 text-xs text-slate-500 mt-2 transition-colors cursor-pointer hover:text-slate-300 select-none">
       {% include "budget/components/icon.html" with name="light-bulb" class="w-4 h-4 shrink-0" %}
-      <span>Saisissez un montant négatif pour un remboursement.</span>
+      <span id="refund-hint-text">Clique ici ou sur <strong>±</strong> pour basculer en remboursement (négatif).</span>
     </div>
   </div>
 
