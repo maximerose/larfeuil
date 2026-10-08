@@ -75,12 +75,16 @@
 
         <div class="truncate">
           <p class="font-semibold text-slate-200 truncate">
-            {% if tx.label %}
-              {{ tx.label }}
-            {% elif tx.category %}
+            {% if tx.category %}
               {{ tx.category.name }}
-            {% else %}
+              {% if tx.label %}<span class="text-slate-400 font-normal text-xs">– {{ tx.label }}</span>{% endif %}
+            {% elif tx.recurring_expense %}
               {{ tx.recurring_expense.label }}
+              {% if tx.label and tx.label != tx.recurring_expense.label %}
+                <span class="text-slate-400 font-normal text-xs">– {{ tx.label }}</span>
+              {% endif %}
+            {% else %}
+              {{ tx.label|default:"Opération" }}
             {% endif %}
           </p>
           <p class="text-[11px] text-slate-500 mt-0.5 truncate">
