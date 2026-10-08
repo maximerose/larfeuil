@@ -14,7 +14,11 @@ from budget.models import (
 )
 from budget.models.category import CategoryType
 from budget.models.forecast import MonthlyForecast
-from budget.models.recurring import RecurringExpense, RecurringExpenseStatus
+from budget.models.recurring import (
+    RecurringExpense,
+    RecurringExpenseShare,
+    RecurringExpenseStatus,
+)
 from budget.models.transaction import Transfer
 from budget.utils import advance_date, remove_accents
 from core.models import Visibility
@@ -44,7 +48,8 @@ def calculate_monthly_projected_balances(
     today = timezone.localdate().replace(day=1)
     target_month = month.replace(day=1)
 
-    initial = {acc.id: acc.current_balance for acc in accounts}
+    # Convertit les UUID en str pour respecter la signature dict[str, dict[str, Decimal]]
+    initial: dict[str, Decimal] = {str(acc.id): acc.current_balance for acc in accounts}
 
     if target_month < today:
         return {
@@ -55,20 +60,21 @@ def calculate_monthly_projected_balances(
             "after_incomes": initial.copy(),
         }
 
-    # Modification : On stocke un dictionnaire avec le montant ET le compte ciblé
-    recurring_overrides = {
-        f.recurring_expense_id: {
-            "amount": f.amount,
-            "account_id": f.transaction_account_id,
-        }
-        for f in MonthlyForecast.objects.filter(
-            member=member,
-            month__year=target_month.year,
-            month__month=target_month.month,
-            recurring_expense__isnull=False,
-            is_active=True,
-        )
-    }
+    # Utilisation de getattr pour sécuriser les accès virtuels
+    recurring_overrides = {}
+    for f in MonthlyForecast.objects.filter(
+        member=member,
+        month__year=target_month.year,
+        month__month=target_month.month,
+        recurring_expense__isnull=False,
+        is_active=True,
+    ):
+        rec_id = getattr(f, "recurring_expense_id", None)
+        if rec_id:
+            recurring_overrides[rec_id] = {
+                "amount": f.amount,
+                "account_id": getattr(f, "transaction_account_id", None),
+            }
 
     # 1. Charges Fixes
     after_recurring = initial.copy()
@@ -105,10 +111,13 @@ def calculate_monthly_projected_balances(
             expected_amount = expense.total_amount
             override_acc_id = None
 
-        shares = expense.shares.filter(is_active=True)
+        # Replaced expense.shares by explicit query
+        shares = RecurringExpenseShare.objects.filter(
+            recurring_expense=expense, is_active=True
+        )
 
         # A. Priorité absolue au compte forcé par la prévision
-        if override_acc_id and override_acc_id in after_recurring:
+        if override_acc_id and str(override_acc_id) in after_recurring:
             real_transactions = Transaction.objects.filter(
                 bank_account_id=override_acc_id,
                 recurring_expense=expense,
@@ -117,15 +126,16 @@ def calculate_monthly_projected_balances(
                 transaction_type=TransactionType.EXPENSE,
             )
             if not real_transactions.exists():
-                after_recurring[override_acc_id] -= expected_amount
+                after_recurring[str(override_acc_id)] -= expected_amount
 
         # B. Sinon, on répartit selon les parts
         elif shares.exists():
             for share in shares:
-                if share.bank_account_id not in after_recurring:
+                share_acc_id = getattr(share, "bank_account_id", None)
+                if not share_acc_id or str(share_acc_id) not in after_recurring:
                     continue
                 real_transactions = Transaction.objects.filter(
-                    bank_account_id=share.bank_account_id,
+                    bank_account_id=share_acc_id,
                     recurring_expense=expense,
                     budget_month__year=target_month.year,
                     budget_month__month=target_month.month,
@@ -138,12 +148,12 @@ def calculate_monthly_projected_balances(
                         else Decimal("1.00")
                     )
                     adjusted_share_amount = round(expected_amount * ratio, 2)
-                    after_recurring[share.bank_account_id] -= adjusted_share_amount
+                    after_recurring[str(share_acc_id)] -= adjusted_share_amount
 
         # C. Sinon, on prend le compte par défaut
         else:
             target_account = get_target_account_for_expense(expense, member)
-            if target_account and target_account.id in after_recurring:
+            if target_account and str(target_account.id) in after_recurring:
                 real_transactions = Transaction.objects.filter(
                     bank_account_id=target_account.id,
                     recurring_expense=expense,
@@ -152,7 +162,7 @@ def calculate_monthly_projected_balances(
                     transaction_type=TransactionType.EXPENSE,
                 )
                 if not real_transactions.exists():
-                    after_recurring[target_account.id] -= expected_amount
+                    after_recurring[str(target_account.id)] -= expected_amount
 
     # 2. Charges Variables
     after_variables = after_recurring.copy()
@@ -161,7 +171,12 @@ def calculate_monthly_projected_balances(
     ]
 
     default_account = next(
-        (acc for acc in accounts if acc.is_default and acc.owner_id == member.id), None
+        (
+            acc
+            for acc in accounts
+            if acc.is_default and getattr(acc, "owner_id", None) == member.id
+        ),
+        None,
     )
     if not default_account:
         default_account = next(
@@ -169,13 +184,14 @@ def calculate_monthly_projected_balances(
                 acc
                 for acc in accounts
                 if acc.account_type == AccountType.CHECKING
-                and acc.owner_id == member.id
+                and getattr(acc, "owner_id", None) == member.id
             ),
             None,
         )
     if not default_account:
         default_account = next(
-            (acc for acc in accounts if acc.owner_id == member.id), None
+            (acc for acc in accounts if getattr(acc, "owner_id", None) == member.id),
+            None,
         )
 
     category_forecasts = {}
@@ -188,7 +204,7 @@ def calculate_monthly_projected_balances(
     ).select_related("category"):
         category_forecasts[f.category] = {
             "amount": f.amount,
-            "account_id": f.transaction_account_id,
+            "account_id": getattr(f, "transaction_account_id", None),
         }
 
     for category, data in category_forecasts.items():
@@ -221,8 +237,8 @@ def calculate_monthly_projected_balances(
 
         if remaining > Decimal("0.00"):
             # A. Si un compte spécifique a été sélectionné pour cette prévision
-            if tx_acc_id and tx_acc_id in after_variables:
-                after_variables[tx_acc_id] -= remaining
+            if tx_acc_id and str(tx_acc_id) in after_variables:
+                after_variables[str(tx_acc_id)] -= remaining
             else:
                 # B. Sinon, priorité au compte Tickets Resto si la catégorie est éligible
                 if category.is_meal_voucher_eligible and tr_accounts:
@@ -231,16 +247,16 @@ def calculate_monthly_projected_balances(
                             break
                         available_tr = max(
                             Decimal("0.00"),
-                            after_variables.get(tr_acc.id, Decimal("0.00")),
+                            after_variables.get(str(tr_acc.id), Decimal("0.00")),
                         )
                         if available_tr > Decimal("0.00"):
                             tr_deduction = min(remaining, available_tr)
-                            after_variables[tr_acc.id] -= tr_deduction
+                            after_variables[str(tr_acc.id)] -= tr_deduction
                             remaining -= tr_deduction
 
                 # C. Le reliquat non couvert par les Tickets Resto s'impute sur le compte courant
                 if remaining > Decimal("0.00") and default_account:
-                    after_variables[default_account.id] -= remaining
+                    after_variables[str(default_account.id)] -= remaining
 
     # 3. Épargne
     after_savings = after_variables.copy()
@@ -256,7 +272,7 @@ def calculate_monthly_projected_balances(
     ).select_related("bank_account"):
         savings_totals[f.bank_account] = {
             "amount": f.amount,
-            "source_acc_id": f.transaction_account_id,
+            "source_acc_id": getattr(f, "transaction_account_id", None),
         }
 
     for target_account, data in savings_totals.items():
@@ -287,10 +303,10 @@ def calculate_monthly_projected_balances(
                 if src_acc_id
                 else (default_account.id if default_account else None)
             )
-            if fallback_src_id and fallback_src_id in after_savings:
-                after_savings[fallback_src_id] -= remaining
-            if target_account.id in after_savings:
-                after_savings[target_account.id] += remaining
+            if fallback_src_id and str(fallback_src_id) in after_savings:
+                after_savings[str(fallback_src_id)] -= remaining
+            if str(target_account.id) in after_savings:
+                after_savings[str(target_account.id)] += remaining
 
     # 4. Revenus
     after_incomes = after_savings.copy()
@@ -331,8 +347,8 @@ def calculate_monthly_projected_balances(
                 else (default_account.id if default_account else None)
             )
 
-            if target_acc_id and target_acc_id in after_incomes:
-                after_incomes[target_acc_id] += remaining_to_receive
+            if target_acc_id and str(target_acc_id) in after_incomes:
+                after_incomes[str(target_acc_id)] += remaining_to_receive
 
     return {
         "initial": initial,
@@ -359,16 +375,17 @@ def get_recurring_expenses_with_status(
         is_active=True,
     ).select_related("category", "default_bank_account")
 
-    recurring_overrides = {
-        f.recurring_expense_id: f.amount
-        for f in MonthlyForecast.objects.filter(
-            member=member,
-            month__year=target_month.year,
-            month__month=target_month.month,
-            recurring_expense__isnull=False,
-            is_active=True,
-        )
-    }
+    recurring_overrides = {}
+    for f in MonthlyForecast.objects.filter(
+        member=member,
+        month__year=target_month.year,
+        month__month=target_month.month,
+        recurring_expense__isnull=False,
+        is_active=True,
+    ):
+        rec_id = getattr(f, "recurring_expense_id", None)
+        if rec_id:
+            recurring_overrides[rec_id] = f.amount
 
     member_accounts_ids = list(
         BankAccount.objects.filter(owner=member, is_active=True).values_list(
@@ -451,7 +468,9 @@ def get_recurring_expenses_with_status(
             is_overdue = True
 
         my_expected_share = expected_total
-        shares = expense.shares.filter(is_active=True)
+        shares = RecurringExpenseShare.objects.filter(
+            recurring_expense=expense, is_active=True
+        )
         if shares.exists():
             my_share = shares.filter(bank_account_id__in=member_accounts_ids).first()
             if my_share:
@@ -467,7 +486,7 @@ def get_recurring_expenses_with_status(
         my_realized = sum(
             t.total_amount
             for t in transactions
-            if t.bank_account_id in member_accounts_ids
+            if getattr(t, "bank_account_id", None) in member_accounts_ids
         ) or Decimal("0.00")
 
         my_remaining = max(Decimal("0.00"), my_expected_share - my_realized)
@@ -480,7 +499,7 @@ def get_recurring_expenses_with_status(
             target_account = get_target_account_for_expense(expense, member)
             if target_account:
                 acc_type = target_account.account_type
-                if target_account.owner_id != member.id:
+                if getattr(target_account, "owner_id", None) != member.id:
                     account_name = (
                         f"{target_account.name} ({target_account.owner.name})"
                     )

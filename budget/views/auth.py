@@ -1,8 +1,6 @@
-from urllib.request import Request
-
 from django.contrib.auth import login
 from django.db import transaction
-from django.http import HttpResponse
+from django.http import HttpRequest, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 
 from budget.forms import RegisterForm
@@ -12,7 +10,11 @@ from budget.models.recurring import RecurringExpense
 from budget.utils import merge_categories
 
 
-def join_household_view(request: Request, token: str) -> HttpResponse:
+class AuthenticatedHttpRequest(HttpRequest):
+    member: HouseholdMember | None
+
+
+def join_household_view(request: AuthenticatedHttpRequest, token: str) -> HttpResponse:
     """Gère le clic sur un lien magique d'invitation."""
     invitation = get_object_or_404(HouseholdInvitation, token=token)
 
@@ -53,8 +55,10 @@ def join_household_view(request: Request, token: str) -> HttpResponse:
 
                         # 3. Désactivation de l'ancien foyer s'il se retrouve vide
                         if (
-                            not old_household.members.exclude(id=member.id)
-                            .filter(is_active=True)
+                            not HouseholdMember.objects.filter(
+                                household=old_household, is_active=True
+                            )
+                            .exclude(id=member.id)
                             .exists()
                         ):
                             old_household.is_active = False
@@ -77,7 +81,7 @@ def join_household_view(request: Request, token: str) -> HttpResponse:
     return redirect("register")
 
 
-def register_view(request: Request) -> HttpResponse:
+def register_view(request: HttpRequest) -> HttpResponse:
     if request.user.is_authenticated:
         return redirect("dashboard")
 

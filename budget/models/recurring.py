@@ -77,9 +77,10 @@ class RecurringExpense(BaseModel, SoftDeleteModel):
 
     def get_remaining_amount_to_split(self) -> Decimal:
         """Calcule le montant qu'il reste à assigner parmi les parts."""
-        allocated = self.shares.aggregate(models.Sum("amount"))[
-            "amount__sum"
-        ] or Decimal("0.00")
+        # Résolution propre sans passer par le reverse accessor magique
+        allocated = RecurringExpenseShare.objects.filter(
+            recurring_expense=self
+        ).aggregate(models.Sum("amount"))["amount__sum"] or Decimal("0.00")
         return self.total_amount - allocated
 
     class Meta(BaseModel.Meta, SoftDeleteModel.Meta):
@@ -110,7 +111,9 @@ class RecurringExpenseShare(BaseModel, SoftDeleteModel):
 
     def clean(self) -> None:
         super().clean()
-        if not self.recurring_expense_id:
+
+        # Validation propre via getattr pour éviter l'alerte Pylance
+        if getattr(self, "recurring_expense_id", None) is None:
             return
 
         existing_shares_sum = RecurringExpenseShare.objects.filter(

@@ -1,18 +1,22 @@
-from urllib.request import Request
-
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db import transaction
-from django.http import HttpResponse
+from django.http import HttpRequest, HttpResponse
 from django.shortcuts import get_object_or_404, render
 
 from budget.forms.category import CategoryForm
-from budget.models import Category
+from budget.models import Category, HouseholdMember
 from budget.utils import htmx_login_required, merge_categories
 
 
+class AuthenticatedHttpRequest(HttpRequest):
+    member: HouseholdMember
+
+
 @login_required
-def settings_categories_list_view(request: Request) -> HttpResponse:
+def settings_categories_list_view(
+    request: AuthenticatedHttpRequest,
+) -> HttpResponse:
     member = request.member
     categories = Category.objects.filter(household=member.household, is_active=True)
 
@@ -29,7 +33,7 @@ def settings_categories_list_view(request: Request) -> HttpResponse:
 
 @htmx_login_required
 def settings_category_form_view(
-    request: Request, category_id: str | None = None
+    request: AuthenticatedHttpRequest, category_id: str | None = None
 ) -> HttpResponse:
     member = request.member
     category = None
@@ -88,7 +92,9 @@ def settings_category_form_view(
 
 
 @htmx_login_required
-def settings_category_delete_view(request: Request, category_id: str) -> HttpResponse:
+def settings_category_delete_view(
+    request: AuthenticatedHttpRequest, category_id: str
+) -> HttpResponse:
     member = request.member
     category = get_object_or_404(
         Category, id=category_id, household=member.household, is_active=True
@@ -109,7 +115,9 @@ def settings_category_delete_view(request: Request, category_id: str) -> HttpRes
 
 
 @htmx_login_required
-def settings_category_merge_view(request: Request, category_id: str) -> HttpResponse:
+def settings_category_merge_view(
+    request: AuthenticatedHttpRequest, category_id: str
+) -> HttpResponse:
     member = request.member
     source_category = get_object_or_404(
         Category,

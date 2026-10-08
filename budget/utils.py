@@ -28,7 +28,7 @@ def htmx_login_required(view_func):
 
 def calculate_budget_month(
     ref_date: datetime.date, target_year: int, target_month: int
-) -> datetime:
+) -> datetime.date:
     """Calcule le budget_month selon que le mois cible est antérieur, égal ou postérieur"""
     ref_key = (ref_date.year, ref_date.month)
     target_key = (target_year, target_month)

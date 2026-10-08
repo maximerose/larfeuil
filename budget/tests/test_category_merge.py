@@ -5,7 +5,7 @@ from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
 
-from budget.models import HouseholdMember, Transaction, TransactionType
+from budget.models import BankAccount, HouseholdMember, Transaction, TransactionType
 from budget.models.account import Household
 from budget.models.category import Category, CategoryType
 from budget.models.forecast import MonthlyForecast
@@ -41,13 +41,13 @@ class CategoryMergeTestCase(TestCase):
 
         today = timezone.localdate()
 
+        account = BankAccount.objects.create(name="Compte", owner=self.member)
+
         # On attache des données à la catégorie source
         self.transaction = Transaction.objects.create(
             total_amount=Decimal("50.00"),
             category=self.cat_source,
-            bank_account_id=self.member.bank_accounts.create(
-                name="Compte", owner=self.member
-            ).id,
+            bank_account=account,
             transaction_type=TransactionType.EXPENSE,
         )
         self.forecast = MonthlyForecast.objects.create(

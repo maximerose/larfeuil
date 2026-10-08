@@ -41,7 +41,7 @@ def read_xlsx_sheet(zip_ref, sheet_path, shared_strings):
     for row in sheet_data.findall("s:row", ns):
         row_cells = {}
         for c in row.findall("s:c", ns):
-            cell_ref = c.get("r")
+            cell_ref = c.get("r") or ""
             cell_type = c.get("t")
             v_tag = c.find("s:v", ns)
             val = None
@@ -112,7 +112,7 @@ def parse_xlsx(file_path):
                 r_id = sheet.get(
                     "{http://schemas.openxmlformats.org/officeDocument/2006/relationships}id"
                 )
-                target = rel_map.get(r_id, "")
+                target = rel_map.get(r_id, "") or ""
                 sheet_path = f"xl/{target}" if not target.startswith("xl/") else target
                 sheets[name] = read_xlsx_sheet(z, sheet_path, shared_strings)
         return sheets
@@ -652,7 +652,7 @@ class Command(BaseCommand):
                         owner_counts[tx["owner"]] += 1
                     valid_owners = [o for o, c in owner_counts.items() if c >= 2]
                     if not valid_owners:
-                        top_owner = max(owner_counts, key=owner_counts.get)
+                        top_owner = max(owner_counts, key=lambda k: owner_counts[k])
                         true_owners = [top_owner]
                     else:
                         true_owners = valid_owners
@@ -663,7 +663,7 @@ class Command(BaseCommand):
                 else:
                     o_txs = [tx for tx in txs if tx["owner"] == owner]
 
-                dates = [tx["date"] for tx in o_txs if tx["date"]]
+                dates = [str(tx["date"]) for tx in o_txs if tx["date"]]
                 amts = [tx["amount"] for tx in o_txs if tx["amount"] > 0]
 
                 final_due_date_str = ""
@@ -671,7 +671,7 @@ class Command(BaseCommand):
                     if p_info["due_date"]:
                         final_due_date_str = p_info["due_date"]
                     elif dates:
-                        final_due_date_str = max(dates)
+                        final_due_date_str = max(dates, default="2026-01-01")
                     else:
                         final_due_date_str = "2026-01-01"
                 else:

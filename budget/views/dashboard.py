@@ -1,18 +1,25 @@
 import datetime
 from decimal import Decimal
 from itertools import chain
-from urllib.request import Request
 
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q
 from django.db.models.aggregates import Sum
-from django.http import HttpResponse
+from django.http import HttpRequest, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 
-from budget.models import BankAccount, MonthlyForecast, RecurringExpense, Transaction
+from budget.models import (
+    BankAccount,
+    Household,
+    HouseholdMember,
+    MonthlyForecast,
+    RecurringExpense,
+    Transaction,
+)
 from budget.models.account import AccountType
 from budget.models.category import Category, CategoryType
+from budget.models.recurring import RecurringExpenseShare
 from budget.models.transaction import TransactionType, Transfer
 from budget.services.forecast import (
     calculate_monthly_projected_balances,
@@ -24,8 +31,13 @@ from budget.utils import get_target_month_from_request, htmx_login_required
 from core.models import Visibility
 
 
+class AuthenticatedHttpRequest(HttpRequest):
+    member: HouseholdMember
+    household: Household
+
+
 @login_required
-def dashboard_view(request: Request) -> HttpResponse:
+def dashboard_view(request: AuthenticatedHttpRequest) -> HttpResponse:
     member = request.member
 
     if not member:
@@ -194,37 +206,38 @@ def dashboard_view(request: Request) -> HttpResponse:
     # 5. Calcul des prévisions
     projection_steps = calculate_monthly_projected_balances(member, target_month)
     for account in accounts:
+        acc_str_id = str(account.id)
         accounts_with_projections.append(
             {
                 "account": account,
                 "totals": {
                     "initial": round(
                         projection_steps.get("initial", {}).get(
-                            account.id, Decimal("0.00")
+                            acc_str_id, Decimal("0.00")
                         ),
                         2,
                     ),
                     "after_recurring": round(
                         projection_steps.get("after_recurring", {}).get(
-                            account.id, Decimal("0.00")
+                            acc_str_id, Decimal("0.00")
                         ),
                         2,
                     ),
                     "after_variables": round(
                         projection_steps.get("after_variables", {}).get(
-                            account.id, Decimal("0.00")
+                            acc_str_id, Decimal("0.00")
                         ),
                         2,
                     ),
                     "after_savings": round(
                         projection_steps.get("after_savings", {}).get(
-                            account.id, Decimal("0.00")
+                            acc_str_id, Decimal("0.00")
                         ),
                         2,
                     ),
                     "after_incomes": round(
                         projection_steps.get("after_incomes", {}).get(
-                            account.id, Decimal("0.00")
+                            acc_str_id, Decimal("0.00")
                         ),
                         2,
                     ),
@@ -251,7 +264,6 @@ def dashboard_view(request: Request) -> HttpResponse:
         "has_recurring": has_recurring,
         "has_transactions": has_transactions,
         "has_forecasts": has_forecasts,
-        # Si tout est complété, l'onboarding se masque automatiquement
         "is_complete": all(
             [
                 has_accounts,
@@ -282,7 +294,9 @@ def dashboard_view(request: Request) -> HttpResponse:
 
 
 @htmx_login_required
-def pay_recurring_expense_view(request: Request, expense_id: str) -> HttpResponse:
+def pay_recurring_expense_view(
+    request: AuthenticatedHttpRequest, expense_id: str
+) -> HttpResponse:
     expense = get_object_or_404(RecurringExpense, id=expense_id)
     member = request.member
     target_month = timezone.localdate()
@@ -298,7 +312,7 @@ def pay_recurring_expense_view(request: Request, expense_id: str) -> HttpRespons
         {
             "id": acc.id,
             "name": f"{acc.name} ({acc.owner.name})"
-            if acc.owner_id != member.id
+            if getattr(acc, "owner_id", None) != member.id
             else acc.name,
         }
         for acc in accounts
@@ -326,7 +340,9 @@ def pay_recurring_expense_view(request: Request, expense_id: str) -> HttpRespons
 
     remaining_to_pay = max(Decimal("0.00"), expected_total - realized_total)
 
-    shares = expense.shares.filter(is_active=True)
+    shares = RecurringExpenseShare.objects.filter(
+        recurring_expense=expense, is_active=True
+    )
     shares_details = []
 
     if shares.exists():
@@ -364,6 +380,9 @@ def pay_recurring_expense_view(request: Request, expense_id: str) -> HttpRespons
                 owner=member,
                 is_active=True,
             )
+
+        if target_account is None:
+            return HttpResponse("Aucun compte bancaire configuré", status=400)
 
         create_transaction_from_recurring_expense(
             expense=expense,

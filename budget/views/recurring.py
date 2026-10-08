@@ -1,14 +1,13 @@
 from decimal import Decimal
-from urllib.request import Request
 
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
-from django.http import HttpResponse
+from django.http import HttpRequest, HttpResponse
 from django.shortcuts import get_object_or_404, render
 from django.views.decorators.http import require_GET, require_http_methods
 
 from budget.forms.recurring import RecurringExpenseForm, RecurringExpenseShareForm
-from budget.models import RecurringExpense
+from budget.models import Household, HouseholdMember, RecurringExpense
 from budget.models.account import BankAccount
 from budget.models.recurring import RecurringExpenseShare
 from budget.services.forecast import get_recurring_expenses_with_status
@@ -16,17 +15,25 @@ from budget.utils import get_target_month_from_request, htmx_login_required
 from core.models import Visibility
 
 
+class AuthenticatedHttpRequest(HttpRequest):
+    member: HouseholdMember
+    household: Household
+
+
 @login_required
 @require_GET
-def settings_recurring_list_view(request: Request) -> HttpResponse:
+def settings_recurring_list_view(request: AuthenticatedHttpRequest) -> HttpResponse:
     member = request.member
+    household = request.household
     today = get_target_month_from_request(request)
 
     recurring_expenses = get_recurring_expenses_with_status(
         member, today, include_all=True
     )
 
-    has_multiple_members = member.household.members.filter(is_active=True).count() > 1
+    has_multiple_members = (
+        HouseholdMember.objects.filter(household=household, is_active=True).count() > 1
+    )
 
     return render(
         request,
@@ -43,28 +50,29 @@ def settings_recurring_list_view(request: Request) -> HttpResponse:
 @htmx_login_required
 @require_http_methods(["GET", "POST"])
 def settings_recurring_form_view(
-    request: Request, expense_id: str | None = None
+    request: AuthenticatedHttpRequest, expense_id: str | None = None
 ) -> HttpResponse:
     member = request.member
+    household = request.household
     expense = None
 
     if expense_id:
         expense = get_object_or_404(
-            RecurringExpense, id=expense_id, household=member.household, is_active=True
+            RecurringExpense, id=expense_id, household=household, is_active=True
         )
 
     if request.method == "POST":
         form = RecurringExpenseForm(
             request.POST,
             instance=expense,
-            household=member.household,
+            household=household,
             member=member,
         )
         if form.is_valid():
             new_expense = form.save(commit=False)
 
             if not expense_id:
-                new_expense.household = member.household
+                new_expense.household = household
                 new_expense.owner = member
             new_expense.save()
 
@@ -74,7 +82,7 @@ def settings_recurring_form_view(
     else:
         form = RecurringExpenseForm(
             instance=expense,
-            household=member.household,
+            household=household,
             member=member,
         )
 
@@ -95,10 +103,12 @@ def settings_recurring_form_view(
 
 
 @htmx_login_required
-def settings_recurring_delete_view(request: Request, expense_id: str) -> HttpResponse:
-    member = request.member
+def settings_recurring_delete_view(
+    request: AuthenticatedHttpRequest, expense_id: str
+) -> HttpResponse:
+    household = request.household
     expense = get_object_or_404(
-        RecurringExpense, id=expense_id, household=member.household, is_active=True
+        RecurringExpense, id=expense_id, household=household, is_active=True
     )
 
     if request.method == "POST":
@@ -113,32 +123,35 @@ def settings_recurring_delete_view(request: Request, expense_id: str) -> HttpRes
 
 
 @htmx_login_required
-def settings_recurring_shares_view(request: Request, expense_id: str) -> HttpResponse:
+def settings_recurring_shares_view(
+    request: AuthenticatedHttpRequest, expense_id: str
+) -> HttpResponse:
     member = request.member
+    household = request.household
     expense = get_object_or_404(
         RecurringExpense,
         id=expense_id,
-        household=member.household,
+        household=household,
         is_active=True,
     )
-    shares = expense.shares.filter(is_active=True)
+    shares = RecurringExpenseShare.objects.filter(
+        recurring_expense=expense, is_active=True
+    )
     remaining = expense.get_remaining_amount_to_split()
 
-    accounts = BankAccount.objects.filter(
-        owner__household=member.household, is_active=True
-    )
+    accounts = BankAccount.objects.filter(owner__household=household, is_active=True)
     account_options = [
         {
             "id": acc.id,
             "name": f"{acc.name} ({acc.owner.name})"
-            if acc.owner_id != member.id
+            if getattr(acc, "owner_id", None) != member.id
             else acc.name,
         }
         for acc in accounts
     ]
 
     if request.method == "POST":
-        form = RecurringExpenseShareForm(request.POST, household=member.household)
+        form = RecurringExpenseShareForm(request.POST, household=household)
 
         if form.is_valid():
             share = form.save(commit=False)
@@ -159,9 +172,11 @@ def settings_recurring_shares_view(request: Request, expense_id: str) -> HttpRes
             except ValidationError as e:
                 form.add_error(None, e)
     else:
-        form = RecurringExpenseShareForm(household=member.household)
+        form = RecurringExpenseShareForm(household=household)
 
-    members_count = member.household.members.filter(is_active=True).count()
+    members_count = HouseholdMember.objects.filter(
+        household=household, is_active=True
+    ).count()
     if members_count > 0:
         ideal_share = Decimal(str(round(expense.total_amount / members_count, 2)))
     else:
@@ -191,11 +206,11 @@ def settings_recurring_shares_view(request: Request, expense_id: str) -> HttpRes
 
 @htmx_login_required
 def settings_recurring_share_delete_view(
-    request: Request, expense_id: str, share_id: str
+    request: AuthenticatedHttpRequest, expense_id: str, share_id: str
 ) -> HttpResponse:
-    member = request.member
+    household = request.household
     expense = get_object_or_404(
-        RecurringExpense, id=expense_id, household=member.household, is_active=True
+        RecurringExpense, id=expense_id, household=household, is_active=True
     )
     share = get_object_or_404(
         RecurringExpenseShare, id=share_id, recurring_expense=expense, is_active=True

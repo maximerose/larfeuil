@@ -115,23 +115,27 @@ class ForecastServiceTestCase(TestCase):
             member=self.member, month=self.today
         )
 
-        self.assertEqual(steps["initial"][self.checking_account.id], Decimal("1500.00"))
         self.assertEqual(
-            steps["after_recurring"][self.checking_account.id], Decimal("900.00")
+            steps["initial"][str(self.checking_account.id)], Decimal("1500.00")
+        )
+        self.assertEqual(
+            steps["after_recurring"][str(self.checking_account.id)], Decimal("900.00")
         )
         # 100.00€ pris sur Swile (tr_account) et 200.00€ restants sur le compte courant : 900 - 200 = 700
         self.assertEqual(
-            steps["after_variables"][self.checking_account.id], Decimal("700.00")
-        )
-        self.assertEqual(steps["after_variables"][self.tr_account.id], Decimal("0.00"))
-        self.assertEqual(
-            steps["after_savings"][self.checking_account.id], Decimal("500.00")
+            steps["after_variables"][str(self.checking_account.id)], Decimal("700.00")
         )
         self.assertEqual(
-            steps["after_savings"][self.savings_account.id], Decimal("5200.00")
+            steps["after_variables"][str(self.tr_account.id)], Decimal("0.00")
         )
         self.assertEqual(
-            steps["after_incomes"][self.checking_account.id], Decimal("3000.00")
+            steps["after_savings"][str(self.checking_account.id)], Decimal("500.00")
+        )
+        self.assertEqual(
+            steps["after_savings"][str(self.savings_account.id)], Decimal("5200.00")
+        )
+        self.assertEqual(
+            steps["after_incomes"][str(self.checking_account.id)], Decimal("3000.00")
         )
 
     def test_savings_forecast_with_transfers_and_incomes(self) -> None:
@@ -165,15 +169,19 @@ class ForecastServiceTestCase(TestCase):
         steps = calculate_monthly_projected_balances(self.member, self.today)
 
         # Le solde DB a changé à cause des signaux : Checking=1450, Savings=5080.
-        self.assertEqual(steps["initial"][self.checking_account.id], Decimal("1450.00"))
-        self.assertEqual(steps["initial"][self.savings_account.id], Decimal("5080.00"))
+        self.assertEqual(
+            steps["initial"][str(self.checking_account.id)], Decimal("1450.00")
+        )
+        self.assertEqual(
+            steps["initial"][str(self.savings_account.id)], Decimal("5080.00")
+        )
 
         # Reste à projeter : 200 - (50 + 30) = 120. Checking = 1450 - 120 = 1330.
         self.assertEqual(
-            steps["after_savings"][self.checking_account.id], Decimal("1330.00")
+            steps["after_savings"][str(self.checking_account.id)], Decimal("1330.00")
         )
         self.assertEqual(
-            steps["after_savings"][self.savings_account.id], Decimal("5200.00")
+            steps["after_savings"][str(self.savings_account.id)], Decimal("5200.00")
         )
 
     def test_calculate_monthly_projected_balances_temporal_logic(self) -> None:
@@ -209,14 +217,16 @@ class ForecastServiceTestCase(TestCase):
             member=self.member, month=past_month
         )
         self.assertEqual(
-            past_steps["after_recurring"][self.checking_account.id], Decimal("920.00")
+            past_steps["after_recurring"][str(self.checking_account.id)],
+            Decimal("920.00"),
         )
 
         future_steps = calculate_monthly_projected_balances(
             member=self.member, month=future_month
         )
         self.assertEqual(
-            future_steps["after_recurring"][self.checking_account.id], Decimal("320.00")
+            future_steps["after_recurring"][str(self.checking_account.id)],
+            Decimal("320.00"),
         )
 
         Transaction.objects.create(
@@ -232,7 +242,7 @@ class ForecastServiceTestCase(TestCase):
             member=self.member, month=current_month
         )
         self.assertEqual(
-            current_steps["after_recurring"][self.checking_account.id],
+            current_steps["after_recurring"][str(self.checking_account.id)],
             Decimal("320.00"),
         )
 
@@ -290,7 +300,7 @@ class ForecastServiceTestCase(TestCase):
 
         steps = calculate_monthly_projected_balances(self.member, self.today)
         self.assertEqual(
-            steps["after_recurring"][self.checking_account.id], Decimal("1460.00")
+            steps["after_recurring"][str(self.checking_account.id)], Decimal("1460.00")
         )
 
         status_list = get_recurring_expenses_with_status(self.member, self.today)
@@ -325,7 +335,7 @@ class ForecastServiceTestCase(TestCase):
         steps = calculate_monthly_projected_balances(self.member, self.today)
         # Compte courant initial : 1500€. Moins 600€ = 900€
         self.assertEqual(
-            steps["after_recurring"][self.checking_account.id], Decimal("900.00")
+            steps["after_recurring"][str(self.checking_account.id)], Decimal("900.00")
         )
 
         # 2. Test des statuts (l'interface doit afficher la charge Globale du foyer)

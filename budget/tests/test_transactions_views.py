@@ -64,6 +64,9 @@ class TransactionViewsTestCase(TestCase):
 
         self.assertEqual(Transaction.objects.count(), 1)
         transaction = Transaction.objects.first()
+
+        assert transaction is not None
+
         self.assertEqual(transaction.total_amount, Decimal("45.50"))
         self.assertEqual(transaction.label, "Boulangerie")
         self.assertEqual(transaction.category, self.category)

@@ -27,13 +27,13 @@ repos:
     hooks:
       - id: python-check
         name: Control Python Syntax
-        entry: bash -c 'if [ -f .venv/bin/python ]; then .venv/bin/python -m py_compile "$@"; else python -m py_compile "$@"; fi' --
+        entry: bash -c 'if [ -f .venv/Scripts/python ]; then .venv/Scripts/python -m py_compile "$@"; elif [ -f .venv/bin/python ]; then .venv/bin/python -m py_compile "$@"; else python -m py_compile "$@"; fi' --
         language: system
         types: [python]
 
       - id: django-test
         name: Django Tests
-        entry: bash -c 'if [ -f .venv/bin/python ]; then .venv/bin/python manage.py test; else python manage.py test; fi'
+        entry: bash -c 'if [ -f .venv/Scripts/python ]; then .venv/Scripts/python manage.py test; elif [ -f .venv/bin/python ]; then .venv/bin/python manage.py test; else python manage.py test; fi'
         language: system
         types: [python]
         pass_filenames: false

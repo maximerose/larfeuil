@@ -28,7 +28,7 @@ class RegisterForm(forms.ModelForm):
 
     class Meta:
         model = User
-        fields: ClassVar[dict[str, str]] = ["username", "email"]
+        fields: ClassVar[list[str]] = ["username", "email"]
         error_messages: ClassVar[dict[str, dict[str, str]]] = {
             "username": {
                 "unique": "Un utilisateur avec ce nom d'utilisateur existe déjà."

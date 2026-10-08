@@ -1,22 +1,33 @@
 import datetime
 import json
 from decimal import Decimal
-from urllib.request import Request
 
 from django.contrib.auth.decorators import login_required
 from django.db.models import Min, Q, Sum
-from django.http import HttpResponse
+from django.http import HttpRequest, HttpResponse
 from django.shortcuts import render
 from django.utils import timezone
 
-from budget.models import BankAccount, RecurringExpense, Transaction, Transfer
+from budget.models import (
+    BankAccount,
+    Household,
+    HouseholdMember,
+    RecurringExpense,
+    Transaction,
+    Transfer,
+)
 from budget.models.account import AccountType
 from budget.models.category import CategoryType
 from budget.utils import advance_date, remove_accents
 
 
+class AuthenticatedHttpRequest(HttpRequest):
+    member: HouseholdMember
+    household: Household
+
+
 @login_required
-def statistics_view(request: Request) -> HttpResponse:
+def statistics_view(request: AuthenticatedHttpRequest) -> HttpResponse:
     household = request.household
     today = timezone.localdate().replace(day=1)
 
@@ -137,14 +148,14 @@ def statistics_view(request: Request) -> HttpResponse:
         m_transfers_in = sum(
             tr.amount
             for tr in range_transfers
-            if str(tr.destination_account_id) == target_acc_id
+            if str(getattr(tr, "destination_account_id", "")) == target_acc_id
             and tr.date.year == m_date.year
             and tr.date.month == m_date.month
         ) or Decimal("0.00")
         m_transfers_out = sum(
             tr.amount
             for tr in range_transfers
-            if str(tr.source_account_id) == target_acc_id
+            if str(getattr(tr, "source_account_id", "")) == target_acc_id
             and tr.date.year == m_date.year
             and tr.date.month == m_date.month
         ) or Decimal("0.00")
@@ -245,10 +256,9 @@ def statistics_view(request: Request) -> HttpResponse:
                 items_dict[str(r.id)] = r.label
 
             for tx in type_txs:
-                if tx.recurring_expense_id:
-                    items_dict[str(tx.recurring_expense_id)] = (
-                        tx.recurring_expense.label
-                    )
+                rec_id = getattr(tx, "recurring_expense_id", None)
+                if rec_id and tx.recurring_expense:
+                    items_dict[str(rec_id)] = tx.recurring_expense.label
                 else:
                     lbl = tx.label or (tx.category.name if tx.category else "Autre")
                     items_dict[f"custom_{lbl}"] = lbl
@@ -346,18 +356,21 @@ def statistics_view(request: Request) -> HttpResponse:
                 savings_acc_dict[str(acc.id)] = acc.name
 
             for tr in range_transfers:
+                dest_id = getattr(tr, "destination_account_id", None)
+                src_id = getattr(tr, "source_account_id", None)
+
                 if (
                     tr.destination_account
                     and tr.destination_account.account_type == AccountType.SAVINGS
+                    and dest_id
                 ):
-                    savings_acc_dict[str(tr.destination_account_id)] = (
-                        tr.destination_account.name
-                    )
+                    savings_acc_dict[str(dest_id)] = tr.destination_account.name
                 if (
                     tr.source_account
                     and tr.source_account.account_type == AccountType.SAVINGS
+                    and src_id
                 ):
-                    savings_acc_dict[str(tr.source_account_id)] = tr.source_account.name
+                    savings_acc_dict[str(src_id)] = tr.source_account.name
 
             sorted_accounts = sorted(
                 savings_acc_dict.items(), key=lambda x: remove_accents(x[1])

@@ -1,4 +1,5 @@
 from django.contrib.auth import get_user_model
+from django.forms import BaseForm
 from django.test import TestCase
 from django.urls import reverse
 
@@ -50,11 +51,13 @@ class AuthenticationTestCase(TestCase):
         response = self.client.post(url, data)
 
         self.assertEqual(response.status_code, 200)
-        # NOUVELLE SYNTAXE DJANGO 5+ POUR LES FORMULAIRES
-        self.assertFormError(
-            response.context["form"],
-            "password_confirm",
-            "Les deux mots de passe ne correspondent pas.",
+        assert response.context is not None
+        form = response.context["form"]
+        assert isinstance(form, BaseForm)
+
+        self.assertEqual(
+            form.errors.get("password_confirm"),
+            ["Les deux mots de passe ne correspondent pas."],
         )
         self.assertFalse(User.objects.filter(username="testeur2").exists())
 
@@ -69,11 +72,16 @@ class AuthenticationTestCase(TestCase):
         response = self.client.post(url, data)
 
         self.assertEqual(response.status_code, 200)
-        self.assertFormError(
-            response.context["form"], "email", "Saisissez une adresse e-mail valide."
+        assert response.context is not None
+        form = response.context["form"]
+        assert isinstance(form, BaseForm)
+
+        self.assertEqual(
+            form.errors.get("email"),
+            ["Saisissez une adresse e-mail valide."],
         )
 
-    def test_register_duplicate_email_raises_error(self):
+    def test_register_duplicate_email_raises_error(self) -> None:
         """Vérifie qu'on ne peut pas créer deux comptes avec la même adresse mail."""
         from budget.forms import RegisterForm
 
@@ -113,15 +121,17 @@ class AuthenticationTestCase(TestCase):
         response = self.client.post(url, data)
 
         self.assertEqual(response.status_code, 200)
-        self.assertFormError(
-            response.context["form"],
-            "username",
-            "Un utilisateur avec ce nom d'utilisateur existe déjà.",
+        assert response.context is not None
+        form = response.context["form"]
+        assert isinstance(form, BaseForm)
+
+        self.assertEqual(
+            form.errors.get("username"),
+            ["Un utilisateur avec ce nom d'utilisateur existe déjà."],
         )
 
     def test_user_login_redirects_to_dashboard(self) -> None:
         user = User.objects.create_user(username="maxime", password="password123")
-        # On lui crée son profil membre pour qu'il ait accès au Dashboard !
         HouseholdMember.objects.create(name="Maxime", user=user)
 
         url = reverse("login")

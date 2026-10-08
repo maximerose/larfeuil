@@ -1,12 +1,11 @@
 import datetime
 import json
 from decimal import Decimal
-from urllib.request import Request
 
 from django.contrib import messages
 from django.db.models import Q
 from django.db.models.aggregates import Sum
-from django.http import HttpResponse
+from django.http import HttpRequest, HttpResponse
 from django.shortcuts import get_object_or_404, render
 from django.utils import timezone
 from django.views.decorators.http import require_GET, require_http_methods
@@ -14,6 +13,8 @@ from django.views.decorators.http import require_GET, require_http_methods
 from budget.models import (
     BankAccount,
     Category,
+    Household,
+    HouseholdMember,
     Transaction,
     TransactionType,
 )
@@ -28,10 +29,15 @@ from budget.utils import (
 )
 
 
+class AuthenticatedHttpRequest(HttpRequest):
+    member: HouseholdMember
+    household: Household
+
+
 @htmx_login_required
 def adjust_account_balance_view(
-    request: Request, account_id: str
-) -> HttpResponse | None:
+    request: AuthenticatedHttpRequest, account_id: str
+) -> HttpResponse:
     account = get_object_or_404(BankAccount, id=account_id)
 
     if request.method == "POST":
@@ -56,7 +62,7 @@ def adjust_account_balance_view(
 
 @htmx_login_required
 @require_http_methods(["GET", "POST"])
-def quick_transaction_form_view(request: Request) -> HttpResponse:
+def quick_transaction_form_view(request: AuthenticatedHttpRequest) -> HttpResponse:
     current_member = request.member
     household = request.household
 
@@ -180,13 +186,13 @@ def quick_transaction_form_view(request: Request) -> HttpResponse:
         (
             acc
             for acc in accounts
-            if acc.owner_id == current_member.id and acc.is_default
+            if getattr(acc, "owner_id", None) == current_member.id and acc.is_default
         ),
         next(
             (
                 acc
                 for acc in accounts
-                if acc.owner_id == current_member.id
+                if getattr(acc, "owner_id", None) == current_member.id
                 and acc.account_type == AccountType.CHECKING
             ),
             None,
@@ -198,7 +204,7 @@ def quick_transaction_form_view(request: Request) -> HttpResponse:
         {
             "id": acc.id,
             "name": f"{acc.name} ({acc.owner.name})"
-            if acc.owner_id != current_member.id
+            if getattr(acc, "owner_id", None) != current_member.id
             else acc.name,
         }
         for acc in accounts
@@ -214,7 +220,7 @@ def quick_transaction_form_view(request: Request) -> HttpResponse:
         {
             "id": str(acc.id),
             "name": f"{acc.name} ({acc.owner.name})"
-            if acc.owner_id != current_member.id
+            if getattr(acc, "owner_id", None) != current_member.id
             else acc.name,
         }
         for acc in all_household_accounts
@@ -246,24 +252,24 @@ def quick_transaction_form_view(request: Request) -> HttpResponse:
             spent_as_tr = sum(
                 tx.meal_voucher_amount
                 for tx in today_txs
-                if tx.meal_voucher_bank_account_id == tr.id
+                if getattr(tx, "meal_voucher_bank_account_id", None) == tr.id
             )
             spent_as_main = sum(
                 (tx.total_amount - tx.meal_voucher_amount)
                 for tx in today_txs
-                if tx.bank_account_id == tr.id
+                if getattr(tx, "bank_account_id", None) == tr.id
             )
 
             remaining = max(Decimal("0.00"), limit - (spent_as_tr + spent_as_main))
+
+            fallback_id = getattr(tr, "fallback_account_id", None)
 
             tr_accounts_info.append(
                 {
                     "id": str(tr.id),
                     "name": tr.name,
                     "remaining": float(remaining),
-                    "fallback_id": str(tr.fallback_account_id)
-                    if tr.fallback_account_id
-                    else "",
+                    "fallback_id": str(fallback_id) if fallback_id else "",
                 }
             )
 
@@ -288,7 +294,9 @@ def quick_transaction_form_view(request: Request) -> HttpResponse:
 
 @htmx_login_required
 @require_http_methods(["GET", "POST"])
-def transaction_update_view(request: Request, transaction_id: str) -> HttpResponse:
+def transaction_update_view(
+    request: AuthenticatedHttpRequest, transaction_id: str
+) -> HttpResponse:
     current_member = request.member
     household = request.household
 
@@ -347,8 +355,16 @@ def transaction_update_view(request: Request, transaction_id: str) -> HttpRespon
             tx.transaction_type = db_tx_type
             tx.total_amount = total_amount
             tx.label = label
-            tx.category_id = category_id
-            tx.bank_account_id = bank_account_id
+
+            # Affectation explicite d'instances ORM pour Pylance & Ruff
+            tx.category = (
+                Category.objects.filter(id=category_id, household=household).first()
+                if category_id
+                else None
+            )
+            if bank_account_id:
+                tx.bank_account = get_object_or_404(BankAccount, id=bank_account_id)
+
             tx.transaction_date = transaction_date
             tx.budget_month = budget_month
             tx.meal_voucher_amount = (
@@ -356,9 +372,11 @@ def transaction_update_view(request: Request, transaction_id: str) -> HttpRespon
                 if db_tx_type == TransactionType.EXPENSE
                 else Decimal("0.00")
             )
-            tx.meal_voucher_bank_account_id = (
-                meal_voucher_account_id
-                if meal_voucher_amount > 0 and db_tx_type == TransactionType.EXPENSE
+            tx.meal_voucher_bank_account = (
+                BankAccount.objects.filter(id=meal_voucher_account_id).first()
+                if meal_voucher_amount > 0
+                and db_tx_type == TransactionType.EXPENSE
+                and meal_voucher_account_id
                 else None
             )
 
@@ -392,7 +410,7 @@ def transaction_update_view(request: Request, transaction_id: str) -> HttpRespon
         {
             "id": acc.id,
             "name": f"{acc.name} ({acc.owner.name})"
-            if acc.owner_id != current_member.id
+            if getattr(acc, "owner_id", None) != current_member.id
             else acc.name,
         }
         for acc in accounts
@@ -408,7 +426,7 @@ def transaction_update_view(request: Request, transaction_id: str) -> HttpRespon
         {
             "id": str(acc.id),
             "name": f"{acc.name} ({acc.owner.name})"
-            if acc.owner_id != current_member.id
+            if getattr(acc, "owner_id", None) != current_member.id
             else acc.name,
         }
         for acc in all_household_accounts
@@ -427,8 +445,8 @@ def transaction_update_view(request: Request, transaction_id: str) -> HttpRespon
                 )
                 or Decimal("0.00")
             ),
-            "fallback_id": str(tr.fallback_account_id)
-            if tr.fallback_account_id
+            "fallback_id": str(getattr(tr, "fallback_account_id", ""))
+            if getattr(tr, "fallback_account_id", None)
             else "",
         }
         for tr in tr_accounts
@@ -452,12 +470,12 @@ def transaction_update_view(request: Request, transaction_id: str) -> HttpRespon
         {
             "transaction": tx,
             "budget_shift": shift,
-            "selected_category_id": tx.category_id,
+            "selected_category_id": getattr(tx, "category_id", None),
             "categories_expense": categories_expense,
             "categories_income": categories_income,
             "accounts": account_options,
             "household_account_options": household_account_options,
-            "selected_account_id": tx.bank_account_id,
+            "selected_account_id": getattr(tx, "bank_account_id", None),
             "today": tx.transaction_date,
             "tr_accounts_info": tr_accounts_info,
             "tr_accounts_info_json": json.dumps(tr_accounts_info),
@@ -467,7 +485,9 @@ def transaction_update_view(request: Request, transaction_id: str) -> HttpRespon
 
 
 @htmx_login_required
-def transaction_delete_view(request: Request, transaction_id: str) -> HttpResponse:
+def transaction_delete_view(
+    request: AuthenticatedHttpRequest, transaction_id: str
+) -> HttpResponse:
     member = request.member
     tx = get_object_or_404(
         Transaction,
@@ -487,7 +507,9 @@ def transaction_delete_view(request: Request, transaction_id: str) -> HttpRespon
 
 @htmx_login_required
 @require_http_methods(["GET", "POST"])
-def transfer_update_view(request: Request, transfer_id: str) -> HttpResponse:
+def transfer_update_view(
+    request: AuthenticatedHttpRequest, transfer_id: str
+) -> HttpResponse:
     current_member = request.member
     household = request.household
 
@@ -503,8 +525,10 @@ def transfer_update_view(request: Request, transfer_id: str) -> HttpResponse:
         amount = Decimal(request.POST.get("total_amount", "0.00"))
         date_str = request.POST.get("transaction_date")
 
-        transfer.source_account_id = source_id
-        transfer.destination_account_id = dest_id
+        if source_id:
+            transfer.source_account = get_object_or_404(BankAccount, id=source_id)
+        if dest_id:
+            transfer.destination_account = get_object_or_404(BankAccount, id=dest_id)
         transfer.amount = amount
         if date_str:
             transfer.date = datetime.date.fromisoformat(date_str)
@@ -537,7 +561,7 @@ def transfer_update_view(request: Request, transfer_id: str) -> HttpResponse:
         {
             "id": acc.id,
             "name": f"{acc.name} ({acc.owner.name})"
-            if acc.owner_id != current_member.id
+            if getattr(acc, "owner_id", None) != current_member.id
             else acc.name,
         }
         for acc in accounts
@@ -553,7 +577,7 @@ def transfer_update_view(request: Request, transfer_id: str) -> HttpResponse:
         {
             "id": str(acc.id),
             "name": f"{acc.name} ({acc.owner.name})"
-            if acc.owner_id != current_member.id
+            if getattr(acc, "owner_id", None) != current_member.id
             else acc.name,
         }
         for acc in all_household_accounts
@@ -569,8 +593,8 @@ def transfer_update_view(request: Request, transfer_id: str) -> HttpResponse:
             "remaining": float(
                 get_remaining_meal_voucher_ceiling(transfer.date, tr) or Decimal("0.00")
             ),
-            "fallback_id": str(tr.fallback_account_id)
-            if tr.fallback_account_id
+            "fallback_id": str(getattr(tr, "fallback_account_id", ""))
+            if getattr(tr, "fallback_account_id", None)
             else "",
         }
         for tr in tr_accounts
@@ -583,7 +607,7 @@ def transfer_update_view(request: Request, transfer_id: str) -> HttpResponse:
         "budget/partials/transactions/_modal_quick_transaction.html",
         {
             "transfer": transfer,
-            "selected_account_id": transfer.source_account_id,
+            "selected_account_id": getattr(transfer, "source_account_id", None),
             "selected_category_id": None,
             "categories_expense": categories_expense,
             "categories_income": categories_income,
@@ -598,15 +622,17 @@ def transfer_update_view(request: Request, transfer_id: str) -> HttpResponse:
 
 
 @htmx_login_required
-def transfer_delete_view(request: Request, transfer_id: str) -> HttpResponse:
+def transfer_delete_view(
+    request: AuthenticatedHttpRequest, transfer_id: str
+) -> HttpResponse:
     member = request.member
     transfer = get_object_or_404(
         Transfer,
         id=transfer_id,
     )
     if (
-        transfer.source_account.owner_id == member.id
-        or transfer.destination_account.owner_id == member.id
+        getattr(transfer.source_account, "owner_id", None) == member.id
+        or getattr(transfer.destination_account, "owner_id", None) == member.id
     ) and request.method == "POST":
         transfer.delete()
         messages.success(request, "Transfert supprimé")
@@ -619,7 +645,7 @@ def transfer_delete_view(request: Request, transfer_id: str) -> HttpResponse:
 
 @htmx_login_required
 @require_GET
-def monthly_history_view(request: Request) -> HttpResponse:
+def monthly_history_view(request: AuthenticatedHttpRequest) -> HttpResponse:
     member = request.member
     household = member.household
 
@@ -730,7 +756,7 @@ def monthly_history_view(request: Request) -> HttpResponse:
         {
             "id": str(acc.id),
             "name": f"{acc.name} ({acc.owner.name})"
-            if acc.owner_id != member.id
+            if getattr(acc, "owner_id", None) != member.id
             else acc.name,
         }
         for acc in visible_accounts
@@ -746,7 +772,7 @@ def monthly_history_view(request: Request) -> HttpResponse:
         "variable_kpi": variable_kpi,
         "savings_kpi": savings_kpi,
         "chart_json": chart_dict,
-        "members": household.members.filter(is_active=True),
+        "members": HouseholdMember.objects.filter(household=household, is_active=True),
         "categories": Category.objects.filter(
             household=household, is_active=True
         ).order_by("name"),

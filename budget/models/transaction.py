@@ -81,6 +81,14 @@ class Transaction(BaseModel):
         """Retourne le montant réel débité du compte bancaire principal (hors Tickets Resto)."""
         return self.total_amount - self.meal_voucher_amount
 
+    def get_transaction_type_display(self) -> str:
+        """Implémentation explicite pour Pylance."""
+        # On crée un dictionnaire purement textuel dict[str, str] à partir des choix
+        choices_dict = {str(k): str(v) for k, v in TransactionType.choices}
+        tx_value = str(self.transaction_type)
+
+        return choices_dict.get(tx_value, tx_value)
+
     def __str__(self) -> str:
         sign = "+" if self.transaction_type == TransactionType.INCOME else "-"
 
@@ -149,6 +157,25 @@ class Transaction(BaseModel):
 
         self.bank_account.save(update_fields=["current_balance"])
 
+    def delete(self, *args, **kwargs):
+        """Réajuste le solde du compte lors de la suppression d'une transaction."""
+        if self.transaction_type == TransactionType.EXPENSE:
+            self.bank_account.current_balance += (
+                self.total_amount - self.meal_voucher_amount
+            )
+
+            # Stockage dans une variable locale pour que Pylance comprenne que ce n'est pas None
+            mv_account = self.meal_voucher_bank_account
+            if self.meal_voucher_amount > 0 and mv_account is not None:
+                mv_account.current_balance += self.meal_voucher_amount
+                mv_account.save(update_fields=["current_balance"])
+
+        elif self.transaction_type == TransactionType.INCOME:
+            self.bank_account.current_balance -= self.total_amount
+
+        self.bank_account.save(update_fields=["current_balance"])
+        super().delete(*args, **kwargs)
+
     class Meta(BaseModel.Meta):
         verbose_name = "Transaction"
         verbose_name_plural = "Transactions"
@@ -179,10 +206,10 @@ class Transfer(BaseModel):
     def clean(self) -> None:
         super().clean()
 
-        if (
-            self.source_account_id
-            and self.source_account_id == self.destination_account_id
-        ):
+        source_id = getattr(self, "source_account_id", None)
+        dest_id = getattr(self, "destination_account_id", None)
+
+        if source_id and source_id == dest_id:
             raise ValidationError(
                 "Le compte source et le compte destination doivent être différents."
             )
@@ -200,6 +227,16 @@ class Transfer(BaseModel):
             # Créditer le compte destination
             self.destination_account.current_balance += self.amount
             self.destination_account.save(update_fields=["current_balance"])
+
+    def delete(self, *args, **kwargs):
+        """Réajuste les soldes lors de la suppression d'un transfert."""
+        self.source_account.current_balance += self.amount
+        self.source_account.save(update_fields=["current_balance"])
+
+        self.destination_account.current_balance -= self.amount
+        self.destination_account.save(update_fields=["current_balance"])
+
+        super().delete(*args, **kwargs)
 
     class Meta(BaseModel.Meta):
         verbose_name = "Transfert"

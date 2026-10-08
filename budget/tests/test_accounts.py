@@ -35,7 +35,9 @@ class AccountModelsTestCase(TestCase):
         self.assertEqual(self.partner.household, self.household)
 
         # Vérifie qu'on peut récpérer tous les membres depuis le foyer
-        self.assertEqual(self.household.members.count(), 2)
+        self.assertEqual(
+            HouseholdMember.objects.filter(household=self.household).count(), 2
+        )
 
     def test_bank_account_str(self) -> None:
         self.assertEqual(

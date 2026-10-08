@@ -1,19 +1,21 @@
-from urllib.request import Request
-
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q
-from django.http import HttpResponse
+from django.http import HttpRequest, HttpResponse
 from django.shortcuts import get_object_or_404, render
 
 from budget.forms import BankAccountForm
-from budget.models import BankAccount
+from budget.models import BankAccount, HouseholdMember
 from budget.utils import htmx_login_required
 from core.models import Visibility
 
 
+class AuthenticatedHttpRequest(HttpRequest):
+    member: HouseholdMember
+
+
 @login_required
-def settings_accounts_list_view(request: Request) -> HttpResponse:
+def settings_accounts_list_view(request: AuthenticatedHttpRequest) -> HttpResponse:
     member = request.member
 
     accounts = BankAccount.objects.filter(
@@ -35,7 +37,7 @@ def settings_accounts_list_view(request: Request) -> HttpResponse:
 
 @htmx_login_required
 def settings_account_form_view(
-    request: Request, account_id: str | None = None
+    request: AuthenticatedHttpRequest, account_id: str | None = None
 ) -> HttpResponse:
     member = request.member
     account = None
@@ -89,7 +91,9 @@ def settings_account_form_view(
 
 
 @htmx_login_required
-def settings_account_delete_view(request: Request, account_id: str) -> HttpResponse:
+def settings_account_delete_view(
+    request: AuthenticatedHttpRequest, account_id: str
+) -> HttpResponse:
     member = request.member
     account = get_object_or_404(
         BankAccount,

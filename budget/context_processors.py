@@ -1,13 +1,13 @@
 import datetime
 from typing import Any
-from urllib.request import Request
 
+from django.http import HttpRequest
 from django.utils import timezone
 
 from budget.utils import get_target_month_from_request
 
 
-def global_budget_context(request: Request) -> dict[str, Any]:
+def global_budget_context(request: HttpRequest) -> dict[str, Any]:
     selected_date = get_target_month_from_request(request)
     today = timezone.localdate().replace(day=1)
 
@@ -43,11 +43,8 @@ def global_budget_context(request: Request) -> dict[str, Any]:
             }
         )
 
-    current_url_name = (
-        request.resolver_match.url_name
-        if hasattr(request, "resolver_match") and request.resolver_match
-        else ""
-    )
+    resolver_match = getattr(request, "resolver_match", None)
+    current_url_name = getattr(resolver_match, "url_name", "") if resolver_match else ""
 
     main_menu = [
         {
@@ -87,7 +84,7 @@ def global_budget_context(request: Request) -> dict[str, Any]:
     }
 
 
-def current_member(request: Request) -> dict[str, Any | None]:
+def current_member(request: HttpRequest) -> dict[str, Any | None]:
     return {
         "current_member": getattr(request, "member", None),
         "household": getattr(request, "household", None),

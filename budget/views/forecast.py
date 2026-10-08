@@ -1,17 +1,18 @@
 import datetime
 from decimal import Decimal, DecimalException
-from urllib.request import Request
 
 from django.contrib.auth.decorators import login_required
 from django.db import transaction
 from django.db.models import Q
-from django.http import HttpResponse
+from django.http import HttpRequest, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 
 from budget.models import (
     BankAccount,
     Category,
+    Household,
+    HouseholdMember,
     MonthlyForecast,
     RecurringExpense,
 )
@@ -21,8 +22,13 @@ from budget.utils import advance_date
 from core.models import Visibility
 
 
+class AuthenticatedHttpRequest(HttpRequest):
+    member: HouseholdMember
+    household: Household
+
+
 @login_required
-def forecast_list_view(request: Request) -> HttpResponse:
+def forecast_list_view(request: AuthenticatedHttpRequest) -> HttpResponse:
     member = request.member
     household = request.household
 
@@ -73,17 +79,19 @@ def forecast_list_view(request: Request) -> HttpResponse:
 
         with transaction.atomic():
             if action == "save":
-                for key, value in request.POST.items():
+                for key in request.POST:
                     if not key.startswith(
                         ("forecast_cat_", "forecast_acc_", "forecast_rec_")
                     ):
                         continue
 
-                    if value.strip() == "":
+                    raw_val = str(request.POST.get(key, "")).strip()
+
+                    if raw_val == "":
                         amount = Decimal("0.00")
                     else:
                         try:
-                            amount = Decimal(value.replace(",", "."))
+                            amount = Decimal(raw_val.replace(",", "."))
                         except (ValueError, TypeError, DecimalException):
                             continue
 
@@ -138,7 +146,6 @@ def forecast_list_view(request: Request) -> HttpResponse:
                         )
                         default_val = default_rec_amounts.get(rec_id, Decimal("0.00"))
 
-                        # Si on valide le montant exact prévu par défaut et aucun compte d'exception, on nettoie
                         if amount == default_val and not tx_acc_id:
                             MonthlyForecast.objects.filter(
                                 month=selected_date,
@@ -199,9 +206,13 @@ def forecast_list_view(request: Request) -> HttpResponse:
         .distinct()
     )
 
-    # Détermination du compte de repli global pour l'utilisateur
     default_account = next(
-        (acc for acc in accounts if acc.is_default and acc.owner_id == member.id), None
+        (
+            acc
+            for acc in accounts
+            if acc.is_default and getattr(acc, "owner_id", None) == member.id
+        ),
+        None,
     )
     if not default_account:
         default_account = next(
@@ -209,13 +220,14 @@ def forecast_list_view(request: Request) -> HttpResponse:
                 acc
                 for acc in accounts
                 if acc.account_type == AccountType.CHECKING
-                and acc.owner_id == member.id
+                and getattr(acc, "owner_id", None) == member.id
             ),
             None,
         )
     if not default_account:
         default_account = next(
-            (acc for acc in accounts if acc.owner_id == member.id), None
+            (acc for acc in accounts if getattr(acc, "owner_id", None) == member.id),
+            None,
         )
 
     global_default_acc_id = str(default_account.id) if default_account else ""
@@ -227,7 +239,7 @@ def forecast_list_view(request: Request) -> HttpResponse:
         {
             "id": str(acc.id),
             "name": f"{acc.name} ({acc.owner.name})"
-            if acc.owner_id != member.id
+            if getattr(acc, "owner_id", None) != member.id
             else acc.name,
         }
         for acc in accounts
@@ -238,21 +250,22 @@ def forecast_list_view(request: Request) -> HttpResponse:
         member=member, month=selected_date, is_active=True
     )
 
-    cat_map = {
-        f.category_id: {"amount": f.amount, "acc_id": f.transaction_account_id}
-        for f in existing_forecasts
-        if f.category_id
-    }
-    acc_map = {
-        f.bank_account_id: {"amount": f.amount, "acc_id": f.transaction_account_id}
-        for f in existing_forecasts
-        if f.bank_account_id
-    }
-    rec_map = {
-        f.recurring_expense_id: {"amount": f.amount, "acc_id": f.transaction_account_id}
-        for f in existing_forecasts
-        if f.recurring_expense_id
-    }
+    cat_map = {}
+    acc_map = {}
+    rec_map = {}
+
+    for f in existing_forecasts:
+        c_id = getattr(f, "category_id", None)
+        b_id = getattr(f, "bank_account_id", None)
+        r_id = getattr(f, "recurring_expense_id", None)
+        t_id = getattr(f, "transaction_account_id", None)
+
+        if c_id:
+            cat_map[c_id] = {"amount": f.amount, "acc_id": t_id}
+        if b_id:
+            acc_map[b_id] = {"amount": f.amount, "acc_id": t_id}
+        if r_id:
+            rec_map[r_id] = {"amount": f.amount, "acc_id": t_id}
 
     # --- SECTION 1 : Catégories Variables ---
     var_categories = Category.objects.filter(
@@ -274,7 +287,6 @@ def forecast_list_view(request: Request) -> HttpResponse:
     fix_data = []
     for r in recurring_items:
         allocated = rec_map.get(r.id, {}).get("amount", default_rec_amounts[str(r.id)])
-        # Pour les charges fixes, on conserve le compte par défaut lié à la charge, sinon on retombe sur le compte global
         def_acc = r.default_bank_account or default_account
         def_acc_id = str(def_acc.id) if def_acc else ""
         def_acc_name = def_acc.name if def_acc else "Aucun compte"
@@ -353,12 +365,13 @@ def forecast_list_view(request: Request) -> HttpResponse:
 
 
 @login_required
-def quick_forecast_override(request, expense_id):
+def quick_forecast_override(
+    request: AuthenticatedHttpRequest, expense_id: str
+) -> HttpResponse:
     expense = get_object_or_404(
         RecurringExpense, id=expense_id, household=request.household
     )
 
-    # On récupère le mois actif depuis l'URL (ex: ?month=2026-09) sinon mois courant
     month_str = request.GET.get("month")
     current_month = timezone.localdate().replace(day=1)
     if month_str:
@@ -372,15 +385,12 @@ def quick_forecast_override(request, expense_id):
         update_default = request.POST.get("update_default") == "on"
 
         if update_default:
-            # 1. On modifie le contrat de base définitivement
             expense.total_amount = amount
             expense.save(update_fields=["total_amount"])
-            # 2. On nettoie l'éventuelle exception qui ne sert plus à rien
             MonthlyForecast.objects.filter(
                 month=current_month, member=request.member, recurring_expense=expense
             ).delete()
         else:
-            # 1. On enregistre une exception juste pour ce mois-ci
             MonthlyForecast.objects.update_or_create(
                 month=current_month,
                 member=request.member,
@@ -390,7 +400,6 @@ def quick_forecast_override(request, expense_id):
 
         return HttpResponse(status=200, headers={"HX-Refresh": "true"})
 
-    # Pour l'affichage de la modale en GET
     existing_forecast = MonthlyForecast.objects.filter(
         month=current_month, member=request.member, recurring_expense=expense
     ).first()

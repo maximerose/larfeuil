@@ -65,6 +65,9 @@ class RecurringViewTestCase(TestCase):
 
         self.assertEqual(Transaction.objects.count(), 1)
         tx = Transaction.objects.first()
+
+        assert tx is not None
+
         self.assertEqual(tx.total_amount, Decimal("30.00"))
         self.assertEqual(tx.recurring_expense, self.expense)
         self.assertEqual(tx.bank_account, self.account)

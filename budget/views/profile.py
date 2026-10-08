@@ -1,17 +1,21 @@
-from urllib.request import Request
-
 from django.contrib.auth.decorators import login_required
 from django.db import transaction
-from django.http import HttpResponse
+from django.http import HttpRequest, HttpResponse
 from django.shortcuts import render
 from django.urls import reverse
 
+from budget.models import Household, HouseholdMember
 from budget.models.account import HouseholdInvitation
 from budget.utils import htmx_login_required
 
 
+class AuthenticatedHttpRequest(HttpRequest):
+    member: HouseholdMember
+    household: Household
+
+
 @login_required
-def settings_profile_view(request: Request) -> HttpResponse:
+def settings_profile_view(request: AuthenticatedHttpRequest) -> HttpResponse:
     member = request.member
     household = request.household
 
@@ -45,7 +49,7 @@ def settings_profile_view(request: Request) -> HttpResponse:
 
 
 @htmx_login_required
-def settings_profile_update(request: Request) -> HttpResponse:
+def settings_profile_update(request: AuthenticatedHttpRequest) -> HttpResponse:
     member = request.member
 
     if request.method == "POST":
@@ -56,9 +60,12 @@ def settings_profile_update(request: Request) -> HttpResponse:
             if name:
                 member.name = name
                 member.save(update_fields=["name"])
-            if email:
-                request.user.email = email
-                request.user.save(update_fields=["email"])
+
+            # Utilisation directe de member.user pour garantir le type User auprès de Pylance
+            if email and member.user:
+                user = member.user
+                user.email = email
+                user.save(update_fields=["email"])
 
         response = HttpResponse("")
         response["HX-Refresh"] = "true"
@@ -69,12 +76,12 @@ def settings_profile_update(request: Request) -> HttpResponse:
 
 
 @htmx_login_required
-def settings_household_update(request: Request) -> HttpResponse:
+def settings_household_update(request: AuthenticatedHttpRequest) -> HttpResponse:
     member = request.member
 
     if request.method == "POST":
         name = request.POST.get("name")
-        if name:
+        if name and member.household:
             member.household.name = name
             member.household.save(update_fields=["name"])
 
@@ -86,13 +93,14 @@ def settings_household_update(request: Request) -> HttpResponse:
 
 
 @htmx_login_required
-def settings_generate_invite(request: Request) -> HttpResponse:
+def settings_generate_invite(request: AuthenticatedHttpRequest) -> HttpResponse:
     member = request.member
 
     if request.method == "POST":
+        user = member.user or (request.user if request.user.is_authenticated else None)
         HouseholdInvitation.objects.create(
             household=member.household,
-            created_by=request.user,
+            created_by=user,
         )
 
         response = HttpResponse("")

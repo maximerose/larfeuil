@@ -472,7 +472,9 @@ class Command(BaseCommand):
         all_recurring = RecurringExpense.objects.filter(household=household)
         for budget_month in all_months:
             for rec in all_recurring:
-                key = (budget_month, rec.owner.id, None, rec.id, None)
+                current_owner_id = rec.owner.id if rec.owner else None
+                key = (budget_month, current_owner_id, None, rec.id, None)
+
                 if key not in forecasts_map:
                     forecasts_map[key] = MonthlyForecast(
                         month=budget_month,

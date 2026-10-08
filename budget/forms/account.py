@@ -1,6 +1,7 @@
 from typing import ClassVar
 
 from django import forms
+from django.forms import ModelChoiceField
 
 from budget.models.account import BankAccount
 
@@ -8,7 +9,7 @@ from budget.models.account import BankAccount
 class BankAccountForm(forms.ModelForm):
     class Meta:
         model = BankAccount
-        fields: ClassVar[str] = [
+        fields: ClassVar[list[str]] = [
             "name",
             "account_type",
             "current_balance",
@@ -23,17 +24,20 @@ class BankAccountForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
 
         # On limite le compte relais aux autres comptes du même foyer
-        if "fallback_account" in self.fields:
-            self.fields["fallback_account"].queryset = BankAccount.objects.filter(
+        fallback_field = self.fields.get("fallback_account")
+
+        # On vérifie formellement le type pour Pylance
+        if isinstance(fallback_field, ModelChoiceField):
+            fallback_field.queryset = BankAccount.objects.filter(
                 owner__household=household,
                 is_active=True,
             ).select_related("owner")
 
             # On empêche un compte d'être son propre relais en modification
             if self.instance and self.instance.pk:
-                self.fields["fallback_account"].queryset = self.fields[
-                    "fallback_account"
-                ].queryset.exclude(pk=self.instance.pk)
+                fallback_field.queryset = fallback_field.queryset.exclude(
+                    pk=self.instance.pk
+                )
 
     def clean_name(self):
         """Validation personnalisée du champ 'name'."""

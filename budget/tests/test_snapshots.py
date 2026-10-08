@@ -68,12 +68,12 @@ class AccountSnapshotTestCase(TestCase):
 
         # Doit créer un snapshot uniquement pour les 2 comptes actifs, pas pour l'inactif
         self.assertEqual(AccountSnapshot.objects.count(), 2)
-        self.assertEqual(
-            AccountSnapshot.objects.filter(bank_account__name="Livret A")
-            .first()
-            .balance,
-            Decimal("3000.00"),
-        )
+
+        livret_snapshot = AccountSnapshot.objects.filter(
+            bank_account__name="Livret A"
+        ).first()
+        assert livret_snapshot is not None
+        self.assertEqual(livret_snapshot.balance, Decimal("3000.00"))
 
     def test_management_command_create_daily_snapshot(self) -> None:
         # Exécution de la commande custom
@@ -81,4 +81,7 @@ class AccountSnapshotTestCase(TestCase):
 
         snapshots = AccountSnapshot.objects.all()
         self.assertEqual(snapshots.count(), 1)
-        self.assertEqual(snapshots.first().balance, Decimal("1500.00"))
+
+        first_snapshot = snapshots.first()
+        assert first_snapshot is not None
+        self.assertEqual(first_snapshot.balance, Decimal("1500.00"))
