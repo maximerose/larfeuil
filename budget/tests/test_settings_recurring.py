@@ -105,15 +105,13 @@ class SettingsRecurringTestCase(TestCase):
         self.assertEqual(response.context["expense"], self.expense)
 
     def test_recurring_update_post(self) -> None:
-        """Vérifie la modification d'une charge existante."""
+        """Vérifie la modification d'une charge existante via le formulaire allégé."""
         url = reverse("settings_recurring_update", args=[self.expense.id])
         data = {
             "label": "Assurance Auto",
             "total_amount": "45.00",
-            "frequency_months": 1,
-            "category": self.category.id,
-            "visibility": Visibility.PRIVATE,
-            "is_variable": True,
+            "default_bank_account": self.account.id,
+            "usual_due_day": "2026-10-15",
         }
         response = self.client.post(url, data)
 
@@ -123,8 +121,6 @@ class SettingsRecurringTestCase(TestCase):
         self.expense.refresh_from_db()
         self.assertEqual(self.expense.label, "Assurance Auto")
         self.assertEqual(self.expense.total_amount, Decimal("45.00"))
-        self.assertEqual(self.expense.visibility, Visibility.PRIVATE)
-        self.assertTrue(self.expense.is_variable)
 
     def test_recurring_delete_post(self) -> None:
         """Vérifie le soft-delete d'une charge fixe."""

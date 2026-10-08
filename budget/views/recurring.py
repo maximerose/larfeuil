@@ -1,12 +1,17 @@
 from decimal import Decimal
 
+from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import get_object_or_404, render
 from django.views.decorators.http import require_GET, require_http_methods
 
-from budget.forms.recurring import RecurringExpenseForm, RecurringExpenseShareForm
+from budget.forms.recurring import (
+    RecurringExpenseForm,
+    RecurringExpenseShareForm,
+    RecurringExpenseUpdateForm,
+)
 from budget.models import Household, HouseholdMember, RecurringExpense
 from budget.models.account import BankAccount
 from budget.models.recurring import RecurringExpenseShare
@@ -61,30 +66,25 @@ def settings_recurring_form_view(
             RecurringExpense, id=expense_id, household=household, is_active=True
         )
 
+    form_class = RecurringExpenseUpdateForm if expense else RecurringExpenseForm
+
     if request.method == "POST":
-        form = RecurringExpenseForm(
-            request.POST,
-            instance=expense,
-            household=household,
-            member=member,
+        form = form_class(
+            request.POST, instance=expense, household=household, member=member
         )
         if form.is_valid():
-            new_expense = form.save(commit=False)
+            rec = form.save(commit=False)
+            if not expense:
+                rec.household = household
+                rec.owner = member if rec.visibility == Visibility.PRIVATE else None
+            rec.save()
 
-            if not expense_id:
-                new_expense.household = household
-                new_expense.owner = member
-            new_expense.save()
-
+            messages.success(request, "Charge fixe enregistrée")
             response = HttpResponse("")
             response["HX-Refresh"] = "true"
             return response
     else:
-        form = RecurringExpenseForm(
-            instance=expense,
-            household=household,
-            member=member,
-        )
+        form = form_class(instance=expense, household=household, member=member)
 
     return render(
         request,

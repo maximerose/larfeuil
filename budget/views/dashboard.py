@@ -301,6 +301,14 @@ def pay_recurring_expense_view(
     member = request.member
     target_month = timezone.localdate()
 
+    # 1. On cherche s'il y a DEJA une transaction pour cette charge ce mois-ci
+    existing_tx = Transaction.objects.filter(
+        recurring_expense=expense,
+        budget_month__year=target_month.year,
+        budget_month__month=target_month.month,
+        transaction_type=TransactionType.EXPENSE,
+    ).first()
+
     accounts = BankAccount.objects.filter(
         Q(owner=member)
         | Q(owner__household=member.household, visibility=Visibility.SHARED),
@@ -320,6 +328,7 @@ def pay_recurring_expense_view(
 
     target_account = get_target_account_for_expense(expense, member)
 
+    # Récupération de la prévision mensuelle s'il y en a une
     override = MonthlyForecast.objects.filter(
         member__household=member.household,
         month__year=target_month.year,
@@ -329,8 +338,13 @@ def pay_recurring_expense_view(
     ).first()
 
     expected_total = override.amount if override else expense.total_amount
-    amount_to_pay = expected_total
 
+    # Si on édite, le montant et la date par défaut viennent de la transaction existante
+    amount_to_pay = existing_tx.total_amount if existing_tx else expected_total
+    default_date = existing_tx.transaction_date if existing_tx else timezone.localdate()
+
+    # Le calcul du reste à payer prend en compte le total réalisé.
+    # Pour l'UI d'édition, on passe le remaining brut.
     realized_total = Transaction.objects.filter(
         recurring_expense=expense,
         budget_month__year=target_month.year,
@@ -340,6 +354,7 @@ def pay_recurring_expense_view(
 
     remaining_to_pay = max(Decimal("0.00"), expected_total - realized_total)
 
+    # ... (Logique de répartition partagée / shares_details inchangée) ...
     shares = RecurringExpenseShare.objects.filter(
         recurring_expense=expense, is_active=True
     )
@@ -359,7 +374,7 @@ def pay_recurring_expense_view(
             shares_details.append({"name": owner_name, "amount": prorated})
 
         member_share = shares.filter(bank_account__in=accounts).first()
-        if member_share:
+        if member_share and not existing_tx:
             ratio = (
                 member_share.amount / expense.total_amount
                 if expense.total_amount > Decimal("0.00")
@@ -367,6 +382,10 @@ def pay_recurring_expense_view(
             )
             amount_to_pay = round(expected_total * ratio, 2)
             target_account = member_share.bank_account
+
+    # Surcharge si la transaction existe
+    if existing_tx:
+        target_account = existing_tx.bank_account
 
     if request.method == "POST":
         amount = Decimal(request.POST.get("amount", str(amount_to_pay)))
@@ -392,14 +411,23 @@ def pay_recurring_expense_view(
         if target_account is None:
             return HttpResponse("Aucun compte bancaire configuré", status=400)
 
-        create_transaction_from_recurring_expense(
-            expense=expense,
-            bank_account=target_account,
-            amount=amount,
-            budget_month=target_month.replace(day=1),
-            transaction_date=tx_date,
-        )
+        # Création ou Mise à jour de la transaction
+        if existing_tx:
+            existing_tx.total_amount = amount
+            existing_tx.bank_account = target_account
+            if tx_date:
+                existing_tx.transaction_date = tx_date
+            existing_tx.save()
+        else:
+            create_transaction_from_recurring_expense(
+                expense=expense,
+                bank_account=target_account,
+                amount=amount,
+                budget_month=target_month.replace(day=1),
+                transaction_date=tx_date,
+            )
 
+        # ... (Logique update_default inchangée) ...
         if update_default:
             if shares.exists():
                 member_share = shares.filter(bank_account__in=accounts).first()
@@ -429,6 +457,7 @@ def pay_recurring_expense_view(
             "expected_total": expected_total,
             "remaining_to_pay": remaining_to_pay,
             "shares_details": shares_details,
-            "today": timezone.localdate(),
+            "today": default_date,
+            "is_edit": existing_tx is not None,
         },
     )

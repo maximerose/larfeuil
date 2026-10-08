@@ -1889,9 +1889,6 @@
     .hover\:border-slate-500:hover {
       border-color: var(--color-slate-500);
     }
-    .hover\:border-slate-600:hover {
-      border-color: var(--color-slate-600);
-    }
     .hover\:border-slate-700:hover {
       border-color: var(--color-slate-700);
     }
@@ -1971,6 +1968,14 @@
     @supports (color: color-mix(in lab, red, red)) {
       .hover\:bg-brand\/20:hover {
         background-color: color-mix(in oklab, var(--color-brand) 20%, transparent);
+      }
+    }
+    .hover\:bg-budget-income\/20:hover {
+      background-color: color-mix(in srgb, #10b981 20%, transparent);
+    }
+    @supports (color: color-mix(in lab, red, red)) {
+      .hover\:bg-budget-income\/20:hover {
+        background-color: color-mix(in oklab, var(--color-budget-income) 20%, transparent);
       }
     }
     .hover\:bg-emerald-400:hover {

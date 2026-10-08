@@ -5,7 +5,7 @@
   {% csrf_token %}
 
   <!-- 1. Onglets de sélection -->
-  <div class="{% if transaction and transaction.recurring_expense %}hidden{% else %}flex{% endif %} p-1 bg-slate-900 rounded-xl mb-6 shadow-inner">
+  <div class="flex p-1 bg-slate-900 rounded-xl mb-6 shadow-inner">
     <label class="flex-1 cursor-pointer">
       <input type="radio"
              name="tx_type"

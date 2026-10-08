@@ -24,7 +24,11 @@ class RecurringExpenseForm(forms.ModelForm):
         ]
 
     def __init__(
-        self, *args, household: Household, member: HouseholdMember, **kwargs
+        self,
+        *args,
+        household: Household,
+        member: HouseholdMember | None = None,
+        **kwargs,
     ) -> None:
         self.household = household
         self.member = member
@@ -79,26 +83,16 @@ class RecurringExpenseForm(forms.ModelForm):
         return label
 
 
-class RecurringExpenseUpdateForm(forms.ModelForm):
-    class Meta:
-        model = RecurringExpense
+class RecurringExpenseUpdateForm(RecurringExpenseForm):
+    """Formulaire allégé pour l'édition : hérite du formulaire principal et restreint les champs."""
+
+    class Meta(RecurringExpenseForm.Meta):
         fields: ClassVar[list[str]] = [
             "label",
             "total_amount",
             "default_bank_account",
             "usual_due_day",
         ]
-
-    def __init__(self, *args, household: Household, **kwargs) -> None:
-        super().__init__(*args, **kwargs)
-
-        # Restreindre aux comptes du foyer
-        acc_field = self.fields.get("default_bank_account")
-        if isinstance(acc_field, ModelChoiceField):
-            acc_field.queryset = BankAccount.objects.filter(
-                owner__household=household,
-                is_active=True,
-            )
 
 
 class RecurringExpenseShareForm(forms.ModelForm):
@@ -109,7 +103,6 @@ class RecurringExpenseShareForm(forms.ModelForm):
     def __init__(self, *args, household: Household, **kwargs) -> None:
         super().__init__(*args, **kwargs)
 
-        # Rend le champ catégorie optionnel (Bien que "category" ne soit pas dans Meta.fields, on garde la logique si elle est ajoutée dynamiquement)
         cat_field = self.fields.get("category")
         if isinstance(cat_field, ModelChoiceField):
             cat_field.required = False
@@ -119,7 +112,6 @@ class RecurringExpenseShareForm(forms.ModelForm):
                 is_active=True,
             )
 
-        # Restreindre aux comptes du foyer
         acc_field = self.fields.get("default_bank_account")
         if isinstance(acc_field, ModelChoiceField):
             acc_field.queryset = BankAccount.objects.filter(

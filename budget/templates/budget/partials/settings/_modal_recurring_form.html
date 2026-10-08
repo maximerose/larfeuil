@@ -18,126 +18,74 @@
       {% if form.label.errors %}<p class="text-[11px] text-action-danger mt-1">{{ form.label.errors.0 }}</p>{% endif %}
     </div>
     <div>
-      {% include "budget/components/currency_input.html" with label="Montant mensuel (€)" name="total_amount" value=form.total_amount.value required=True %}
+      {% include "budget/components/currency_input.html" with label="Montant mensuel (€)" name="total_amount" value=form.total_amount.value|default_if_none:0 required=True %}
       {% if form.total_amount.errors %}
         <p class="text-[11px] text-action-danger mt-1">{{ form.total_amount.errors.0 }}</p>
       {% endif %}
     </div>
   </div>
 
-  <!-- Catégorie et Visibilité -->
-  <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+  <!-- Catégorie et Compte par défaut -->
+  <div class="grid grid-cols-1 {% if 'category' in form.fields %}sm:grid-cols-2{% endif %} gap-4">
+    {% if "category" in form.fields %}
+      <div>
+        {% include "budget/components/select.html" with label="Catégorie" name="category" options=form.fields.category.queryset selected=form.category.value required=True %}
+        {% if form.category.errors %}
+          <p class="text-[11px] text-action-danger mt-1">{{ form.category.errors.0 }}</p>
+        {% endif %}
+      </div>
+    {% endif %}
     <div>
-      {% include "budget/components/select.html" with label="Catégorie (Optionnelle)" name="category" options=form.fields.category.queryset selected=form.category.value placeholder="Aucune catégorie" allow_create=True create_type="category" %}
-      {% if form.category.errors %}
-        <p class="text-[11px] text-action-danger mt-1">{{ form.category.errors.0 }}</p>
-      {% endif %}
-    </div>
-    <div>
-      {% include "budget/components/select.html" with label="Visibilité" name="visibility" options=form.fields.visibility.choices selected=form.visibility.value required=True %}
-      {% if form.visibility.errors %}
-        <p class="text-[11px] text-action-danger mt-1">{{ form.visibility.errors.0 }}</p>
+      {% include "budget/components/select.html" with label="Compte prélevé par défaut" name="default_bank_account" options=form.fields.default_bank_account.queryset selected=form.default_bank_account.value %}
+      {% if form.default_bank_account.errors %}
+        <p class="text-[11px] text-action-danger mt-1">{{ form.default_bank_account.errors.0 }}</p>
       {% endif %}
     </div>
   </div>
 
-  <!-- Compte par défaut -->
+  <!-- Visibilité et Fréquence (Uniquement en création) -->
+  {% if "visibility" in form.fields or "frequency_months" in form.fields %}
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      {% if "visibility" in form.fields %}
+        <div>
+          {% include "budget/components/select.html" with label="Visibilité" name="visibility" options=form.fields.visibility.choices selected=form.visibility.value required=True %}
+          {% if form.visibility.errors %}
+            <p class="text-[11px] text-action-danger mt-1">{{ form.visibility.errors.0 }}</p>
+          {% endif %}
+        </div>
+      {% endif %}
+      {% if "frequency_months" in form.fields %}
+        <div>
+          {% include "budget/components/input.html" with label="Fréquence (en mois)" type="number" name="frequency_months" value=form.frequency_months.value|default_if_none:1 min="1" required=True %}
+          {% if form.frequency_months.errors %}
+            <p class="text-[11px] text-action-danger mt-1">{{ form.frequency_months.errors.0 }}</p>
+          {% endif %}
+        </div>
+      {% endif %}
+    </div>
+  {% endif %}
+
+  <!-- Date habituelle de prélèvement -->
   <div>
-    {% include "budget/components/select.html" with label="Compte prélevé par défaut" name="default_bank_account" options=form.fields.default_bank_account.queryset selected=form.default_bank_account.value placeholder="Sélectionnez un compte" required=True %}
-    {% if form.default_bank_account.errors %}
-      <p class="text-[11px] text-action-danger mt-1">{{ form.default_bank_account.errors.0 }}</p>
+    {% include "budget/components/input.html" with label="Date habituelle de prélèvement (optionnel)" type="date" name="usual_due_day" value=form.usual_due_day.value|date:"Y-m-d" %}
+    {% if form.usual_due_day.errors %}
+      <p class="text-[11px] text-action-danger mt-1">{{ form.usual_due_day.errors.0 }}</p>
     {% endif %}
   </div>
 
-  <!-- Options avancées : Variable, Fréquence, Échéance -->
-  <div class="border-t border-brand-border/50 space-y-4">
-    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-      <div>
-        {% include "budget/components/input.html" with label="Fréquence (en mois)" type="number" name="frequency_months" value=form.frequency_months.value|default_if_none:"1" required=True %}
-        {% if form.frequency_months.errors %}
-          <p class="text-[11px] text-action-danger mt-1">{{ form.frequency_months.errors.0 }}</p>
-        {% endif %}
-      </div>
-
-      <!-- Wrapper Date Complète (affiché si fréquence > 1) -->
-      <div id="date-wrapper" class="hidden">
-        {% include "budget/components/input.html" with label="Prochaine échéance (Optionnelle)" type="date" name="usual_due_day" value=form.usual_due_day.value|date:"Y-m-d" %}
-        {% if form.usual_due_day.errors %}
-          <p class="text-[11px] text-action-danger mt-1">{{ form.usual_due_day.errors.0 }}</p>
-        {% endif %}
-      </div>
-
-      <!-- Wrapper Jour Simple (affiché si fréquence == 1) -->
-      <div id="day-wrapper">
-        <div class="space-y-1">
-          <label for="day_input" class="block text-xs font-semibold text-slate-400 uppercase tracking-wider">
-            Jour de prélèvement (Optionnel)
-          </label>
-          <input type="number" id="day_input" min="1" max="31" placeholder="Ex: 15" class="input-base px-4 py-2.5" />
-        </div>
-      </div>
+  <!-- Case à cocher : Variable (Uniquement en création) -->
+  {% if "is_variable" in form.fields %}
+    <div class="pt-2">
+      <label class="flex items-center gap-2 cursor-pointer p-3 bg-slate-900/50 rounded-xl border border-brand-border">
+        <input type="checkbox"
+               name="is_variable"
+               {% if form.is_variable.value %}checked{% endif %}
+               class="rounded border-slate-600 bg-slate-900 focus:ring-1 focus:ring-offset-0 focus:ring-offset-transparent text-brand" />
+        <span class="text-sm font-medium text-slate-200">Le montant de cette charge peut varier d'un mois à l'autre</span>
+      </label>
+      {% if form.is_variable.errors %}
+        <p class="text-[11px] text-action-danger mt-1">{{ form.is_variable.errors.0 }}</p>
+      {% endif %}
     </div>
-
-    <label class="flex items-center gap-2 cursor-pointer p-3 bg-slate-900/50 rounded-xl border border-brand-border hover:border-slate-600 transition-colors">
-      <input type="checkbox"
-             name="is_variable"
-             {% if form.is_variable.value %}checked{% endif %}
-             class="rounded border-slate-600 bg-slate-900 focus:ring-1 focus:ring-offset-0 focus:ring-offset-transparent text-brand" />
-      <span class="text-sm font-medium text-slate-200">Le montant peut varier (ex: facture d'électricité)</span>
-    </label>
-  </div>
+  {% endif %}
 </form>
-
-<!-- Script pour basculer entre Jour et Date Complète -->
-<script>
-  (() => {
-    const freqInput = document.querySelector('input[name="frequency_months"]');
-    const dateInput = document.querySelector('input[name="usual_due_day"]');
-    const dayWrapper = document.getElementById('day-wrapper');
-    const dateWrapper = document.getElementById('date-wrapper');
-    const dayInput = document.getElementById('day_input');
-
-    if (freqInput && dateInput && dayInput) {
-
-      // On initialise le champ de jour (1-31) si la date est déjà remplie
-      if (dateInput.value) {
-        const parts = dateInput.value.split('-');
-        if (parts.length === 3) {
-          dayInput.value = parseInt(parts[2], 10);
-        }
-      }
-
-      function toggleInputs() {
-        if (parseInt(freqInput.value) === 1) {
-          dayWrapper.classList.remove('hidden');
-          dateWrapper.classList.add('hidden');
-        } else {
-          dayWrapper.classList.add('hidden');
-          dateWrapper.classList.remove('hidden');
-        }
-      }
-
-      // Quand on tape un jour, on forge une date fictive sur le mois courant
-      function syncDateFromDay() {
-        if (!dayInput.value) return;
-        const today = new Date();
-        let month = today.getMonth() + 1;
-        let year = today.getFullYear();
-        let day = parseInt(dayInput.value);
-
-        // Sécurité pour les mois à 28 ou 30 jours
-        const lastDayOfMonth = new Date(year, month, 0).getDate();
-        if (day > lastDayOfMonth) day = lastDayOfMonth;
-
-        const formattedMonth = month.toString().padStart(2, '0');
-        const formattedDay = day.toString().padStart(2, '0');
-        dateInput.value = `${year}-${formattedMonth}-${formattedDay}`;
-      }
-
-      freqInput.addEventListener('input', toggleInputs);
-      dayInput.addEventListener('input', syncDateFromDay);
-
-      toggleInputs();
-    }
-  })();
-</script>
