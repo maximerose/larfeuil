@@ -6,12 +6,14 @@ from django.shortcuts import get_object_or_404, render
 
 from budget.forms import BankAccountForm
 from budget.models import BankAccount, HouseholdMember
+from budget.models.account import Household
 from budget.utils import htmx_login_required
 from core.models import Visibility
 
 
 class AuthenticatedHttpRequest(HttpRequest):
     member: HouseholdMember
+    household: Household
 
 
 @login_required
@@ -40,11 +42,15 @@ def settings_account_form_view(
     request: AuthenticatedHttpRequest, account_id: str | None = None
 ) -> HttpResponse:
     member = request.member
+    household = request.household
     account = None
 
     if account_id:
         account = get_object_or_404(
-            BankAccount, id=account_id, owner=member, is_active=True
+            BankAccount,
+            Q(owner=member) | Q(owner__household=household, is_joint=True),
+            id=account_id,
+            is_active=True,
         )
 
     if request.method == "POST":
@@ -95,10 +101,12 @@ def settings_account_delete_view(
     request: AuthenticatedHttpRequest, account_id: str
 ) -> HttpResponse:
     member = request.member
+    household = request.household
+
     account = get_object_or_404(
         BankAccount,
+        Q(owner=member) | Q(owner__household=household, is_joint=True),
         id=account_id,
-        owner=member,
         is_active=True,
     )
 

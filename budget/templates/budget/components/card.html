@@ -1,3 +1,3 @@
-<div class="bg-brand-card border p-5 rounded-card shadow-sm hover:border-slate-700 transition-colors flex flex-col justify-between {% if account and member and account.owner.id != member.id %}border-dashed border-slate-600 opacity-80 bg-slate-900/40{% else %}border-brand-border{% endif %} {{ custom_class|default:'' }}">
+<div class="bg-brand-card border p-5 rounded-card shadow-sm hover:border-slate-700 transition-colors flex flex-col justify-between {% if account and member and account.owner.id != member.id and not account.is_joint %}border-dashed border-slate-600 opacity-80 bg-slate-900/40{% else %}border-brand-border{% endif %} {{ custom_class|default:'' }}">
   {% block card_body %}{% endblock %}
 </div>

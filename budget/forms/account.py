@@ -14,6 +14,7 @@ class BankAccountForm(forms.ModelForm):
             "account_type",
             "current_balance",
             "visibility",
+            "is_joint",
             "is_default",
             "daily_meal_voucher_limit",
             "fallback_account",

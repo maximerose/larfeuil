@@ -38,7 +38,15 @@ class AuthenticatedHttpRequest(HttpRequest):
 def adjust_account_balance_view(
     request: AuthenticatedHttpRequest, account_id: str
 ) -> HttpResponse:
-    account = get_object_or_404(BankAccount, id=account_id)
+    member = request.member
+    household = request.household
+
+    account = get_object_or_404(
+        BankAccount,
+        Q(owner=member) | Q(owner__household=household, is_joint=True),
+        id=account_id,
+        is_active=True,
+    )
 
     if request.method == "POST":
         new_balance = Decimal(request.POST.get("new_balance", "0.00"))

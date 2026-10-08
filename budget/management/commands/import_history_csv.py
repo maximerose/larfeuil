@@ -143,11 +143,8 @@ class Command(BaseCommand):
             key = (member.id, account_name.lower())
             if key not in accounts_map:
                 n_lower = account_name.lower()
-                vis = (
-                    Visibility.SHARED
-                    if "joint" in n_lower or "swile" in n_lower
-                    else visibility
-                )
+                is_j = "joint" in n_lower
+                vis = Visibility.SHARED if is_j or "swile" in n_lower else visibility
 
                 acc, _ = BankAccount.objects.get_or_create(
                     owner=member,
@@ -156,6 +153,7 @@ class Command(BaseCommand):
                         "account_type": default_type,
                         "current_balance": Decimal("0.00"),
                         "visibility": vis,
+                        "is_joint": is_j,
                     },
                 )
                 accounts_map[key] = acc

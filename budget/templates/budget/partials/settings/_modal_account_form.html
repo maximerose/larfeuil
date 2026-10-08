@@ -41,8 +41,16 @@
     </div>
   </div>
 
-  <!-- Case à cocher : Compte par défaut -->
-  <div class="pt-2">
+  <!-- Cases à cocher : Compte joint & Compte principal -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+    <label class="flex items-center gap-2 cursor-pointer p-3 bg-slate-900/50 rounded-xl border border-brand-border">
+      <input type="checkbox"
+             name="is_joint"
+             {% if form.is_joint.value %}checked{% endif %}
+             class="rounded border-slate-600 bg-slate-900 focus:ring-1 focus:ring-offset-0 focus:ring-offset-transparent text-brand" />
+      <span class="text-sm font-medium text-slate-200">Compte joint (co-détenu)</span>
+    </label>
+
     <label class="flex items-center gap-2 cursor-pointer p-3 bg-slate-900/50 rounded-xl border border-brand-border">
       <input type="checkbox"
              name="is_default"
@@ -50,10 +58,13 @@
              class="rounded border-slate-600 bg-slate-900 focus:ring-1 focus:ring-offset-0 focus:ring-offset-transparent text-brand" />
       <span class="text-sm font-medium text-slate-200">Compte principal (par défaut)</span>
     </label>
-    {% if form.is_default.errors %}
-      <p class="text-[11px] text-action-danger mt-1">{{ form.is_default.errors.0 }}</p>
-    {% endif %}
   </div>
+  {% if form.is_joint.errors %}
+    <p class="text-[11px] text-action-danger mt-1">{{ form.is_joint.errors.0 }}</p>
+  {% endif %}
+  {% if form.is_default.errors %}
+    <p class="text-[11px] text-action-danger mt-1">{{ form.is_default.errors.0 }}</p>
+  {% endif %}
 
   <!-- Section dynamique Tickets Resto -->
   <div id="meal-voucher-fields"

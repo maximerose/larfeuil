@@ -156,6 +156,11 @@ class BankAccount(BaseModel, SoftDeleteModel):
         verbose_name="Compte relais",
         help_text="Si ce compte est un compte Tickets Resto, alors vous pouvez renseigner un autre compte qui fait la bascule lors d'un paiement d'un montant supérieur à la limite quotidienne",
     )
+    is_joint = models.BooleanField(
+        default=False,
+        verbose_name="Compte joint",
+        help_text="Cochez si ce compte est co-détenu par le foyer.",
+    )
 
     def __str__(self) -> str:
         account_type_label = AccountType(self.account_type).label
