@@ -335,10 +335,7 @@ class Command(BaseCommand):
                                     if raw_val != "" and raw_val.lower() != "nan":
                                         try:
                                             amt = float(raw_val)
-                                            if (
-                                                current_forecast_section == "RECURRING"
-                                                or amt != 0
-                                            ):
+                                            if amt != 0:
                                                 tx_records.append(
                                                     {
                                                         "source_file": file_path,

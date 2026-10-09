@@ -103,12 +103,6 @@ class MonthlyForecast(BaseModel, SoftDeleteModel):
     class Meta(BaseModel.Meta, SoftDeleteModel.Meta):
         verbose_name = "Prévision mensuelle"
         verbose_name_plural = "Prévisions mensuelles"
-        constraints: ClassVar[list[models.UniqueConstraint]] = [
-            models.UniqueConstraint(
-                fields=["month", "category", "member"],
-                name="unique_monthly_category_forecast_per_member",
-            )
-        ]
         ordering: ClassVar[list[str]] = [
             "-month",
             "category__name",

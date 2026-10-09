@@ -22,14 +22,49 @@
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           {% for cat in var_data %}
             <div class="p-4 bg-slate-900 rounded-xl border border-brand-border/60 flex flex-col gap-3">
-              <span class="text-sm font-semibold text-slate-300 truncate">{{ cat.name }}</span>
-              <div class="flex items-start gap-3">
-                <div class="flex-1 min-w-0">
-                  {% include "budget/components/select.html" with name="forecast_tx_acc_cat_"|add:cat.id options=account_options selected=cat.acc_id placeholder=cat.placeholder exclude_value=cat.default_acc_id %}
+              <div class="flex items-center justify-between">
+                <span class="text-sm font-semibold text-slate-300 truncate">{{ cat.name }}</span>
+                <button type="button"
+                        onclick="addForecastLine('cat_{{ cat.id }}')"
+                        class="text-[10px] font-bold text-brand hover:underline px-2 py-1 bg-brand/10 rounded-lg shrink-0 transition-colors">
+                  + Ajouter
+                </button>
+              </div>
+
+              <div id="lines-cat_{{ cat.id }}" data-default-acc-id="{{ cat.default_acc_id }}" class="space-y-2">
+                <!-- Modèle caché utilisé pour le clonage -->
+                <div class="line-row line-template hidden items-start gap-3">
+                  <div class="flex-1 min-w-0">
+                    {% include "budget/components/select.html" with name="forecast_tx_acc_cat_"|add:cat.id|add:"_template" options=account_options selected="" placeholder=cat.placeholder exclude_value=cat.default_acc_id custom_class="line-select" %}
+                  </div>
+                  <div class="w-28 shrink-0">
+                    {% include "budget/components/currency_input.html" with name="forecast_cat_"|add:cat.id|add:"_template" value="" custom_class="line-amount" %}
+                  </div>
+                  <button type="button"
+                          onclick="deleteForecastLine(this)"
+                          class="p-2 text-slate-500 hover:text-action-danger hover:bg-slate-800 rounded-lg transition-colors cursor-pointer shrink-0 mt-0.5"
+                          title="Supprimer">
+                    {% include "budget/components/icon.html" with name="trash" class="w-4 h-4" %}
+                  </button>
                 </div>
-                <div class="w-32 shrink-0">
-                  {% include "budget/components/currency_input.html" with name="forecast_cat_"|add:cat.id value=cat.amount %}
-                </div>
+
+                <!-- Lignes réelles en BDD -->
+                {% for line in cat.lines %}
+                  <div class="line-row flex items-start gap-3">
+                    <div class="flex-1 min-w-0">
+                      {% include "budget/components/select.html" with name="forecast_tx_acc_cat_"|add:cat.id|add:"_"|add:line.id options=account_options selected=line.acc_id placeholder=cat.placeholder exclude_value=cat.default_acc_id custom_class="line-select" %}
+                    </div>
+                    <div class="w-28 shrink-0">
+                      {% include "budget/components/currency_input.html" with name="forecast_cat_"|add:cat.id|add:"_"|add:line.id value=line.amount custom_class="line-amount" %}
+                    </div>
+                    <button type="button"
+                            onclick="deleteForecastLine(this)"
+                            class="p-2 text-slate-500 hover:text-action-danger hover:bg-slate-800 rounded-lg transition-colors cursor-pointer shrink-0 mt-0.5"
+                            title="Supprimer">
+                      {% include "budget/components/icon.html" with name="trash" class="w-4 h-4" %}
+                    </button>
+                  </div>
+                {% endfor %}
               </div>
             </div>
           {% empty %}
@@ -50,34 +85,68 @@
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           {% for item in fix_data %}
             <div class="p-4 bg-slate-900 rounded-xl flex flex-col gap-3 transition-all {% if item.is_due_this_month and item.frequency_months > 1 %} border border-brand-border/60 border-l-4 border-l-action-warning {% else %} border border-brand-border/60 {% endif %}">
-              <div class="truncate flex flex-col justify-center gap-0.5">
-                <div class="flex items-center gap-2">
-                  <span class="text-sm font-semibold text-slate-300 truncate">{{ item.name }}</span>
+              <div class="flex items-start justify-between">
+                <div class="truncate flex flex-col justify-center gap-0.5">
+                  <div class="flex items-center gap-2">
+                    <span class="text-sm font-semibold text-slate-300 truncate">{{ item.name }}</span>
 
-                  <!-- Badges d'échéance -->
-                  {% if item.frequency_months == 1 and item.due_day %}
-                    <span class="shrink-0 inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-[10px] font-bold shadow-sm transition-colors bg-slate-800 text-slate-400 border-slate-700">
-                      {% include "budget/components/icon.html" with name="calendar" class="w-2.5 h-2.5" %}
-                      Le {{ item.due_day }}
-                    </span>
-                  {% elif item.frequency_months > 1 and item.next_date %}
-                    <span class="shrink-0 inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-[10px] font-bold shadow-sm transition-colors {% if item.is_due_this_month %}bg-action-warning/10 text-action-warning border-action-warning/30 {% else %}bg-slate-800 text-slate-400 border-slate-700{% endif %}">
-                      {% include "budget/components/icon.html" with name="calendar" class="w-2.5 h-2.5" %}
-                      {{ item.next_date|date:"d/m/y" }}
-                    </span>
-                  {% endif %}
+                    {% if item.frequency_months == 1 and item.due_day %}
+                      <span class="shrink-0 inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-[10px] font-bold shadow-sm transition-colors bg-slate-800 text-slate-400 border-slate-700">
+                        {% include "budget/components/icon.html" with name="calendar" class="w-2.5 h-2.5" %}
+                        Le {{ item.due_day }}
+                      </span>
+                    {% elif item.frequency_months > 1 and item.next_date %}
+                      <span class="shrink-0 inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-[10px] font-bold shadow-sm transition-colors {% if item.is_due_this_month %}bg-action-warning/10 text-action-warning border-action-warning/30 {% else %}bg-slate-800 text-slate-400 border-slate-700{% endif %}">
+                        {% include "budget/components/icon.html" with name="calendar" class="w-2.5 h-2.5" %}
+                        {{ item.next_date|date:"d/m/y" }}
+                      </span>
+                    {% endif %}
+                  </div>
+                  <span class="text-[10px] transition-colors {% if item.is_due_this_month and item.frequency_months > 1 %}text-action-warning font-bold{% else %}text-slate-500{% endif %}">
+                    Par défaut : {{ item.default_amount|stringformat:".2f" }} €
+                  </span>
                 </div>
-                <span class="text-[10px] transition-colors {% if item.is_due_this_month and item.frequency_months > 1 %}text-action-warning font-bold{% else %}text-slate-500{% endif %}">
-                  Par défaut : {{ item.default_amount|stringformat:".2f" }} €
-                </span>
+                <button type="button"
+                        onclick="addForecastLine('rec_{{ item.id }}', '{{ item.default_amount|floatformat:2 }}')"
+                        class="text-[10px] font-bold text-brand hover:underline px-2 py-1 bg-brand/10 rounded-lg shrink-0 transition-colors mt-0.5">
+                  + Ajouter
+                </button>
               </div>
-              <div class="flex items-start gap-3">
-                <div class="flex-1 min-w-0">
-                  {% include "budget/components/select.html" with name="forecast_tx_acc_rec_"|add:item.id options=account_options selected=item.acc_id placeholder=item.placeholder exclude_value=item.default_acc_id %}
+
+              <div id="lines-rec_{{ item.id }}" data-default-acc-id="{{ item.default_acc_id }}" class="space-y-2">
+                <!-- Modèle caché -->
+                <div class="line-row line-template hidden items-start gap-3">
+                  <div class="flex-1 min-w-0">
+                    {% include "budget/components/select.html" with name="forecast_tx_acc_rec_"|add:item.id|add:"_template" options=account_options selected="" placeholder=item.placeholder exclude_value=item.default_acc_id custom_class="line-select" %}
+                  </div>
+                  <div class="w-28 shrink-0">
+                    {% include "budget/components/currency_input.html" with name="forecast_rec_"|add:item.id|add:"_template" value="" custom_class="line-amount" %}
+                  </div>
+                  <button type="button"
+                          onclick="deleteForecastLine(this)"
+                          class="p-2 text-slate-500 hover:text-action-danger hover:bg-slate-800 rounded-lg transition-colors cursor-pointer shrink-0 mt-0.5"
+                          title="Supprimer">
+                    {% include "budget/components/icon.html" with name="trash" class="w-4 h-4" %}
+                  </button>
                 </div>
-                <div class="w-32 shrink-0">
-                  {% include "budget/components/currency_input.html" with name="forecast_rec_"|add:item.id value=item.amount %}
-                </div>
+
+                <!-- Lignes réelles -->
+                {% for line in item.lines %}
+                  <div class="line-row flex items-start gap-3">
+                    <div class="flex-1 min-w-0">
+                      {% include "budget/components/select.html" with name="forecast_tx_acc_rec_"|add:item.id|add:"_"|add:line.id options=account_options selected=line.acc_id placeholder=item.placeholder exclude_value=item.default_acc_id custom_class="line-select" %}
+                    </div>
+                    <div class="w-28 shrink-0">
+                      {% include "budget/components/currency_input.html" with name="forecast_rec_"|add:item.id|add:"_"|add:line.id value=line.amount custom_class="line-amount" %}
+                    </div>
+                    <button type="button"
+                            onclick="deleteForecastLine(this)"
+                            class="p-2 text-slate-500 hover:text-action-danger hover:bg-slate-800 rounded-lg transition-colors cursor-pointer shrink-0 mt-0.5"
+                            title="Supprimer">
+                      {% include "budget/components/icon.html" with name="trash" class="w-4 h-4" %}
+                    </button>
+                  </div>
+                {% endfor %}
               </div>
             </div>
           {% empty %}
@@ -100,14 +169,49 @@
           <div class="space-y-3">
             {% for acc in savings_data %}
               <div class="p-4 bg-slate-900 rounded-xl border border-brand-border/60 flex flex-col gap-3">
-                <span class="text-sm font-semibold text-slate-300 truncate">{{ acc.name }}</span>
-                <div class="flex items-start gap-3">
-                  <div class="flex-1 min-w-0">
-                    {% include "budget/components/select.html" with name="forecast_tx_acc_acc_"|add:acc.id options=account_options selected=acc.acc_id placeholder=acc.placeholder exclude_value=acc.default_acc_id %}
+                <div class="flex items-center justify-between">
+                  <span class="text-sm font-semibold text-slate-300 truncate">{{ acc.name }}</span>
+                  <button type="button"
+                          onclick="addForecastLine('acc_{{ acc.id }}')"
+                          class="text-[10px] font-bold text-brand hover:underline px-2 py-1 bg-brand/10 rounded-lg shrink-0 transition-colors">
+                    + Ajouter
+                  </button>
+                </div>
+
+                <div id="lines-acc_{{ acc.id }}" data-default-acc-id="{{ acc.default_acc_id }}" class="space-y-2">
+                  <!-- Modèle caché -->
+                  <div class="line-row line-template hidden items-start gap-3">
+                    <div class="flex-1 min-w-0">
+                      {% include "budget/components/select.html" with name="forecast_tx_acc_acc_"|add:acc.id|add:"_template" options=account_options selected="" placeholder=acc.placeholder exclude_value=acc.default_acc_id custom_class="line-select" %}
+                    </div>
+                    <div class="w-28 shrink-0">
+                      {% include "budget/components/currency_input.html" with name="forecast_acc_"|add:acc.id|add:"_template" value="" custom_class="line-amount" %}
+                    </div>
+                    <button type="button"
+                            onclick="deleteForecastLine(this)"
+                            class="p-2 text-slate-500 hover:text-action-danger hover:bg-slate-800 rounded-lg transition-colors cursor-pointer shrink-0 mt-0.5"
+                            title="Supprimer">
+                      {% include "budget/components/icon.html" with name="trash" class="w-4 h-4" %}
+                    </button>
                   </div>
-                  <div class="w-32 shrink-0">
-                    {% include "budget/components/currency_input.html" with name="forecast_acc_"|add:acc.id value=acc.amount %}
-                  </div>
+
+                  <!-- Lignes réelles -->
+                  {% for line in acc.lines %}
+                    <div class="line-row flex items-start gap-3">
+                      <div class="flex-1 min-w-0">
+                        {% include "budget/components/select.html" with name="forecast_tx_acc_acc_"|add:acc.id|add:"_"|add:line.id options=account_options selected=line.acc_id placeholder=acc.placeholder exclude_value=acc.default_acc_id custom_class="line-select" %}
+                      </div>
+                      <div class="w-28 shrink-0">
+                        {% include "budget/components/currency_input.html" with name="forecast_acc_"|add:acc.id|add:"_"|add:line.id value=line.amount custom_class="line-amount" %}
+                      </div>
+                      <button type="button"
+                              onclick="deleteForecastLine(this)"
+                              class="p-2 text-slate-500 hover:text-action-danger hover:bg-slate-800 rounded-lg transition-colors cursor-pointer shrink-0 mt-0.5"
+                              title="Supprimer">
+                        {% include "budget/components/icon.html" with name="trash" class="w-4 h-4" %}
+                      </button>
+                    </div>
+                  {% endfor %}
                 </div>
               </div>
             {% empty %}
@@ -127,14 +231,49 @@
           <div class="space-y-3">
             {% for cat in income_data %}
               <div class="p-4 bg-slate-900 rounded-xl border border-brand-border/60 flex flex-col gap-3">
-                <span class="text-sm font-semibold text-slate-300 truncate">{{ cat.name }}</span>
-                <div class="flex items-start gap-3">
-                  <div class="flex-1 min-w-0">
-                    {% include "budget/components/select.html" with name="forecast_tx_acc_cat_"|add:cat.id options=account_options selected=cat.acc_id placeholder=cat.placeholder exclude_value=cat.default_acc_id %}
+                <div class="flex items-center justify-between">
+                  <span class="text-sm font-semibold text-slate-300 truncate">{{ cat.name }}</span>
+                  <button type="button"
+                          onclick="addForecastLine('cat_{{ cat.id }}')"
+                          class="text-[10px] font-bold text-brand hover:underline px-2 py-1 bg-brand/10 rounded-lg shrink-0 transition-colors">
+                    + Ajouter
+                  </button>
+                </div>
+
+                <div id="lines-cat_{{ cat.id }}" data-default-acc-id="{{ cat.default_acc_id }}" class="space-y-2">
+                  <!-- Modèle caché -->
+                  <div class="line-row line-template hidden items-start gap-3">
+                    <div class="flex-1 min-w-0">
+                      {% include "budget/components/select.html" with name="forecast_tx_acc_cat_"|add:cat.id|add:"_template" options=account_options selected="" placeholder=cat.placeholder exclude_value=cat.default_acc_id custom_class="line-select" %}
+                    </div>
+                    <div class="w-28 shrink-0">
+                      {% include "budget/components/currency_input.html" with name="forecast_cat_"|add:cat.id|add:"_template" value="" custom_class="line-amount" %}
+                    </div>
+                    <button type="button"
+                            onclick="deleteForecastLine(this)"
+                            class="p-2 text-slate-500 hover:text-action-danger hover:bg-slate-800 rounded-lg transition-colors cursor-pointer shrink-0 mt-0.5"
+                            title="Supprimer">
+                      {% include "budget/components/icon.html" with name="trash" class="w-4 h-4" %}
+                    </button>
                   </div>
-                  <div class="w-32 shrink-0">
-                    {% include "budget/components/currency_input.html" with name="forecast_cat_"|add:cat.id value=cat.amount %}
-                  </div>
+
+                  <!-- Lignes réelles -->
+                  {% for line in cat.lines %}
+                    <div class="line-row flex items-start gap-3">
+                      <div class="flex-1 min-w-0">
+                        {% include "budget/components/select.html" with name="forecast_tx_acc_cat_"|add:cat.id|add:"_"|add:line.id options=account_options selected=line.acc_id placeholder=cat.placeholder exclude_value=cat.default_acc_id custom_class="line-select" %}
+                      </div>
+                      <div class="w-28 shrink-0">
+                        {% include "budget/components/currency_input.html" with name="forecast_cat_"|add:cat.id|add:"_"|add:line.id value=line.amount custom_class="line-amount" %}
+                      </div>
+                      <button type="button"
+                              onclick="deleteForecastLine(this)"
+                              class="p-2 text-slate-500 hover:text-action-danger hover:bg-slate-800 rounded-lg transition-colors cursor-pointer shrink-0 mt-0.5"
+                              title="Supprimer">
+                        {% include "budget/components/icon.html" with name="trash" class="w-4 h-4" %}
+                      </button>
+                    </div>
+                  {% endfor %}
                 </div>
               </div>
             {% empty %}
@@ -172,4 +311,79 @@
     </div>
 
   </div>
+
+  <script>
+    // Ajoute une nouvelle ligne
+    function addForecastLine(groupId, defaultAmount = '') {
+      const container = document.getElementById('lines-' + groupId);
+      if (!container) return;
+
+      const template = container.querySelector('.line-template');
+      if (!template) return;
+
+      const newLine = template.cloneNode(true);
+      newLine.classList.remove('line-template', 'hidden');
+      newLine.classList.add('flex');
+
+      const newId = 'new_' + Math.random().toString(36).substr(2, 9);
+
+      // 1. Gérer le select (et détruire le wrapper TomSelect cloné pour le réinitialiser proprement)
+      const select = newLine.querySelector('select');
+      if (select) {
+        select.name = select.name.replace('_template', '_' + newId);
+        select.id = select.name; // Met à jour l'ID pour TomSelect
+        select.value = '';
+
+        const tsWrapper = newLine.querySelector('.ts-wrapper');
+        if (tsWrapper) {
+            // On sort le select du wrapper TomSelect, puis on supprime le vieux wrapper cloné
+            tsWrapper.after(select);
+            tsWrapper.remove();
+            select.style.display = '';
+            select.classList.remove('tomselected', 'ts-hidden-accessible');
+            delete select.tomselect;
+        }
+      }
+
+      // 2. Gérer spécifiquement le champ montant (grâce à sa classe .line-amount)
+      const input = newLine.querySelector('input.line-amount');
+      if (input) {
+        input.name = input.name.replace('_template', '_' + newId);
+        input.id = input.name;
+        input.value = defaultAmount;
+      }
+
+      container.appendChild(newLine);
+
+      // 3. Réinitialiser le design TomSelect sur le nouveau champ
+      if (typeof initTomSelects === 'function') {
+          initTomSelects();
+      }
+    }
+
+    // Supprime une ligne
+    function deleteForecastLine(btn) {
+      const lineRow = btn.closest('.line-row');
+      if (!lineRow) return;
+
+      const input = lineRow.querySelector('input.line-amount');
+      const select = lineRow.querySelector('select');
+
+      const isExistingDbRecord = input && !input.name.includes('new_') && !input.name.includes('_template');
+
+      if (isExistingDbRecord) {
+        // Enregistrement BDD : on met le montant à 0 pour forcer la suppression au POST
+        if (input) input.value = '0';
+        // On vide le select proprement via TomSelect
+        if (select && select.tomselect) select.tomselect.clear();
+        else if (select) select.value = '';
+
+        lineRow.style.display = 'none';
+        lineRow.classList.add('hidden');
+      } else {
+        // Ligne dynamique non sauvegardée : on l'efface direct du DOM
+        lineRow.remove();
+      }
+    }
+  </script>
 {% endblock %}

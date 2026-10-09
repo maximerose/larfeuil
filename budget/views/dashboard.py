@@ -1,4 +1,5 @@
 import datetime
+from collections import defaultdict
 from decimal import Decimal
 from itertools import chain
 
@@ -106,10 +107,17 @@ def dashboard_view(request: AuthenticatedHttpRequest) -> HttpResponse:
         is_active=True,
     ).select_related("category", "member")
 
-    for forecast in category_forecasts:
-        category = forecast.category
+    cat_totals = defaultdict(
+        lambda: {"category": None, "budget_amount": Decimal("0.00"), "member": None}
+    )
+    for f in category_forecasts:
+        cat_totals[f.category]["category"] = f.category
+        cat_totals[f.category]["member"] = f.member
+        cat_totals[f.category]["budget_amount"] += f.amount
+
+    for category, data in cat_totals.items():
         realized = Transaction.objects.filter(
-            bank_account__owner=forecast.member,
+            bank_account__owner=data["member"],
             bank_account__in=accounts,
             category=category,
             recurring_expense__isnull=True,
@@ -118,12 +126,12 @@ def dashboard_view(request: AuthenticatedHttpRequest) -> HttpResponse:
             transaction_type=TransactionType.EXPENSE,
         ).aggregate(Sum("total_amount"))["total_amount__sum"] or Decimal("0.00")
 
-        remaining = max(Decimal("0.00"), forecast.amount - realized)
+        remaining = max(Decimal("0.00"), data["budget_amount"] - realized)
         variable_forecasts.append(
             {
                 "category": category,
-                "member": forecast.member,
-                "budget_amount": forecast.amount,
+                "member": data["member"],
+                "budget_amount": data["budget_amount"],
                 "realized_amount": realized,
                 "remaining_amount": remaining,
             }

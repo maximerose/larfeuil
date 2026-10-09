@@ -319,6 +319,8 @@ class Command(BaseCommand):
 
                 # --- TRAITEMENT DES PRÉVISIONS ---
                 if section.startswith("FORECAST_"):
+                    if raw_amount == Decimal("0.00"):
+                        continue
                     forecast_type = section.replace("FORECAST_", "")
                     cat_obj = None
                     rec_obj = None
@@ -482,23 +484,6 @@ class Command(BaseCommand):
 
         Transaction.objects.bulk_create(transactions_to_create, batch_size=500)
         Transfer.objects.bulk_create(transfers_to_create, batch_size=500)
-
-        # --- FORCE LES CHARGES FIXES MANQUANTES À 0€ POUR CE MOIS ---
-        all_recurring = RecurringExpense.objects.filter(household=household)
-        for budget_month in all_months:
-            for rec in all_recurring:
-                current_owner_id = rec.owner.id if rec.owner else None
-                key = (budget_month, current_owner_id, None, rec.id, None)
-
-                if key not in forecasts_map:
-                    forecasts_map[key] = MonthlyForecast(
-                        month=budget_month,
-                        member=rec.owner,
-                        amount=Decimal("0.00"),
-                        recurring_expense=rec,
-                        visibility=Visibility.PRIVATE,
-                    )
-
         MonthlyForecast.objects.bulk_create(forecasts_map.values(), batch_size=500)
 
         self.stdout.write(self.style.SUCCESS("Importation finale réussie !"))

@@ -4,11 +4,11 @@
   {% endif %}
 
   <div class="relative flex items-center">
-    <!-- Bouton de bascule +/- pour contourner les restrictions des claviers mobiles -->
+    <!-- Bouton +/- compact -->
     <button type="button"
             tabindex="-1"
             onclick="(function(id){ const el = document.getElementById(id); if(!el) return; el.value = el.value.startsWith('-') ? el.value.slice(1) : ('-' + el.value); })('{{ name }}')"
-            class="absolute left-2 z-10 px-2 py-1 bg-slate-800 hover:bg-slate-700 active:scale-95 text-slate-300 rounded-lg text-xs font-bold border border-brand-border/60 transition-all select-none cursor-pointer">
+            class="absolute left-1.5 z-10 px-1.5 py-0.5 bg-slate-800 hover:bg-slate-700 active:scale-95 text-slate-300 rounded-md text-[11px] font-bold border border-brand-border/60 transition-all select-none cursor-pointer">
       ±
     </button>
 
@@ -17,13 +17,13 @@
            pattern="^-?\d*[.,]?\d*$"
            id="{{ name }}"
            name="{{ name }}"
-           value="{{ value|stringformat:'.2f'|default:'' }}"
+           value="{{ value|floatformat:2|default:'' }}"
            {% if placeholder %}placeholder="{{ placeholder }}"{% endif %}
            {% if required %}required{% endif %}
            {% if autofocus %}autofocus{% endif %}
-           class="input-base pl-11 pr-8 py-2.5 font-medium w-full" />
+           class="input-base pl-9 pr-6 py-2 text-right text-sm font-medium w-full {{ custom_class|default:'' }}" />
 
-    <span class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold pointer-events-none">€</span>
+    <span class="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 font-bold pointer-events-none text-xs">€</span>
   </div>
 
   {% if help_text %}<p class="text-[11px] text-slate-500">{{ help_text }}</p>{% endif %}
