@@ -57,7 +57,7 @@ class DashboardViewsTestCase(TestCase):
         self.assertRedirects(response, "/login/", fetch_redirect_response=False)
 
     def test_dashboard_forecast_privacy_and_strict_realized_amounts(self) -> None:
-        """Vérifie l'isolation des dépenses et la confidentialité des prévisions entre conjoints."""
+        """Vérifie l'isolation des prévisions : un membre ne voit que ses propres prévisions sur son tableau de bord."""
 
         # Création de Laurie et de son compte partagé
         user_laurie = User.objects.create_user(
@@ -131,17 +131,13 @@ class DashboardViewsTestCase(TestCase):
         # Maxime charge son dashboard
         response = self.client.get(reverse("dashboard"))
 
-        # 1. Maxime ne doit voir que DEUX prévisions de charges variables (Celle de Laurie en privée est masquée)
+        # 1. Maxime ne doit voir que SA SEULE prévision (les prévisions des autres membres restent isolées)
         forecasts = response.context["variable_forecasts"]
-        self.assertEqual(len(forecasts), 2)
+        self.assertEqual(len(forecasts), 1)
 
-        # 2. Vérification des montants réalisés stricts
-        forecast_maxime = next(f for f in forecasts if f["member"] == self.member)
-        forecast_laurie = next(f for f in forecasts if f["member"] == member_laurie)
-
+        # 2. Vérification de la prévision de Maxime et de son montant réalisé strict
+        forecast_maxime = forecasts[0]
+        self.assertEqual(forecast_maxime["member"], self.member)
         self.assertEqual(
             forecast_maxime["realized_amount"], Decimal("55.00")
-        )  # Uniquement les 55 de Maxime
-        self.assertEqual(
-            forecast_laurie["realized_amount"], Decimal("35.00")
-        )  # Uniquement les 35 de Laurie
+        )  # Uniquement les 55€ de Maxime

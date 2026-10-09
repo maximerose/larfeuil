@@ -60,7 +60,7 @@ def dashboard_view(request: AuthenticatedHttpRequest) -> HttpResponse:
     # 1. 10 Dernières activités (Transactions + Transferts)
     recent_txs = list(
         Transaction.objects.filter(
-            bank_account__in=accounts,
+            Q(bank_account__in=accounts) | Q(meal_voucher_bank_account__in=accounts),
             budget_month__year=target_month.year,
             budget_month__month=target_month.month,
         )
@@ -98,8 +98,7 @@ def dashboard_view(request: AuthenticatedHttpRequest) -> HttpResponse:
 
     # 3. Enveloppes des charges variables restantes par catégorie
     category_forecasts = MonthlyForecast.objects.filter(
-        Q(member=member) | Q(visibility=Visibility.SHARED),
-        member__household=household,
+        member=member,
         month__year=target_month.year,
         month__month=target_month.month,
         category__isnull=False,
@@ -132,8 +131,7 @@ def dashboard_view(request: AuthenticatedHttpRequest) -> HttpResponse:
 
     # 4. Enveloppes d'épargne restantes
     savings_qs = MonthlyForecast.objects.filter(
-        Q(member=member) | Q(visibility=Visibility.SHARED),
-        member__household=household,
+        member=member,
         month__year=target_month.year,
         month__month=target_month.month,
         bank_account__isnull=False,
@@ -172,8 +170,7 @@ def dashboard_view(request: AuthenticatedHttpRequest) -> HttpResponse:
         )
 
     income_qs = MonthlyForecast.objects.filter(
-        Q(member=member) | Q(visibility=Visibility.SHARED),
-        member__household=household,
+        member=member,
         month__year=target_month.year,
         month__month=target_month.month,
         category__isnull=False,

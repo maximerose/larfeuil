@@ -101,7 +101,13 @@ class Command(BaseCommand):
 
         def get_or_create_member(name_str):
             clean_name = name_str.strip() if name_str else "Maxime"
-            if "pro" in clean_name.lower():
+            clean_lower = clean_name.lower()
+
+            if (
+                "pro" in clean_lower
+                or "joint" in clean_lower
+                or "commun" in clean_lower
+            ):
                 clean_name = "Maxime"
 
             if clean_name not in members_map:
@@ -299,6 +305,10 @@ class Command(BaseCommand):
                     base_account = get_or_create_account(
                         member, "Compte pro", AccountType.BUSINESS, Visibility.PRIVATE
                     )
+                elif "joint" in user_raw.lower() or "commun" in user_raw.lower():
+                    base_account = get_or_create_account(
+                        member, "Compte joint", AccountType.CHECKING, Visibility.SHARED
+                    )
                 else:
                     base_account = get_or_create_account(
                         member,
@@ -446,6 +456,12 @@ class Command(BaseCommand):
                         label_or_cat, CategoryType.VARIABLE
                     )
 
+                tr_account = None
+                if mv_amount > 0:
+                    tr_account = BankAccount.objects.filter(
+                        owner=member, account_type=AccountType.MEAL_VOUCHER
+                    ).first()
+
                 transactions_to_create.append(
                     Transaction(
                         bank_account=account,
@@ -456,6 +472,7 @@ class Command(BaseCommand):
                         transaction_type=tx_type,
                         total_amount=final_amount,
                         meal_voucher_amount=mv_amount,
+                        meal_voucher_bank_account=tr_account,
                         label=label_or_cat
                         if section in ["RECURRING", "INCOME"]
                         else "",

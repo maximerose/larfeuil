@@ -1,6 +1,7 @@
 import datetime
 import json
 from decimal import Decimal
+from itertools import chain
 
 from django.contrib import messages
 from django.db.models import Q
@@ -673,13 +674,21 @@ def monthly_history_view(request: AuthenticatedHttpRequest) -> HttpResponse:
     selected_tx_type = request.GET.get("tx_type", "")
 
     # --- 2. REQUÊTE DE BASE (SÉCURISÉE) ---
+    history_visible_accounts = BankAccount.objects.filter(
+        Q(owner=member) | Q(visibility=Visibility.SHARED),
+        owner__household=household,
+    ).distinct()
+
     base_txs = Transaction.objects.filter(
-        Q(bank_account__owner=member) | Q(bank_account__visibility=Visibility.SHARED),
-        bank_account__owner__household=household,
+        Q(bank_account__in=history_visible_accounts)
+        | Q(meal_voucher_bank_account__in=history_visible_accounts),
         budget_month__year=target_month.year,
         budget_month__month=target_month.month,
     ).select_related(
-        "category", "bank_account", "bank_account__owner", "recurring_expense"
+        "category",
+        "bank_account",
+        "bank_account__owner",
+        "recurring_expense",
     )
 
     if selected_member_id:
@@ -725,7 +734,7 @@ def monthly_history_view(request: AuthenticatedHttpRequest) -> HttpResponse:
 
     chart_dict = {"labels": chart_labels, "data": chart_data} if chart_labels else None
 
-    # --- 5. APPLICATION DES FILTRES À LA LISTE ---
+    # --- 5. APPLICATION DES FILTRES À LA LISTE DES TRANSACTIONS ---
     txs = base_txs
     if selected_category_id == "none":
         txs = txs.filter(category__isnull=True)
@@ -747,8 +756,36 @@ def monthly_history_view(request: AuthenticatedHttpRequest) -> HttpResponse:
     elif selected_tx_type == "SAVINGS":
         txs = txs.filter(transaction_type="EXPENSE", category__type="SAVINGS")
 
-    txs = txs.order_by("-transaction_date", "-created_at")
+    # --- RÉCUPÉRATION ET FILTRAGE DES TRANSFERTS ---
+    transfers = Transfer.objects.filter(
+        Q(source_account__owner__household=household)
+        | Q(destination_account__owner__household=household),
+        date__year=target_month.year,
+        date__month=target_month.month,
+    ).select_related("source_account", "destination_account")
 
+    if selected_member_id:
+        transfers = transfers.filter(
+            Q(source_account__owner_id=selected_member_id)
+            | Q(destination_account__owner_id=selected_member_id)
+        )
+    if selected_account_id:
+        transfers = transfers.filter(
+            Q(source_account_id=selected_account_id)
+            | Q(destination_account_id=selected_account_id)
+        )
+
+    # Si un filtre de type spécifique aux transactions est actif (Revenu, Dépense fixe...), on masque les transferts
+    if selected_tx_type and selected_tx_type not in ["", "TRANSFER"]:
+        transfers = transfers.none()
+
+    # --- FUSION ET TRI ---
+    def get_sort_date(item):
+        if hasattr(item, "transaction_date"):
+            return (item.transaction_date, item.created_at)
+        return (item.date, item.created_at)
+
+    combined_history = sorted(chain(txs, transfers), key=get_sort_date, reverse=True)
     # --- 6. FORMATAGE DES COMPTES POUR LE SÉLECTEUR ---
     visible_accounts = (
         BankAccount.objects.filter(
@@ -773,7 +810,7 @@ def monthly_history_view(request: AuthenticatedHttpRequest) -> HttpResponse:
     # --- 7. PRÉPARATION DU CONTEXTE ---
     context = {
         "member": member,
-        "transactions": txs,
+        "transactions": combined_history,
         "target_month": target_month,
         "income_kpi": income_kpi,
         "fixed_kpi": fixed_kpi,

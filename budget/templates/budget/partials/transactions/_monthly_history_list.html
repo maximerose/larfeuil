@@ -77,7 +77,9 @@
           <p class="font-semibold text-slate-200 truncate">
             {% if tx.category %}
               {{ tx.category.name }}
-              {% if tx.label %}<span class="text-slate-400 font-normal text-xs">– {{ tx.label }}</span>{% endif %}
+              {% if tx.label and tx.label != tx.category.name %}
+                <span class="text-slate-400 font-normal text-xs">– {{ tx.label }}</span>
+              {% endif %}
             {% elif tx.recurring_expense %}
               {{ tx.recurring_expense.label }}
               {% if tx.label and tx.label != tx.recurring_expense.label %}
@@ -108,7 +110,12 @@
             </div>
           {% endif %}
 
-          {% if tx.comment %}<div class="text-[10px] text-slate-400 mt-1 truncate italic">💬 {{ tx.comment }}</div>{% endif %}
+          {% if tx.comment %}
+            <div class="mt-1.5 flex items-center gap-1.5 px-2 py-1 bg-slate-800/50 rounded-lg border border-slate-700 w-fit max-w-full">
+              <span class="text-xs">💬</span>
+              <span class="text-xs font-medium text-slate-300 truncate">{{ tx.comment }}</span>
+            </div>
+          {% endif %}
         </div>
       </div>
 
@@ -162,10 +169,12 @@
               {% include "budget/components/icon.html" with name="trash" class="w-4 h-4" %}
             </button>
           </div>
+        {% else %}
+          <div class="w-17 hidden sm:block"></div>
         {% endif %}
       </div>
     </div>
   {% endif %}
 {% empty %}
-  <p class="text-xs text-slate-500 py-3 text-center">Aucune transaction enregistrée ce mois-ci.</p>
+  <p class="text-xs text-slate-500 py-3 text-center">Aucune opération enregistrée ce mois-ci.</p>
 {% endfor %}
