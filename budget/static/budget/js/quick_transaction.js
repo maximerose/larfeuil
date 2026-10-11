@@ -1,4 +1,5 @@
 // Quick Transaction Form Handler
+
 function updateRequiredFields() {
   ["block-expense", "block-income", "block-transfer"].forEach((blockId) => {
     const block = document.getElementById(blockId);
@@ -9,13 +10,11 @@ function updateRequiredFields() {
 
     fields.forEach((field) => {
       if (isHidden) {
-        // On retire le required des blocs masqués pour la validation HTML5
         if (field.hasAttribute("required")) {
           field.removeAttribute("required");
           field.setAttribute("data-was-required", "true");
         }
       } else {
-        // On réassocie le required aux champs du bloc actif
         if (field.getAttribute("data-was-required") === "true") {
           field.setAttribute("required", "required");
           field.removeAttribute("data-was-required");
@@ -26,22 +25,27 @@ function updateRequiredFields() {
 }
 
 function initQuickTransactionForm() {
+  if (typeof initTomSelects === "function") {
+    initTomSelects();
+  }
+
   const configEl = document.getElementById("quick-tx-modal-config");
   const isEditMode = configEl ? configEl.dataset.isEdit === "true" : false;
   const initialTxType = configEl ? configEl.dataset.initialType : "EXPENSE";
 
   const displayAmountInput = document.getElementById("total_amount_display");
-  const hiddenAmountInput = document.getElementById("total_amount");
+  const hiddenTotalAmountInput = document.getElementById("total_amount");
   const refundHint = document.getElementById("refund-hint");
-  const trWrapper = document.getElementById("meal-voucher-wrapper");
-  const trCheckbox = document.getElementById("use_meal_voucher");
-  const trDetails = document.getElementById("meal-voucher-details");
-  const trAmountInput = document.getElementById("meal_voucher_amount");
-  const trAccountSelect = document.getElementById("meal_voucher_account_id");
-  const trMaxLabel = document.getElementById("tr-max-label");
-  const expenseAccountSelect = document.querySelector('select[name="expense_account"]');
+
   const categorySelect = document.querySelector('select[name="expense_category"]');
-  const trEmptyMsg = document.getElementById("tr-empty-message");
+  const mainSelect = document.querySelector('select[name="expense_account"]') || document.querySelector('select[name="ui_main_account"]');
+  const fallbackSelect = document.querySelector('select[name="tr_fallback_account"]') || document.querySelector('select[name="ui_fallback_account"]');
+  const splitBreakdown = document.getElementById("tr-split-breakdown");
+  const trAmountInput = document.getElementById("meal_voucher_amount_input");
+  const hiddenTrAccountId = document.getElementById("meal_voucher_account_id");
+  const hiddenTrAmount = document.getElementById("meal_voucher_amount");
+  const trMaxBadge = document.getElementById("tr-max-badge");
+  const formEl = document.getElementById("quick-transaction-form");
 
   function autoResizeAmount() {
     if (!displayAmountInput) return;
@@ -49,68 +53,136 @@ function initQuickTransactionForm() {
     displayAmountInput.style.width = `${length + 0.5}ch`;
   }
 
-  function getSelectedTrAccount() {
-    if (!trAccountSelect || !window.trAccountsInfo || !window.trAccountsInfo.length) return null;
-    return window.trAccountsInfo.find((acc) => acc.id === trAccountSelect.value);
+  function getTrAccount(accId) {
+    if (!window.trAccountsInfo || !accId) return null;
+    return window.trAccountsInfo.find((acc) => acc.id === accId);
   }
 
-  function updateTrMax() {
-    const trAcc = getSelectedTrAccount();
-    if (!trAcc) return;
-
-    if (trMaxLabel) trMaxLabel.textContent = `Max dispo: ${trAcc.remaining.toFixed(2)} €`;
-
-    const total = parseFloat(hiddenAmountInput.value) || 0;
-    const suggested = Math.max(0, Math.min(total, trAcc.remaining));
-    if (trAmountInput) trAmountInput.value = suggested > 0 ? suggested.toFixed(2) : "";
-
-    if (trAcc.fallback_id && expenseAccountSelect) {
-      expenseAccountSelect.value = trAcc.fallback_id;
-    }
-  }
-
-  function updateTrVisibility() {
-    if (!trWrapper || !categorySelect) return;
+  window.updateTrLogic = function () {
     const txTypeEl = document.querySelector('input[name="tx_type"]:checked');
     if (!txTypeEl) return;
-
     const txType = txTypeEl.value;
-    const catId = categorySelect.value;
-    const isEligible = window.catTrMap && window.catTrMap[catId] === true;
-    const hasTrBalance = window.trAccountsInfo && window.trAccountsInfo.some((acc) => acc.remaining > 0);
 
-    if (txType === "EXPENSE" && isEligible) {
-      if (hasTrBalance) {
-        trWrapper.classList.remove("hidden");
-        if (trEmptyMsg) trEmptyMsg.classList.add("hidden");
+    if (!mainSelect || !window.trAccountsInfo) return;
+
+    const catId = categorySelect ? categorySelect.value : "";
+    const isEligible = window.catTrMap && window.catTrMap[catId] === true;
+
+    // 1. Activer / Désactiver les options TR proprement (ajout ou retrait dans TomSelect)
+    window.trAccountsInfo.forEach((trAcc) => {
+      const trId = trAcc.id;
+      const canUseTr = txType === "EXPENSE" && isEligible && trAcc.remaining > 0;
+
+      if (mainSelect.tomselect) {
+        if (canUseTr) {
+          // L'ajouter s'il manque
+          if (!mainSelect.tomselect.options[trId]) {
+            mainSelect.tomselect.addOption({ value: trId, text: trAcc.name });
+          }
+        } else {
+          // Le retirer
+          if (mainSelect.tomselect.getValue() === trId) {
+            const firstValid = Object.keys(mainSelect.tomselect.options).find(
+              (val) => val !== trId && val !== ""
+            );
+            mainSelect.tomselect.setValue(firstValid || "", true);
+          }
+          mainSelect.tomselect.removeOption(trId);
+        }
       } else {
-        trWrapper.classList.add("hidden");
-        if (trEmptyMsg) trEmptyMsg.classList.remove("hidden");
-        if (trCheckbox) {
-          trCheckbox.checked = false;
-          toggleMealVoucherAmount();
+        const nativeOpt = mainSelect.querySelector(`option[value="${trId}"]`);
+        if (nativeOpt) {
+          nativeOpt.disabled = !canUseTr;
+          nativeOpt.style.display = canUseTr ? "" : "none";
+          if (!canUseTr && mainSelect.value === trId) mainSelect.value = "";
         }
       }
-    } else {
-      trWrapper.classList.add("hidden");
-      if (trEmptyMsg) trEmptyMsg.classList.add("hidden");
-      if (trCheckbox) {
-        trCheckbox.checked = false;
-        toggleMealVoucherAmount();
-      }
-    }
-  }
+    });
 
-  window.toggleMealVoucherAmount = function () {
-    if (!trCheckbox || !trDetails) return;
-    if (trCheckbox.checked) {
-      trDetails.classList.remove("hidden");
-      updateTrMax();
+    if (mainSelect.tomselect) mainSelect.tomselect.refreshOptions(false);
+
+    // 2. Gestion de la ventilation si Swile est sélectionné
+    const selectedAccId = mainSelect.value || (mainSelect.tomselect ? mainSelect.tomselect.getValue() : "");
+    const selectedTrAcc = getTrAccount(selectedAccId);
+    const totalAmount = parseFloat(hiddenTotalAmountInput ? hiddenTotalAmountInput.value : 0) || 0;
+
+    if (txType === "EXPENSE" && selectedTrAcc) {
+      const trRemaining = selectedTrAcc.remaining;
+
+      if (totalAmount > trRemaining) {
+        // Dépassement : afficher la ventilation
+        if (splitBreakdown) splitBreakdown.classList.remove("hidden");
+        if (trMaxBadge) trMaxBadge.textContent = `Plafond dispo: ${trRemaining.toFixed(2).replace('.', ',')} €`;
+
+        if (trAmountInput && (!trAmountInput.value || parseFloat(trAmountInput.value) > trRemaining || parseFloat(trAmountInput.value) <= 0)) {
+          trAmountInput.value = trRemaining.toFixed(2);
+        }
+
+        const currentTrAmount = Math.min(totalAmount, Math.max(0, parseFloat(trAmountInput ? trAmountInput.value : 0) || trRemaining));
+        const remainingForFallback = totalAmount - currentTrAmount;
+
+        const remDisplay = document.getElementById("tr-split-remaining-display");
+        if (remDisplay) remDisplay.textContent = remainingForFallback.toFixed(2).replace('.', ',') + " €";
+
+        mainSelect.name = "ui_main_account";
+        if (fallbackSelect) fallbackSelect.name = "expense_account";
+
+        // Sélection par défaut du relais
+        if (fallbackSelect) {
+          const fallbackVal = fallbackSelect.value;
+          if (!fallbackVal || fallbackVal === selectedTrAcc.id) {
+            const defaultFallbackId = selectedTrAcc.fallback_id || "";
+            if (fallbackSelect.tomselect && defaultFallbackId) {
+              fallbackSelect.tomselect.setValue(defaultFallbackId, true);
+            } else if (defaultFallbackId) {
+              fallbackSelect.value = defaultFallbackId;
+            }
+          }
+        }
+
+        if (hiddenTrAccountId) hiddenTrAccountId.value = selectedTrAcc.id;
+        if (hiddenTrAmount) hiddenTrAmount.value = currentTrAmount.toFixed(2);
+
+      } else {
+        // Achat <= Plafond
+        if (splitBreakdown) splitBreakdown.classList.add("hidden");
+
+        mainSelect.name = "expense_account";
+        if (fallbackSelect) fallbackSelect.name = "ui_fallback_account";
+
+        if (hiddenTrAccountId) hiddenTrAccountId.value = selectedTrAcc.id;
+        if (hiddenTrAmount) hiddenTrAmount.value = totalAmount.toFixed(2);
+      }
     } else {
-      trDetails.classList.add("hidden");
-      if (trAmountInput) trAmountInput.value = "";
+      // Compte classique
+      if (splitBreakdown) splitBreakdown.classList.add("hidden");
+
+      mainSelect.name = "expense_account";
+      if (fallbackSelect) fallbackSelect.name = "ui_fallback_account";
+
+      if (hiddenTrAccountId) hiddenTrAccountId.value = "";
+      if (hiddenTrAmount) hiddenTrAmount.value = "0.00";
     }
   };
+
+  // Soumission
+  if (formEl) {
+    formEl.addEventListener("submit", function () {
+      const selectedTrAcc = getTrAccount(mainSelect ? mainSelect.value : null);
+      const totalAmount = parseFloat(hiddenTotalAmountInput ? hiddenTotalAmountInput.value : 0) || 0;
+
+      if (selectedTrAcc && totalAmount > selectedTrAcc.remaining && fallbackSelect) {
+        const fallbackValue = fallbackSelect.value;
+        if (fallbackValue && fallbackValue !== selectedTrAcc.id) {
+          if (mainSelect.tomselect) {
+            mainSelect.tomselect.setValue(fallbackValue, true);
+          } else {
+            mainSelect.value = fallbackValue;
+          }
+        }
+      }
+    });
+  }
 
   window.updateTransferAccounts = function () {
     const sourceSelect = document.querySelector('select[name="source_account"]');
@@ -120,22 +192,12 @@ function initQuickTransactionForm() {
     const sourceVal = sourceSelect.value;
     const destVal = destSelect.value;
 
-    // 1. Mise à jour du HTML Natif
-    for (let opt of destSelect.options) {
-      opt.disabled = opt.value !== "" && opt.value === sourceVal;
-    }
-    for (let opt of sourceSelect.options) {
-      opt.disabled = opt.value !== "" && opt.value === destVal;
-    }
-
-    // 2. Mise à jour de l'API TomSelect (si initialisé)
     if (destSelect.tomselect) {
       Object.keys(destSelect.tomselect.options).forEach((val) => {
         destSelect.tomselect.options[val].disabled = val !== "" && val === sourceVal;
       });
       destSelect.tomselect.refreshOptions(false);
     }
-
     if (sourceSelect.tomselect) {
       Object.keys(sourceSelect.tomselect.options).forEach((val) => {
         sourceSelect.tomselect.options[val].disabled = val !== "" && val === destVal;
@@ -146,7 +208,6 @@ function initQuickTransactionForm() {
 
   window.swapTransferAccounts = function (e) {
     if (e && e.preventDefault) e.preventDefault();
-
     const sourceSelect = document.querySelector('select[name="source_account"]');
     const destSelect = document.querySelector('select[name="destination_account"]');
     if (!sourceSelect || !destSelect) return;
@@ -154,28 +215,14 @@ function initQuickTransactionForm() {
     const tempSourceVal = sourceSelect.value;
     const tempDestVal = destSelect.value;
 
-    // Débloquer temporairement pour permettre le croisement sans blocage
-    Array.from(sourceSelect.options).forEach((opt) => (opt.disabled = false));
-    Array.from(destSelect.options).forEach((opt) => (opt.disabled = false));
-
     if (sourceSelect.tomselect) {
-      Object.keys(sourceSelect.tomselect.options).forEach((val) => {
-        sourceSelect.tomselect.options[val].disabled = false;
-      });
-      sourceSelect.tomselect.setValue(tempDestVal, true); // true = silent
-    } else {
-      sourceSelect.value = tempDestVal;
+      Object.keys(sourceSelect.tomselect.options).forEach((val) => (sourceSelect.tomselect.options[val].disabled = false));
+      sourceSelect.tomselect.setValue(tempDestVal, true);
     }
-
     if (destSelect.tomselect) {
-      Object.keys(destSelect.tomselect.options).forEach((val) => {
-        destSelect.tomselect.options[val].disabled = false;
-      });
-      destSelect.tomselect.setValue(tempSourceVal, true); // true = silent
-    } else {
-      destSelect.value = tempSourceVal;
+      Object.keys(destSelect.tomselect.options).forEach((val) => (destSelect.tomselect.options[val].disabled = false));
+      destSelect.tomselect.setValue(tempSourceVal, true);
     }
-
     sourceSelect.dispatchEvent(new Event("change", { bubbles: true }));
   };
 
@@ -184,69 +231,60 @@ function initQuickTransactionForm() {
     if (!txTypeEl) return;
     const type = txTypeEl.value;
 
-    const blockExpense = document.getElementById("block-expense");
-    const blockIncome = document.getElementById("block-income");
-    const blockTransfer = document.getElementById("block-transfer");
-    const imputationWrapper = document.getElementById("imputation-wrapper");
-
-    if (blockExpense) blockExpense.classList.toggle("hidden", type !== "EXPENSE");
-    if (blockIncome) blockIncome.classList.toggle("hidden", type !== "INCOME");
-    if (blockTransfer) blockTransfer.classList.toggle("hidden", type !== "TRANSFER");
-
+    document.getElementById("block-expense")?.classList.toggle("hidden", type !== "EXPENSE");
+    document.getElementById("block-income")?.classList.toggle("hidden", type !== "INCOME");
+    document.getElementById("block-transfer")?.classList.toggle("hidden", type !== "TRANSFER");
     if (refundHint) refundHint.classList.toggle("hidden", type !== "EXPENSE");
 
+    const imputationWrapper = document.getElementById("imputation-wrapper");
     if (imputationWrapper) {
       imputationWrapper.style.opacity = type === "TRANSFER" ? "0.3" : "1";
       imputationWrapper.style.pointerEvents = type === "TRANSFER" ? "none" : "auto";
     }
 
-    updateTrVisibility();
+    window.updateTrLogic();
     updateRequiredFields();
   };
 
-  const sourceSelect = document.querySelector('select[name="source_account"]');
-  const destSelect = document.querySelector('select[name="destination_account"]');
+  if (categorySelect) {
+    categorySelect.addEventListener("change", window.updateTrLogic);
+    if (categorySelect.tomselect) categorySelect.tomselect.on("change", window.updateTrLogic);
+  }
 
-  if (categorySelect) categorySelect.addEventListener("change", updateTrVisibility);
-  if (sourceSelect) sourceSelect.addEventListener("change", window.updateTransferAccounts);
-  if (destSelect) destSelect.addEventListener("change", window.updateTransferAccounts);
-  if (trAccountSelect) trAccountSelect.addEventListener("change", updateTrMax);
+  document.body.addEventListener("change", function(e) {
+      if (e.target.name === "expense_account" || e.target.name === "ui_main_account" || e.target.name === "tr_fallback_account" || e.target.name === "ui_fallback_account") {
+          window.updateTrLogic();
+      }
+  });
+
+  if (trAmountInput) {
+    trAmountInput.addEventListener("input", window.updateTrLogic);
+  }
 
   if (displayAmountInput) {
     displayAmountInput.addEventListener("input", () => {
       autoResizeAmount();
       updateRefundHint();
-      if (trCheckbox && trCheckbox.checked) {
-        updateTrMax();
-      }
+      window.updateTrLogic();
     });
   }
 
-  // Initialisation du formulaire
+  const sourceSelect = document.querySelector('select[name="source_account"]');
+  const destSelect = document.querySelector('select[name="destination_account"]');
+  if (sourceSelect) sourceSelect.addEventListener("change", window.updateTransferAccounts);
+  if (destSelect) destSelect.addEventListener("change", window.updateTransferAccounts);
+
   autoResizeAmount();
   window.updateTransferAccounts();
 
-  if (isEditMode) {
-    if (initialTxType) {
-      const radioToSelect = document.querySelector(`input[name="tx_type"][value="${initialTxType}"]`);
-      if (radioToSelect) radioToSelect.checked = true;
-    }
-    window.toggleTxType();
-    if (trCheckbox && trCheckbox.checked && trDetails) {
-      trDetails.classList.remove("hidden");
-      const trAcc = getSelectedTrAccount();
-      if (trAcc && trMaxLabel) {
-        trMaxLabel.textContent = `Max dispo: ${trAcc.remaining.toFixed(2)} €`;
-      }
-    } else {
-      updateTrVisibility();
-    }
-  } else {
-    window.toggleTxType();
+  if (isEditMode && initialTxType) {
+    const radioToSelect = document.querySelector(`input[name="tx_type"][value="${initialTxType}"]`);
+    if (radioToSelect) radioToSelect.checked = true;
   }
 
+  window.toggleTxType();
   updateRequiredFields();
-  updateRefundHint(); // Met à jour le texte du remboursement lors de l'ouverture de la modale
+  updateRefundHint();
 }
 
 function toggleAmountSign() {

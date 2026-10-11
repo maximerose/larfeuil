@@ -44,7 +44,6 @@
   <!-- 2. Saisie du Montant -->
   <div class="mb-6 border-b border-brand-border/60 pb-6">
     <div class="flex items-center justify-center gap-2 w-full">
-      <!-- Bouton +/- pour inverser le signe -->
       <button type="button"
               tabindex="-1"
               onclick="toggleAmountSign()"
@@ -68,7 +67,6 @@
       <span class="text-4xl font-extrabold text-slate-500 mt-1">€</span>
     </div>
 
-    <!-- Indication cliquable dynamique -->
     <div id="refund-hint"
          onclick="toggleAmountSign()"
          class="flex items-center justify-center gap-1.5 text-xs text-slate-500 mt-2 transition-colors cursor-pointer hover:text-slate-300 select-none">
@@ -84,39 +82,38 @@
       {% include "budget/components/select.html" with label="Compte Débité" name="expense_account" options=accounts selected=selected_account_id required=True %}
 
       {% if tr_accounts_info %}
-        <div id="meal-voucher-wrapper" class="hidden mt-4 p-3 bg-slate-900/50 rounded-xl border border-brand-border">
-          <label class="flex items-center gap-2 cursor-pointer">
-            <input type="checkbox"
-                   id="use_meal_voucher"
-                   class="rounded border-slate-600 bg-slate-900 focus:ring-1 focus:ring-offset-0 focus:ring-offset-transparent text-brand"
-                   {% if transaction and transaction.meal_voucher_amount > 0 %}checked{% endif %}
-                   onchange="toggleMealVoucherAmount()" />
-            <span class="text-sm font-medium text-slate-200">Régler avec Tickets Resto</span>
-          </label>
+        <!-- Encart de ventilation dynamique si montant > plafond TR -->
+        <div id="tr-split-breakdown"
+             class="hidden mt-3 col-span-1 sm:col-span-2 p-3.5 bg-slate-900/80 rounded-xl border border-brand-border space-y-3 shadow-inner">
+          <div class="flex items-center gap-2 border-b border-brand-border/60 pb-2">
+            {% include "budget/components/icon.html" with name="credit-card" class="w-4 h-4 text-brand" %}
+            <span class="text-xs font-bold text-slate-200 uppercase tracking-wider">Ventilation Tickets Resto</span>
+          </div>
 
-          <div id="meal-voucher-details" class="hidden pl-7 pt-3 mt-1 space-y-3 border-l-2 border-brand-border/60 ml-2">
-            <div class="flex flex-col gap-1">
-              {% include "budget/components/select.html" with label="Carte utilisée" name="meal_voucher_account_id" options=tr_accounts_info selected=transaction.meal_voucher_bank_account_id %}
-            </div>
-            <div class="flex flex-col gap-1">
-              <div class="flex items-center justify-between">
-                <label class="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Montant déduit (TR)</label>
-                <span id="tr-max-label" class="text-[10px] text-slate-400 font-bold"></span>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1 text-xs">
+            <div>
+              <div class="flex items-center justify-between mb-1">
+                <label class="font-semibold text-slate-400">Montant déduit TR (€)</label>
+                <span id="tr-max-badge" class="text-[10px] text-brand font-bold"></span>
               </div>
               <input type="number"
-                     id="meal_voucher_amount"
-                     name="meal_voucher_amount"
                      step="0.01"
-                     value="{% if transaction and transaction.meal_voucher_amount %}{{ transaction.meal_voucher_amount|stringformat:'.2f' }}{% endif %}"
-                     class="input-base px-3 py-1.5 text-sm font-bold text-brand" />
+                     id="meal_voucher_amount_input"
+                     class="input-base px-3 py-1.5 text-sm font-bold text-brand w-full"
+                     placeholder="25.00" />
+            </div>
+
+            <div>
+              {% include "budget/components/select.html" with label="Compte relais (Reste)" name="tr_fallback_account" options=accounts selected="" %}
+              <div class="mt-1 text-[10px] text-slate-400 font-medium">
+                Reste prélevé : <strong id="tr-split-remaining-display" class="text-action-warning">0,00 €</strong>
+              </div>
             </div>
           </div>
         </div>
 
-        <div id="tr-empty-message"
-             class="hidden mt-4 p-3 bg-action-warning/10 text-action-warning rounded-xl border border-action-warning/30 text-sm text-center">
-          Vous avez atteint votre plafond Tickets Resto pour aujourd'hui.
-        </div>
+        <input type="hidden" name="meal_voucher_account_id" id="meal_voucher_account_id" value="" />
+        <input type="hidden" name="meal_voucher_amount" id="meal_voucher_amount" value="" />
       {% endif %}
     </div>
   </div>

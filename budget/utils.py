@@ -3,6 +3,7 @@ import datetime
 from decimal import Decimal
 from functools import wraps
 
+from django import forms
 from django.db.models import F, Sum
 from django.http import HttpResponse
 from django.utils import timezone
@@ -118,3 +119,12 @@ def remove_accents(text):
     if not text:
         return ""
     return str(text).lower().translate(str.maketrans("éèêëàâäôöûüç", "eeeeaaaoouuc"))
+
+
+class FrenchDecimalField(forms.DecimalField):
+    """Champ personnalisé pour accepter la virgule française et la convertir en point."""
+
+    def to_python(self, value):
+        if isinstance(value, str):
+            value = value.replace(",", ".")
+        return super().to_python(value)

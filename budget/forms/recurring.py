@@ -7,9 +7,14 @@ from budget.models import BankAccount, Category, RecurringExpense
 from budget.models.account import Household, HouseholdMember
 from budget.models.category import CategoryType
 from budget.models.recurring import RecurringExpenseShare
+from budget.utils import FrenchDecimalField
 
 
 class RecurringExpenseForm(forms.ModelForm):
+    total_amount = FrenchDecimalField(
+        max_digits=15, decimal_places=2, required=True, label="Montant"
+    )
+
     class Meta:
         model = RecurringExpense
         fields: ClassVar[list[str]] = [

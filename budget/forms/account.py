@@ -4,9 +4,20 @@ from django import forms
 from django.forms import ModelChoiceField
 
 from budget.models.account import BankAccount
+from budget.utils import FrenchDecimalField
 
 
 class BankAccountForm(forms.ModelForm):
+    current_balance = FrenchDecimalField(
+        max_digits=15, decimal_places=2, required=True, label="Solde actuel"
+    )
+    daily_meal_voucher_limit = FrenchDecimalField(
+        max_digits=6,
+        decimal_places=2,
+        required=False,
+        label="Limite quotidienne de tickets resto",
+    )
+
     class Meta:
         model = BankAccount
         fields: ClassVar[list[str]] = [
