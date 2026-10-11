@@ -49,7 +49,7 @@ class TransactionViewsTestCase(TestCase):
 
         data = {
             "total_amount": "45.50",
-            "label": "Boulangerie",
+            "comment": "Boulangerie",
             "category": str(self.category.id),
             "bank_account": str(self.account.id),
             "expense_category": str(self.category.id),
@@ -68,7 +68,7 @@ class TransactionViewsTestCase(TestCase):
         assert transaction is not None
 
         self.assertEqual(transaction.total_amount, Decimal("45.50"))
-        self.assertEqual(transaction.label, "Boulangerie")
+        self.assertEqual(transaction.comment, "Boulangerie")
         self.assertEqual(transaction.category, self.category)
 
         self.account.refresh_from_db()

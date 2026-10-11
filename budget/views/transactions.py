@@ -78,8 +78,8 @@ def quick_transaction_form_view(request: AuthenticatedHttpRequest) -> HttpRespon
     if request.method == "POST":
         tx_type = request.POST.get("tx_type", "EXPENSE")
         total_amount = Decimal(request.POST.get("total_amount", "0.00"))
-        label = request.POST.get("label", "")
         transaction_date_str = request.POST.get("transaction_date")
+        comment = request.POST.get("comment", "")
         transaction_date = (
             datetime.date.fromisoformat(transaction_date_str)
             if transaction_date_str
@@ -105,7 +105,7 @@ def quick_transaction_form_view(request: AuthenticatedHttpRequest) -> HttpRespon
                 # Remboursement "Catégorisé"
                 Transaction.objects.create(
                     total_amount=total_amount,
-                    label=label or "Remboursement envoyé",
+                    comment=comment,
                     category_id=transfer_category_id,
                     bank_account_id=source_id,
                     transaction_date=transaction_date,
@@ -114,7 +114,7 @@ def quick_transaction_form_view(request: AuthenticatedHttpRequest) -> HttpRespon
                 )
                 Transaction.objects.create(
                     total_amount=-total_amount,
-                    label=label or "Remboursement reçu",
+                    comment=comment,
                     category_id=transfer_category_id,
                     bank_account_id=dest_id,
                     transaction_date=transaction_date,
@@ -146,7 +146,7 @@ def quick_transaction_form_view(request: AuthenticatedHttpRequest) -> HttpRespon
 
             Transaction.objects.create(
                 total_amount=total_amount,
-                label=label,
+                comment=comment,
                 category_id=category_id,
                 bank_account_id=bank_account_id,
                 transaction_date=transaction_date,
@@ -318,7 +318,7 @@ def transaction_update_view(
     if request.method == "POST":
         tx_type = request.POST.get("tx_type", "EXPENSE")
         total_amount = Decimal(request.POST.get("total_amount", "0.00"))
-        label = request.POST.get("label", "")
+        comment = request.POST.get("comment", "")
         transaction_date_str = request.POST.get("transaction_date")
         transaction_date = (
             datetime.date.fromisoformat(transaction_date_str)
@@ -363,7 +363,7 @@ def transaction_update_view(
 
             tx.transaction_type = db_tx_type
             tx.total_amount = total_amount
-            tx.label = label
+            tx.comment = comment
 
             # Affectation explicite d'instances ORM pour Pylance & Ruff
             tx.category = (

@@ -189,7 +189,7 @@
       </div>
     </div>
 
-    {% include "budget/components/input.html" with label="Libellé / Note (Optionnel)" name="label" value=transaction.label|default:"" placeholder="Libellé ou commentaire..." %}
+    {% include "budget/components/input.html" with label="Commentaire" name="comment" value=transaction.comment|default:"" placeholder="Libellé ou commentaire..." %}
   </div>
 
   <script>
