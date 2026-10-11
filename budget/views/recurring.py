@@ -3,6 +3,7 @@ from decimal import Decimal
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
+from django.db.models import Q
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import get_object_or_404, render
 from django.views.decorators.http import require_GET, require_http_methods
@@ -108,7 +109,10 @@ def settings_recurring_delete_view(
 ) -> HttpResponse:
     household = request.household
     expense = get_object_or_404(
-        RecurringExpense, id=expense_id, household=household, is_active=True
+        RecurringExpense,
+        Q(household=household) | Q(owner__household=household),
+        id=expense_id,
+        is_active=True,
     )
 
     if request.method == "POST":

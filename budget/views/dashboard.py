@@ -393,7 +393,12 @@ def pay_recurring_expense_view(
         target_account = existing_tx.bank_account
 
     if request.method == "POST":
-        amount = Decimal(request.POST.get("amount", str(amount_to_pay)))
+        raw_amount = request.POST.get("amount", "").strip().replace(",", ".")
+        if raw_amount:
+            amount = Decimal(raw_amount)
+        else:
+            amount = Decimal(str(amount_to_pay))
+
         account_id = request.POST.get("account_id")
         update_default = request.POST.get("update_default") == "on"
         tx_date_str = request.POST.get("transaction_date")

@@ -2,6 +2,7 @@ import csv
 import datetime
 import os
 from decimal import Decimal
+import re
 
 from django.conf import settings
 from django.contrib.auth import get_user_model
@@ -89,7 +90,7 @@ class Command(BaseCommand):
         categories_map = {}
         recurring_map = {}
 
-        # NOUVEAU : Chargement de la map des catégories (Swilable)
+        # Chargement de la map des catégories (Swilable)
         meal_voucher_eligible_map = {}
         if os.path.exists(categories_file):
             with open(categories_file, mode="r", encoding="utf-8-sig") as f:
@@ -267,6 +268,7 @@ class Command(BaseCommand):
                             if row["frequency_months"]
                             else 1,
                             "is_variable": row["is_variable"] == "True",
+                            "is_active": row.get("is_active", "True") == "True",
                             "default_bank_account": target_account,
                             "usual_due_day": due_date,
                         },
@@ -335,6 +337,9 @@ class Command(BaseCommand):
                             label_or_cat, CategoryType.VARIABLE
                         )
                     elif forecast_type == "RECURRING":
+                        lbl_clean = re.sub(
+                            r"(?i)\s*\((résilié|inactif)\)", "", label_or_cat
+                        ).strip()
                         lbl_lower = label_or_cat.lower()
                         owner_key = user_raw.lower()
 
@@ -349,12 +354,13 @@ class Command(BaseCommand):
                         else:
                             rec_obj, _ = RecurringExpense.objects.get_or_create(
                                 household=household,
-                                label=label_or_cat,
+                                label=lbl_clean,
                                 owner=member,
                                 defaults={
                                     "visibility": Visibility.PRIVATE,
                                     "total_amount": abs(raw_amount),
                                     "default_bank_account": base_account,
+                                    "is_active": False,
                                 },
                             )
                             recurring_map[(household.id, lbl_lower, owner_key)] = (

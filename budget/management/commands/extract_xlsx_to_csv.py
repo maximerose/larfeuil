@@ -201,7 +201,7 @@ class Command(BaseCommand):
         }
 
         param_info = {}
-        category_records = {}  # <-- NOUVEAU : Sauvegarde des catégories et du statut Swilable
+        category_records = {}
         observed_txs = defaultdict(list)
         tx_records = []
 
@@ -224,6 +224,25 @@ class Command(BaseCommand):
                         and str(label).strip() != "None"
                     ):
                         lbl_clean = str(label).strip()
+
+                        is_active_flag = True
+                        if (
+                            "(résilié)" in lbl_clean.lower()
+                            or "(inactif)" in lbl_clean.lower()
+                        ):
+                            is_active_flag = False
+                            lbl_clean = re.sub(
+                                r"(?i)\s*\((résilié|inactif)\)", "", lbl_clean
+                            ).strip()
+
+                        lbl_key = lbl_clean.lower()
+
+                        # Si la charge existait déjà et qu'elle a été marquée résiliée dans un fichier, on conserve is_active = False
+                        if lbl_key in param_info and not param_info[lbl_key].get(
+                            "is_active", True
+                        ):
+                            is_active_flag = False
+
                         if lbl_clean.lower() in [
                             "la bellenergie",
                             "energie",
@@ -243,15 +262,16 @@ class Command(BaseCommand):
                         except (ValueError, TypeError):
                             amt_val = 0.0
 
-                        param_info[lbl_clean.lower()] = {
+                        param_info[lbl_key] = {
                             "display": lbl_clean,
                             "freq": freq_val,
                             "amount": amt_val,
                             "is_pro": bool(is_pro) if is_pro is not None else False,
                             "due_date": parse_excel_date(due_date) or "",
+                            "is_active": is_active_flag,
                         }
 
-                    # NOUVEAU : Lecture des catégories variables et du statut Swilable
+                    # Lecture des catégories variables et du statut Swilable
                     cat_name = row[10] if len(row) > 10 else None
                     swilable = row[11] if len(row) > 11 else False
 
@@ -287,7 +307,7 @@ class Command(BaseCommand):
                     continue
                 month_num = month_names[sheet_name.strip().lower()]
 
-                # === EXTRACTION SÉCURISÉE DES PRÉVISIONS (Colonnes AA à AD) ===
+                # === EXTRACTION SÉCURISÉE DES PRÉVISIONS ===
                 current_forecast_section = None
                 for r_idx, row in enumerate(rows):
                     if len(row) > 26 and row[26] is not None and str(row[26]).strip():
@@ -319,6 +339,11 @@ class Command(BaseCommand):
                                 current_forecast_section = None
                             elif cell_26_str != "type":
                                 cat_name = str(row[26]).strip()
+
+                                # --- NETTOYAGE DU TAG (résilié/inactif) ---
+                                cat_name = re.sub(
+                                    r"(?i)\s*\((résilié|inactif)\)", "", cat_name
+                                ).strip()
 
                                 if cat_name.lower() in [
                                     "la bellenergie",
@@ -359,10 +384,7 @@ class Command(BaseCommand):
                                     if raw_val != "" and raw_val.lower() != "nan":
                                         try:
                                             amt = float(raw_val)
-                                            if (
-                                                current_forecast_section == "RECURRING"
-                                                or amt != 0
-                                            ):
+                                            if amt != 0:
                                                 tx_records.append(
                                                     {
                                                         "source_file": file_path,
@@ -386,10 +408,7 @@ class Command(BaseCommand):
                                     if raw_val != "" and raw_val.lower() != "nan":
                                         try:
                                             amt = float(raw_val)
-                                            if (
-                                                current_forecast_section == "RECURRING"
-                                                or amt != 0
-                                            ):
+                                            if amt != 0:
                                                 tx_records.append(
                                                     {
                                                         "source_file": file_path,
@@ -408,7 +427,6 @@ class Command(BaseCommand):
                                             pass
                     else:
                         current_forecast_section = None
-                # === FIN EXTRACTION DES PRÉVISIONS ===
 
                 # === RÉCUPÉRATION CLASSIQUE (Transactions réelles) ===
                 header_row = 28
@@ -446,6 +464,17 @@ class Command(BaseCommand):
                                 user is not None or raw_date is not None
                             ):
                                 lbl_clean = str(label).strip()
+
+                                is_active_flag = True
+                                if (
+                                    "(résilié)" in lbl_clean.lower()
+                                    or "(inactif)" in lbl_clean.lower()
+                                ):
+                                    is_active_flag = False
+                                    lbl_clean = re.sub(
+                                        r"(?i)\s*\((résilié|inactif)\)", "", lbl_clean
+                                    ).strip()
+
                                 if lbl_clean.lower() in [
                                     "la bellenergie",
                                     "energie",
@@ -488,6 +517,7 @@ class Command(BaseCommand):
                                         if comment is not None
                                         else "",
                                         "meal_voucher_amount": 0.0,
+                                        "is_active": is_active_flag,
                                     }
                                 )
                         except (ValueError, TypeError):
@@ -627,6 +657,7 @@ class Command(BaseCommand):
                     "amount": 0.0,
                     "is_pro": False,
                     "due_date": "",
+                    "is_active": True,
                 },
             )
             txs = observed_txs.get(lbl_lower, [])
@@ -664,8 +695,8 @@ class Command(BaseCommand):
                 amts = [tx["amount"] for tx in o_txs if tx["amount"] > 0]
 
                 final_due_date_str = ""
-                if p_info["freq"] > 1:
-                    if p_info["due_date"]:
+                if p_info.get("freq", 1) > 1:
+                    if p_info.get("due_date", ""):
                         final_due_date_str = p_info["due_date"]
                     elif dates:
                         final_due_date_str = max(dates, default="2026-01-01")
@@ -684,7 +715,7 @@ class Command(BaseCommand):
                             if days
                             else "2026-01-01"
                         )
-                    elif p_info["due_date"]:
+                    elif p_info.get("due_date", ""):
                         try:
                             final_due_date_str = f"2026-01-{datetime.date.fromisoformat(p_info['due_date']).day:02d}"
                         except ValueError:
@@ -692,20 +723,21 @@ class Command(BaseCommand):
                     else:
                         final_due_date_str = "2026-01-01"
 
-                final_amount = amts[-1] if amts else p_info["amount"]
+                final_amount = amts[-1] if amts else p_info.get("amount", 0.0)
 
                 recurring_records.append(
                     {
                         "label": lbl_display,
                         "owner": owner,
-                        "frequency_months": p_info["freq"],
+                        "frequency_months": p_info.get("freq", 1),
                         "total_amount": final_amount,
                         "usual_due_day": final_due_date_str,
                         "is_variable": lbl_lower in ["électricité", "urssaf", "impôts"],
+                        "is_active": p_info.get("is_active", True),
                     }
                 )
 
-        # NOUVEAU : Sauvegarde des catégories et de leur éligibilité Tickets Resto
+        # Sauvegarde des catégories et de leur éligibilité Tickets Resto
         with open(
             os.path.join(settings.BASE_DIR, "categories_init.csv"),
             mode="w",
@@ -737,6 +769,7 @@ class Command(BaseCommand):
                     "total_amount",
                     "usual_due_day",
                     "is_variable",
+                    "is_active",
                 ],
             )
             writer.writeheader()
@@ -759,7 +792,14 @@ class Command(BaseCommand):
                 "date",
                 "comment",
                 "meal_voucher_amount",
+                "is_active",  # optionnel pour les tx
             ]
+
+            # Remove is_active from tx_records just in case writerows fails if fieldnames don't exactly match
+            for tx in tx_records:
+                if "is_active" not in tx:
+                    tx["is_active"] = True
+
             writer = csv.DictWriter(f, fieldnames=fieldnames)
             writer.writeheader()
             writer.writerows(tx_records)
