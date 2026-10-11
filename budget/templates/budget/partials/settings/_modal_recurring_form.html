@@ -66,8 +66,33 @@
   {% endif %}
 
   <!-- Date habituelle de prélèvement -->
-  <div>
-    {% include "budget/components/input.html" with label="Date habituelle de prélèvement (optionnel)" type="date" name="usual_due_day" value=form.usual_due_day.value|date:"Y-m-d" %}
+  <div class="grid grid-cols-1 gap-4">
+    <!-- Champ pour fréquence = 1 (Mensuel) -->
+    <div id="wrapper_due_day_number" class="hidden">
+      <label for="due_day_number" class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">
+        Jour de prélèvement (optionnel)
+      </label>
+      <input type="number"
+             id="due_day_number"
+             min="1"
+             max="31"
+             class="input-base px-4 py-2.5 text-base sm:text-sm"
+             placeholder="Ex: 5"
+             value="{{ form.usual_due_day.value|date:'j' }}" />
+    </div>
+
+    <!-- Champ pour fréquence > 1 (Pluriannuel) -->
+    <div id="wrapper_usual_due_day" class="hidden">
+      <label for="usual_due_day" class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">
+        Date du prochain prélèvement (optionnel)
+      </label>
+      <input type="date"
+             id="usual_due_day"
+             name="usual_due_day"
+             class="input-base px-4 py-2.5 text-base sm:text-sm"
+             value="{{ form.usual_due_day.value|date:'Y-m-d' }}" />
+    </div>
+
     {% if form.usual_due_day.errors %}
       <p class="text-[11px] text-action-danger mt-1">{{ form.usual_due_day.errors.0 }}</p>
     {% endif %}
@@ -89,3 +114,55 @@
     </div>
   {% endif %}
 </form>
+
+<script>
+  (function() {
+    const freqInput = document.querySelector('input[name="frequency_months"]');
+    const wrapperNumber = document.getElementById('wrapper_due_day_number');
+    const wrapperDate = document.getElementById('wrapper_usual_due_day');
+    const inputNumber = document.getElementById('due_day_number');
+    const inputDate = document.getElementById('usual_due_day');
+
+    // Fréquence par défaut de Django : 1
+    const initialFreq = parseInt("{{ form.frequency_months.value|default:'1' }}", 10);
+
+    function updateDueDayVisibility() {
+      const freq = freqInput ? parseInt(freqInput.value, 10) : initialFreq;
+
+      if (freq > 1) {
+        wrapperDate.classList.remove('hidden');
+        wrapperNumber.classList.add('hidden');
+      } else {
+        wrapperNumber.classList.remove('hidden');
+        wrapperDate.classList.add('hidden');
+      }
+    }
+
+    if (freqInput) {
+      freqInput.addEventListener('input', updateDueDayVisibility);
+    }
+
+    updateDueDayVisibility();
+
+    // CORRECTION : On met à jour la date complète *dès que l'utilisateur tape un jour*
+    if (inputNumber && inputDate) {
+      inputNumber.addEventListener('input', function() {
+        if (inputNumber.value) {
+          let day = parseInt(inputNumber.value, 10);
+          if (day < 1) day = 1;
+          if (day > 31) day = 31;
+
+          const now = new Date();
+          const currentYear = now.getFullYear();
+          const currentMonth = String(now.getMonth() + 1).padStart(2, '0');
+          const d = String(day).padStart(2, '0');
+
+          // Injecte la date valide pour HTMX en temps réel
+          inputDate.value = `${currentYear}-${currentMonth}-${d}`;
+        } else {
+          inputDate.value = "";
+        }
+      });
+    }
+  })();
+</script>
