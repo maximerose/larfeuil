@@ -209,31 +209,11 @@ def quick_transaction_form_view(request: AuthenticatedHttpRequest) -> HttpRespon
     )
     selected_account_id = default_account.id if default_account else None
 
-    account_options = [
-        {
-            "id": acc.id,
-            "name": f"{acc.name} ({acc.owner.name})"
-            if getattr(acc, "owner_id", None) != current_member.id
-            else acc.name,
-        }
-        for acc in accounts
-    ]
-
     all_household_accounts = (
         BankAccount.objects.filter(owner__household=household, is_active=True)
         .select_related("owner")
         .order_by("name")
     )
-
-    household_account_options = [
-        {
-            "id": str(acc.id),
-            "name": f"{acc.name} ({acc.owner.name})"
-            if getattr(acc, "owner_id", None) != current_member.id
-            else acc.name,
-        }
-        for acc in all_household_accounts
-    ]
 
     today = timezone.localdate()
 
@@ -290,8 +270,8 @@ def quick_transaction_form_view(request: AuthenticatedHttpRequest) -> HttpRespon
         {
             "categories_expense": categories_expense,
             "categories_income": categories_income,
-            "accounts": account_options,
-            "household_account_options": household_account_options,
+            "accounts": accounts,
+            "household_account_options": all_household_accounts,
             "selected_account_id": selected_account_id,
             "today": today,
             "tr_accounts_info": tr_accounts_info,
@@ -415,31 +395,11 @@ def transaction_update_view(
         .distinct()
     )
 
-    account_options = [
-        {
-            "id": acc.id,
-            "name": f"{acc.name} ({acc.owner.name})"
-            if getattr(acc, "owner_id", None) != current_member.id
-            else acc.name,
-        }
-        for acc in accounts
-    ]
-
     all_household_accounts = (
         BankAccount.objects.filter(owner__household=household, is_active=True)
         .select_related("owner")
         .order_by("name")
     )
-
-    household_account_options = [
-        {
-            "id": str(acc.id),
-            "name": f"{acc.name} ({acc.owner.name})"
-            if getattr(acc, "owner_id", None) != current_member.id
-            else acc.name,
-        }
-        for acc in all_household_accounts
-    ]
 
     tr_accounts = [
         acc for acc in accounts if acc.account_type == AccountType.MEAL_VOUCHER
@@ -482,8 +442,8 @@ def transaction_update_view(
             "selected_category_id": getattr(tx, "category_id", None),
             "categories_expense": categories_expense,
             "categories_income": categories_income,
-            "accounts": account_options,
-            "household_account_options": household_account_options,
+            "accounts": accounts,
+            "household_account_options": all_household_accounts,
             "selected_account_id": getattr(tx, "bank_account_id", None),
             "today": tx.transaction_date,
             "tr_accounts_info": tr_accounts_info,

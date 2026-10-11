@@ -29,14 +29,14 @@
   <div class="grid grid-cols-1 {% if 'category' in form.fields %}sm:grid-cols-2{% endif %} gap-4">
     {% if "category" in form.fields %}
       <div>
-        {% include "budget/components/select.html" with label="Catégorie" name="category" options=form.fields.category.queryset selected=form.category.value %}
+        {% include "budget/components/category_select.html" with label="Catégorie" name="category" options=form.fields.category.queryset selected=form.category.value %}
         {% if form.category.errors %}
           <p class="text-[11px] text-action-danger mt-1">{{ form.category.errors.0 }}</p>
         {% endif %}
       </div>
     {% endif %}
     <div>
-      {% include "budget/components/select.html" with label="Compte prélevé par défaut" name="default_bank_account" options=form.fields.default_bank_account.queryset selected=form.default_bank_account.value %}
+      {% include "budget/components/account_select.html" with label="Compte prélevé par défaut" name="default_bank_account" options=form.fields.default_bank_account.queryset selected=form.default_bank_account.value %}
       {% if form.default_bank_account.errors %}
         <p class="text-[11px] text-action-danger mt-1">{{ form.default_bank_account.errors.0 }}</p>
       {% endif %}

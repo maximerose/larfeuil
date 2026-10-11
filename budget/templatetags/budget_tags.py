@@ -1,8 +1,63 @@
+from collections import defaultdict
 from decimal import Decimal
 
 from django import template
 
+from budget.models.category import CategoryType
+
 register = template.Library()
+
+
+@register.simple_tag
+def group_accounts(accounts, current_member):
+    grouped = {
+        "Comptes communs": [],
+        "Mes comptes": [],
+    }
+    other_members = defaultdict(list)
+
+    for acc in accounts:
+        if getattr(acc, "is_joint", False):
+            grouped["Comptes communs"].append(acc)
+        elif getattr(acc, "owner_id", None) == current_member.id:
+            grouped["Mes comptes"].append(acc)
+        else:
+            owner_name = acc.owner.name if getattr(acc, "owner", None) else "Autre"
+            other_members[f"Comptes de {owner_name}"].append(acc)
+
+    final_groups = {}
+    if grouped["Comptes communs"]:
+        final_groups["Comptes communs"] = grouped["Comptes communs"]
+    if grouped["Mes comptes"]:
+        final_groups["Mes comptes"] = grouped["Mes comptes"]
+
+    for owner_group, accs in other_members.items():
+        if accs:
+            final_groups[owner_group] = accs
+
+    return final_groups
+
+
+@register.simple_tag
+def group_categories(categories):
+    grouped = {
+        "Charges fixes": [],
+        "Charges variables": [],
+        "Épargne": [],
+        "Revenus": [],
+    }
+
+    for cat in categories:
+        if cat.type == CategoryType.RECURRING:
+            grouped["Charges fixes"].append(cat)
+        elif cat.type == CategoryType.VARIABLE:
+            grouped["Charges variables"].append(cat)
+        elif cat.type == CategoryType.SAVINGS:
+            grouped["Épargne"].append(cat)
+        elif cat.type == CategoryType.INCOME:
+            grouped["Revenus"].append(cat)
+
+    return {k: v for k, v in grouped.items() if v}
 
 
 @register.simple_tag

@@ -840,9 +840,6 @@
   .overflow-x-auto {
     overflow-x: auto;
   }
-  .overflow-x-clip {
-    overflow-x: clip;
-  }
   .overflow-x-hidden {
     overflow-x: hidden;
   }
@@ -2386,6 +2383,15 @@
 .ts-wrapper.single.input-active .ts-control > input {
   width: 100% !important;
   flex: 1 1 auto;
+}
+.ts-dropdown .optgroup-header {
+  color: #94a3b8 !important;
+  font-weight: 800;
+  text-transform: uppercase;
+  font-size: 0.65rem;
+  letter-spacing: 0.05em;
+  padding: 10px 12px 4px 12px !important;
+  background-color: #0f172a !important;
 }
 @property --tw-translate-x {
   syntax: "*";

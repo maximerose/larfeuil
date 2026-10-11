@@ -45,7 +45,7 @@
       {% endif %}
 
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {% include "budget/components/select.html" with label="Compte payeur" name="bank_account" options=account_options required=True %}
+        {% include "budget/components/account_select.html" with label="Compte payeur" name="bank_account" options=account_options required=True %}
         {% include "budget/components/currency_input.html" with label="Montant (€)" name="amount" value=suggested_amount required=True %}
       </div>
 

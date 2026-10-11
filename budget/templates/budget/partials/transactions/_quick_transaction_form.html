@@ -78,8 +78,8 @@
   <!-- 3. Blocs de champs dynamiques -->
   <div id="block-expense">
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-      {% include "budget/components/select.html" with label="Catégorie" name="expense_category" options=categories_expense selected=selected_category_id allow_create=True create_type="category" required=True placeholder="Sélectionnez une catégorie..." %}
-      {% include "budget/components/select.html" with label="Compte Débité" name="expense_account" options=accounts selected=selected_account_id required=True %}
+      {% include "budget/components/category_select.html" with label="Catégorie" name="expense_category" options=categories_expense selected=selected_category_id allow_create=True create_type="category" required=True placeholder="Sélectionnez une catégorie..." %}
+      {% include "budget/components/account_select.html" with label="Compte Débité" name="expense_account" options=accounts selected=selected_account_id required=True %}
 
       {% if tr_accounts_info %}
         <!-- Encart de ventilation dynamique si montant > plafond TR -->
@@ -104,7 +104,7 @@
             </div>
 
             <div>
-              {% include "budget/components/select.html" with label="Compte relais (Reste)" name="tr_fallback_account" options=accounts selected="" %}
+              {% include "budget/components/account_select.html" with label="Compte relais (Reste)" name="tr_fallback_account" options=accounts selected="" %}
               <div class="mt-1 text-[10px] text-slate-400 font-medium">
                 Reste prélevé : <strong id="tr-split-remaining-display" class="text-action-warning">0,00 €</strong>
               </div>
@@ -120,8 +120,8 @@
 
   <div id="block-income" class="hidden">
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-      {% include "budget/components/select.html" with label="Catégorie" name="income_category" options=categories_income selected=selected_category_id allow_create=True create_type="category" required=True placeholder="Sélectionnez une catégorie..." %}
-      {% include "budget/components/select.html" with label="Compte Crédité" name="income_account" options=accounts selected=selected_account_id required=True %}
+      {% include "budget/components/category_select.html" with label="Catégorie" name="income_category" options=categories_income selected=selected_category_id allow_create=True create_type="category" required=True placeholder="Sélectionnez une catégorie..." %}
+      {% include "budget/components/account_select.html" with label="Compte Crédité" name="income_account" options=accounts selected=selected_account_id required=True %}
     </div>
   </div>
 
@@ -129,7 +129,7 @@
   <div id="block-transfer" class="hidden space-y-3">
     <div class="flex flex-col sm:flex-row sm:items-end gap-3">
       <div class="w-full sm:flex-1">
-        {% include "budget/components/select.html" with label="Depuis le compte" name="source_account" options=household_account_options selected=transfer.source_account_id|default:selected_account_id required=True %}
+        {% include "budget/components/account_select.html" with label="Depuis le compte" name="source_account" options=household_account_options selected=transfer.source_account_id|default:selected_account_id required=True %}
       </div>
 
       <div class="flex justify-center shrink-0 sm:pb-0.5 relative z-10 -my-2 sm:my-0">
@@ -142,12 +142,12 @@
       </div>
 
       <div class="w-full sm:flex-1">
-        {% include "budget/components/select.html" with label="Vers le compte" name="destination_account" options=household_account_options selected=transfer.destination_account_id required=True placeholder="Sélectionnez un compte..." %}
+        {% include "budget/components/account_select.html" with label="Vers le compte" name="destination_account" options=household_account_options selected=transfer.destination_account_id required=True placeholder="Sélectionnez un compte..." %}
       </div>
     </div>
 
     <div class="p-3 bg-slate-900/50 rounded-xl border border-brand-border">
-      {% include "budget/components/select.html" with label="Catégorie (Optionnelle : pour remboursements)" name="transfer_category" options=categories_expense placeholder="Aucune (Transfert classique)" allow_create=True create_type="category" %}
+      {% include "budget/components/category_select.html" with label="Catégorie (Optionnelle : pour remboursements)" name="transfer_category" options=categories_expense placeholder="Aucune (Transfert classique)" allow_create=True create_type="category" %}
       <div class="flex items-start gap-2 text-[10px] text-slate-500 mt-2 leading-tight">
         {% include "budget/components/icon.html" with name="light-bulb" class="w-4 h-4 shrink-0" %}
         <span>Si vous sélectionnez une catégorie, cela créera automatiquement deux dépenses inversées pour équilibrer vos statistiques. Idéal quand un proche vous rembourse sa part !</span>

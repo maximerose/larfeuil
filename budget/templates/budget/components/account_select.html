@@ -1,0 +1,32 @@
+{% load budget_tags %}
+{% group_accounts options request.member as grouped_options %}
+
+<div class="space-y-1">
+  {% if label %}
+    <label for="{{ name }}" class="block text-xs font-semibold text-slate-400 uppercase tracking-wider">{{ label }}</label>
+  {% endif %}
+  <select id="{{ name }}"
+          name="{{ name }}"
+          {% if required %}required{% endif %}
+          data-tomselect="true"
+          class="input-base px-3 py-2.5 text-base sm:text-sm {{ custom_class|default:'' }}">
+
+    <option value="" {% if required %}disabled{% endif %} {% if not selected %}selected{% endif %}>
+      {{ placeholder|default:"Sélectionnez un compte..." }}
+    </option>
+
+    {% for group_name, accs in grouped_options.items %}
+      <optgroup label="{{ group_name }}">
+        {% for acc in accs %}
+          {% if acc.id|stringformat:"s" != exclude_value|stringformat:"s" %}
+            <option value="{{ acc.id }}" {% if acc.id|stringformat:"s" == selected|stringformat:"s" %}selected{% endif %}>
+              {{ acc.name }}
+            </option>
+          {% endif %}
+        {% endfor %}
+      </optgroup>
+    {% endfor %}
+  </select>
+
+  {% if help_text %}<p class="text-[11px] text-slate-500">{{ help_text }}</p>{% endif %}
+</div>
