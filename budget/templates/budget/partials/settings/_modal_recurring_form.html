@@ -29,7 +29,7 @@
   <div class="grid grid-cols-1 {% if 'category' in form.fields %}sm:grid-cols-2{% endif %} gap-4">
     {% if "category" in form.fields %}
       <div>
-        {% include "budget/components/select.html" with label="Catégorie" name="category" options=form.fields.category.queryset selected=form.category.value required=True %}
+        {% include "budget/components/select.html" with label="Catégorie" name="category" options=form.fields.category.queryset selected=form.category.value %}
         {% if form.category.errors %}
           <p class="text-[11px] text-action-danger mt-1">{{ form.category.errors.0 }}</p>
         {% endif %}
