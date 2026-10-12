@@ -50,7 +50,7 @@ def adjust_account_balance_view(
     )
 
     if request.method == "POST":
-        new_balance = Decimal(request.POST.get("new_balance", "0.00"))
+        new_balance = Decimal(request.POST.get("new_balance", "0.00").replace(",", "."))
 
         account.current_balance = new_balance
         account.save()
