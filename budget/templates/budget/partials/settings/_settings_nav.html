@@ -1,25 +1,21 @@
-<nav class="flex overflow-x-auto gap-6 border-b border-brand-border/60 mb-6 scrollbar-hide relative">
+<nav class="sticky top-16 z-30 -mt-4 sm:-mt-8 pt-4 sm:pt-5 bg-brand-dark/95 backdrop-blur-md flex overflow-x-auto gap-6 border-b border-brand-border/60 mb-6 scrollbar-hide">
   <a href="{% url 'settings_accounts' %}"
-     {% if active_tab == 'accounts' %}id="active-nav-tab"{% endif %}
-     class="pb-3 px-1 text-sm font-semibold transition-colors whitespace-nowrap {% if active_tab == 'accounts' %}text-brand border-b-2 border-brand{% else %}text-slate-400 hover:text-slate-200{% endif %}">
+     class="pb-3 px-1 text-sm font-semibold transition-colors whitespace-nowrap {% if active_tab == 'accounts' %}text-brand border-b-2 border-brand js-active-tab{% else %}text-slate-400 hover:text-slate-200{% endif %}">
     Comptes bancaires
   </a>
 
   <a href="{% url 'settings_categories' %}"
-     {% if active_tab == 'categories' %}id="active-nav-tab"{% endif %}
-     class="pb-3 px-1 text-sm font-semibold transition-colors whitespace-nowrap {% if active_tab == 'categories' %}text-brand border-b-2 border-brand{% else %}text-slate-400 hover:text-slate-200{% endif %}">
+     class="pb-3 px-1 text-sm font-semibold transition-colors whitespace-nowrap {% if active_tab == 'categories' %}text-brand border-b-2 border-brand js-active-tab{% else %}text-slate-400 hover:text-slate-200{% endif %}">
     Catégories
   </a>
 
   <a href="{% url 'settings_recurring' %}"
-     {% if active_tab == 'recurring' %}id="active-nav-tab"{% endif %}
-     class="pb-3 px-1 text-sm font-semibold transition-colors whitespace-nowrap {% if active_tab == 'recurring' %}text-brand border-b-2 border-brand{% else %}text-slate-400 hover:text-slate-200{% endif %}">
+     class="pb-3 px-1 text-sm font-semibold transition-colors whitespace-nowrap {% if active_tab == 'recurring' %}text-brand border-b-2 border-brand js-active-tab{% else %}text-slate-400 hover:text-slate-200{% endif %}">
     Charges fixes
   </a>
 
   <a href="{% url 'settings_profile' %}"
-     {% if active_tab == 'profile' %}id="active-nav-tab"{% endif %}
-     class="pb-3 px-1 text-sm font-semibold transition-colors whitespace-nowrap {% if active_tab == 'profile' %}text-brand border-b-2 border-brand{% else %}text-slate-400 hover:text-slate-200{% endif %}">
+     class="pb-3 px-1 text-sm font-semibold transition-colors whitespace-nowrap {% if active_tab == 'profile' %}text-brand border-b-2 border-brand js-active-tab{% else %}text-slate-400 hover:text-slate-200{% endif %}">
     Foyer & Profil
   </a>
 </nav>
@@ -27,7 +23,7 @@
 <!-- Script pour centrer automatiquement l'onglet actif sur mobile -->
 <script>
   (function() {
-    const activeTab = document.getElementById('active-nav-tab');
+    const activeTab = document.querySelector('.js-active-tab');
     if (activeTab) {
       activeTab.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
     }

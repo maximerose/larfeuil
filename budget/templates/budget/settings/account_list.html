@@ -6,23 +6,25 @@
   <!-- Navigation des paramètres -->
   {% include "budget/partials/settings/_settings_nav.html" with active_tab="accounts" %}
 
-  <!-- Liste des comptes -->
-  <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+  <div class="space-y-8">
+    <section>
+      <h2 class="text-sm font-bold text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+        Comptes bancaires
+        <span class="bg-brand-border text-slate-300 py-0.5 px-2 rounded-full text-[10px]">{{ accounts|length }}</span>
+      </h2>
 
-    {% for account in accounts %}
-      {% include "budget/partials/accounts/_account_card.html" with account=account view_context="settings" %}
-    {% endfor %}
-
-    <!-- Carte d'ajout -->
-    <button type="button"
-            hx-get="{% url 'settings_account_create' %}"
-            hx-target="#modal-container"
-            class="group bg-transparent border-2 border-dashed border-brand-border hover:border-brand hover:bg-brand/5 p-5 rounded-card transition-all flex flex-col items-center justify-center min-h-45 cursor-pointer">
-      <div class="w-12 h-12 bg-slate-800 group-hover:bg-brand text-slate-400 group-hover:text-brand-dark rounded-full flex items-center justify-center transition-colors mb-3 shadow-sm">
-        {% include "budget/components/icon.html" with name="plus" class="w-6 h-6" %}
+      <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+        {% for account in accounts %}
+          {% include "budget/partials/accounts/_account_card.html" with account=account view_context="settings" %}
+        {% empty %}
+          <div class="col-span-full pt-2">
+            {% include "budget/partials/shared/_empty_state.html" with message="Aucun compte configuré. Commence par en ajouter un !" %}
+          </div>
+        {% endfor %}
       </div>
-      <span class="text-sm font-bold text-slate-400 group-hover:text-brand transition-colors">Ajouter un compte</span>
-    </button>
+    </section>
 
+    <!-- Bouton d'ajout pleine largeur -->
+    {% include "budget/components/add_list_button.html" with url_name="settings_account_create" label="Ajouter un compte" %}
   </div>
 {% endblock %}

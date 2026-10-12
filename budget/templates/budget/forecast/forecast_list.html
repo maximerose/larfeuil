@@ -6,7 +6,7 @@
   <div class="max-w-5xl mx-auto space-y-6">
     {% include "budget/components/month_selector.html" %}
 
-    <form method="post" class="space-y-6">
+    <form id="forecast-form" method="post" class="space-y-6">
       {% csrf_token %}
       <input type="hidden" name="action" value="save" />
 
@@ -284,10 +284,14 @@
 
       </div>
 
-      <!-- BOUTON DE SAUVEGARDE -->
-      <div class="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-brand-border">
-        <div class="flex items-center gap-2 w-full sm:w-auto">
-          {% include "budget/components/button.html" with label="Enregistrer les prévisions" variant="primary" type="submit" %}
+      <!-- BARRE DE SAUVEGARDE FLOTTANTE (Apparaît au premier changement) -->
+      <div id="sticky-save-bar"
+           class="fixed bottom-20 sm:bottom-8 left-4 right-4 sm:left-auto sm:right-8 z-40 transition-all duration-300 translate-y-32 opacity-0 pointer-events-none">
+        <div class="bg-slate-900/95 backdrop-blur-md border border-brand/50 p-3 sm:p-4 rounded-2xl shadow-2xl shadow-emerald-500/20 flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4">
+          <span class="text-sm font-bold text-slate-200 hidden sm:inline">Modifications en attente...</span>
+          <div class="w-full sm:w-auto">
+            {% include "budget/components/button.html" with label="Enregistrer les prévisions" variant="primary" type="submit" %}
+          </div>
         </div>
       </div>
     </form>
@@ -385,5 +389,41 @@
         lineRow.remove();
       }
     }
+
+    (function() {
+      const form = document.getElementById('forecast-form');
+      const saveBar = document.getElementById('sticky-save-bar');
+
+      if (form && saveBar) {
+        // 1. On capture l'état initial complet du formulaire
+        const initialData = new URLSearchParams(new FormData(form)).toString();
+
+        function checkDirtyState() {
+          // 2. On compare l'état actuel avec l'état initial
+          const currentData = new URLSearchParams(new FormData(form)).toString();
+
+          if (currentData !== initialData) {
+            // Il y a eu une vraie modification -> Afficher la barre
+            saveBar.classList.remove('translate-y-32', 'opacity-0', 'pointer-events-none');
+            saveBar.classList.add('translate-y-0', 'opacity-100', 'pointer-events-auto');
+          } else {
+            // Retour à l'état d'origine (ex: ligne ajoutée puis supprimée) -> Masquer la barre
+            saveBar.classList.add('translate-y-32', 'opacity-0', 'pointer-events-none');
+            saveBar.classList.remove('translate-y-0', 'opacity-100', 'pointer-events-auto');
+          }
+        }
+
+        // Détecter les frappes et changements
+        form.addEventListener('input', checkDirtyState);
+        form.addEventListener('change', checkDirtyState);
+
+        // Détecter l'ajout/suppression de lignes (on met un mini délai pour laisser le DOM se mettre à jour)
+        form.addEventListener('click', function(e) {
+          if (e.target.closest('button[type="button"]')) {
+            setTimeout(checkDirtyState, 50);
+          }
+        });
+      }
+    })();
   </script>
 {% endblock %}
