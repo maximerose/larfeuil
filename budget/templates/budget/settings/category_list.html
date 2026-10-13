@@ -17,60 +17,38 @@
 
         <div class="bg-brand-card border border-brand-border rounded-card shadow-sm overflow-hidden divide-y divide-brand-border/60">
           {% for category in group.list %}
-            <div class="p-4 sm:px-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-slate-900/40 transition-colors">
-              <div>
-                <div class="flex items-center gap-2">
-                  <p class="text-base font-bold text-slate-100">{{ category.name }}</p>
-                  {% if category.is_meal_voucher_eligible %}
-                    <span class="flex items-center gap-1 text-[10px] uppercase font-bold tracking-wider text-action-warning bg-action-warning/10 px-2 py-0.5 rounded-full border border-action-warning/20"
-                          title="Éligible Tickets Resto">
-                      {% include "budget/components/icon.html" with name="ticket" class="w-3 h-3" %}
-                      TR
-                    </span>
-                  {% endif %}
-                </div>
+            <div class="p-4 sm:px-5 flex items-center justify-between gap-4 hover:bg-slate-900/40 transition-colors">
 
-                {% if category.default_bank_account %}
-                  <p class="text-xs text-slate-400 mt-1">
-                    {% if category.type == "INCOME" %}
-                      Versé sur :
-                    {% elif category.type == "SAVINGS" %}
-                      Cible :
-                    {% else %}
-                      Prélevé sur :
-                    {% endif %}
-                    <span class="text-slate-300 font-medium">
-                      {{ category.default_bank_account.name }}
-                      {% if category.default_bank_account.owner.id != member.id %}
-                        <span class="text-[10px] opacity-70">({{ category.default_bank_account.owner.name }})</span>
-                      {% endif %}
-                    </span>
-                  </p>
-                {% else %}
-                  <p class="text-[11px] text-slate-500 mt-1 italic">Aucun compte par défaut</p>
+              <!-- Nom et badge -->
+              <div class="flex items-center gap-2 truncate">
+                <p class="text-base font-bold text-slate-100 truncate">{{ category.name }}</p>
+                {% if category.is_meal_voucher_eligible %}
+                  <span class="flex items-center gap-1 text-[10px] uppercase font-bold tracking-wider text-action-warning bg-action-warning/10 px-2 py-0.5 rounded-full border border-action-warning/20 shrink-0"
+                        title="Éligible Tickets Resto">
+                    {% include "budget/components/icon.html" with name="ticket" class="w-3 h-3" %}
+                    TR
+                  </span>
                 {% endif %}
               </div>
 
-              <div class="flex items-center gap-2 w-full sm:w-auto sm:shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-brand-border/40">
+              <!-- Boutons d'action -->
+              <div class="flex items-center gap-2 shrink-0">
                 <button type="button"
                         hx-get="{% url 'settings_category_update' category.id %}"
                         hx-target="#modal-container"
-                        class="flex-1 sm:flex-none px-3 py-2 sm:py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-lg transition-colors cursor-pointer text-center">
-                  Modifier
-                </button>
-                <button type="button"
-                        hx-get="{% url 'settings_category_merge' category.id %}"
-                        hx-target="#modal-container"
-                        class="flex-1 sm:flex-none px-3 py-2 sm:py-1.5 bg-action-warning/10 hover:bg-action-warning/20 text-action-warning text-xs font-semibold rounded-lg transition-colors cursor-pointer text-center">
-                  Fusionner
+                        class="p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition-colors cursor-pointer"
+                        title="Modifier">
+                  {% include "budget/components/icon.html" with name="pencil" class="w-4 h-4" %}
                 </button>
                 <button type="button"
                         hx-post="{% url 'settings_category_delete' category.id %}"
                         hx-confirm="Êtes-vous sûr de vouloir supprimer cette catégorie ?"
-                        class="flex-1 sm:flex-none px-3 py-2 sm:py-1.5 bg-action-danger/10 hover:bg-action-danger/20 text-action-danger text-xs font-semibold rounded-lg transition-colors cursor-pointer text-center">
-                  Supprimer
+                        class="p-2 bg-action-danger/10 hover:bg-action-danger/20 text-action-danger rounded-lg transition-colors cursor-pointer"
+                        title="Supprimer">
+                  {% include "budget/components/icon.html" with name="trash" class="w-4 h-4" %}
                 </button>
               </div>
+
             </div>
           {% endfor %}
         </div>

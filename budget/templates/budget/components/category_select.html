@@ -21,7 +21,6 @@
         {% for cat in cats %}
           <option value="{{ cat.id }}" {% if cat.id|stringformat:"s" == selected|stringformat:"s" %}selected{% endif %}>
             {{ cat.name }}
-            {% if cat.is_meal_voucher_eligible %}[TR]{% endif %}
           </option>
         {% endfor %}
       </optgroup>

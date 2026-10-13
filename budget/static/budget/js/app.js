@@ -173,9 +173,11 @@ function initTomSelects() {
       create: false,
       allowEmptyOption: true,
       onDropdownOpen: function () {
-        // S'assure que le TomSelect remonte au centre de l'écran (au-dessus du clavier)
+        // Remonte le champ tout en haut de l'écran (avec une toute petite marge) pour voir un maximum d'options
         setTimeout(() => {
-          this.wrapper.scrollIntoView({ behavior: "smooth", block: "center" });
+          const rect = this.wrapper.getBoundingClientRect();
+          const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+          window.scrollTo({ top: rect.top + scrollTop - 80, behavior: "smooth" });
         }, 100);
       },
       onDropdownClose: function () {
@@ -234,9 +236,19 @@ document.body.addEventListener("htmx:afterSettle", initTomSelects);
 
 document.addEventListener("focusin", (e) => {
   const target = e.target;
-  // On cible UNIQUEMENT les champs texte classiques, sans délai, pour éviter de bloquer les modales natives (ex: date)
-  if (["INPUT", "TEXTAREA"].includes(target.tagName) && target.type !== 'date') {
-    target.scrollIntoView({ behavior: "smooth", block: "center" });
+
+  if (target.tagName === "INPUT" || target.tagName === "TEXTAREA") {
+    // Si c'est une date, on évite le scrollIntoView qui bloque l'ouverture du calendrier natif
+    if (target.type === "date") {
+      return;
+    }
+
+    // Pour les autres champs textes, on les remonte légèrement (ex: -80px) plutôt que de les centrer
+    setTimeout(() => {
+      const rect = target.getBoundingClientRect();
+      const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+      window.scrollTo({ top: rect.top + scrollTop - 80, behavior: "smooth" });
+    }, 150);
   }
 });
 

@@ -15,7 +15,7 @@
         id="mobile-fab"
         hx-get="{% url url_name %}"
         hx-target="#modal-container"
-        class="md:hidden fixed bottom-20 right-5 z-40 w-12 h-12 bg-brand text-brand-dark rounded-full shadow-[0_0_15px_rgba(16,185,129,0.4)] flex items-center justify-center hover:scale-105 active:scale-95 transition-all duration-300 transform">
+        class="md:hidden fixed bottom-12 right-5 z-40 w-12 h-12 bg-brand text-brand-dark rounded-full shadow-[0_0_15px_rgba(16,185,129,0.4)] flex items-center justify-center hover:scale-105 active:scale-95 transition-all duration-300 transform">
   {% include "budget/components/icon.html" with name="plus" class="w-6 h-6" %}
 </button>
 
@@ -30,10 +30,10 @@
       const observer = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
           if (entry.isIntersecting) {
-            fab.classList.add('opacity-0', 'translate-y-10', 'pointer-events-none');
+            fab.classList.add('opacity-0', 'translate-y-20', 'pointer-events-none');
             fab.classList.remove('opacity-100', 'translate-y-0');
           } else {
-            fab.classList.remove('opacity-0', 'translate-y-10', 'pointer-events-none');
+            fab.classList.remove('opacity-0', 'translate-y-20', 'pointer-events-none');
             fab.classList.add('opacity-100', 'translate-y-0');
           }
         });
