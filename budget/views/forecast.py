@@ -19,7 +19,7 @@ from budget.models import (
 )
 from budget.models.account import AccountType
 from budget.models.category import CategoryType
-from budget.utils import advance_date
+from budget.utils import advance_date, remove_accents
 from core.models import Visibility
 
 
@@ -296,7 +296,7 @@ def forecast_list_view(request: AuthenticatedHttpRequest) -> HttpResponse:
     fix_data.sort(
         key=lambda x: (
             not (x["is_due_this_month"] and x["frequency_months"] > 1),
-            x["name"].lower(),
+            remove_accents(x["name"]),
         )
     )
 

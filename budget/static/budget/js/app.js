@@ -234,12 +234,9 @@ document.body.addEventListener("htmx:afterSettle", initTomSelects);
 
 document.addEventListener("focusin", (e) => {
   const target = e.target;
-  // On cible uniquement les champs de formulaire
-  if (["INPUT", "SELECT", "TEXTAREA"].includes(target.tagName)) {
-    // Le délai de 300ms laisse le temps au clavier du téléphone de s'ouvrir
-    setTimeout(() => {
-      target.scrollIntoView({ behavior: "smooth", block: "center" });
-    }, 300);
+  // On cible UNIQUEMENT les champs texte classiques, sans délai, pour éviter de bloquer les modales natives (ex: date)
+  if (["INPUT", "TEXTAREA"].includes(target.tagName) && target.type !== 'date') {
+    target.scrollIntoView({ behavior: "smooth", block: "center" });
   }
 });
 
