@@ -105,12 +105,16 @@ class SettingsRecurringTestCase(TestCase):
         self.assertEqual(response.context["expense"], self.expense)
 
     def test_recurring_update_post(self) -> None:
-        """Vérifie la modification d'une charge existante via le formulaire allégé."""
+        """Vérifie la modification d'une charge existante."""
         url = reverse("settings_recurring_update", args=[self.expense.id])
         data = {
             "label": "Assurance Auto",
             "total_amount": "45.00",
+            "category": self.category.id,
             "default_bank_account": self.account.id,
+            "visibility": Visibility.SHARED,
+            "frequency_months": 1,
+            "is_variable": False,
             "usual_due_day": "2026-10-15",
         }
         response = self.client.post(url, data)

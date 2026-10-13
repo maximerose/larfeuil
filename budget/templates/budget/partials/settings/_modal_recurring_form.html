@@ -43,17 +43,14 @@
     </div>
   </div>
 
-  <!-- Visibilité et Fréquence (Uniquement en création) -->
   {% if "visibility" in form.fields or "frequency_months" in form.fields %}
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-      {% if "visibility" in form.fields %}
-        <div>
-          {% include "budget/components/select.html" with label="Visibilité" name="visibility" options=form.fields.visibility.choices selected=form.visibility.value required=True %}
-          {% if form.visibility.errors %}
-            <p class="text-[11px] text-action-danger mt-1">{{ form.visibility.errors.0 }}</p>
-          {% endif %}
-        </div>
-      {% endif %}
+      <div>
+        {% include "budget/components/select.html" with label="Visibilité" name="visibility" options=form.fields.visibility.choices selected=form.visibility.value required=True %}
+        {% if form.visibility.errors %}
+          <p class="text-[11px] text-action-danger mt-1">{{ form.visibility.errors.0 }}</p>
+        {% endif %}
+      </div>
       {% if "frequency_months" in form.fields %}
         <div>
           {% include "budget/components/input.html" with label="Fréquence (en mois)" type="number" name="frequency_months" value=form.frequency_months.value|default_if_none:1 min="1" required=True %}

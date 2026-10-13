@@ -238,17 +238,35 @@ document.addEventListener("focusin", (e) => {
   const target = e.target;
 
   if (target.tagName === "INPUT" || target.tagName === "TEXTAREA") {
-    // Si c'est une date, on évite le scrollIntoView qui bloque l'ouverture du calendrier natif
-    if (target.type === "date") {
-      return;
-    }
+    if (target.type === "date") return;
 
-    // Pour les autres champs textes, on les remonte légèrement (ex: -80px) plutôt que de les centrer
     setTimeout(() => {
+      const scrollableParent = target.closest(".overflow-y-auto") || window;
       const rect = target.getBoundingClientRect();
-      const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-      window.scrollTo({ top: rect.top + scrollTop - 80, behavior: "smooth" });
+
+      if (scrollableParent === window) {
+        const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+        window.scrollTo({ top: rect.top + scrollTop - 80, behavior: "smooth" });
+      } else {
+        const parentRect = scrollableParent.getBoundingClientRect();
+        scrollableParent.scrollTo({
+          top: scrollableParent.scrollTop + (rect.top - parentRect.top) - 20,
+          behavior: "smooth",
+        });
+      }
     }, 150);
+  }
+});
+
+// Force l'ouverture du calendrier natif au clic sur les champs date
+document.addEventListener("click", (e) => {
+  const target = e.target;
+  if (target.tagName === "INPUT" && target.type === "date") {
+    try {
+      target.showPicker();
+    } catch (err) {
+      // Fallback silencieux si le navigateur est trop ancien
+    }
   }
 });
 

@@ -11,7 +11,6 @@ from django.views.decorators.http import require_GET, require_http_methods
 from budget.forms.recurring import (
     RecurringExpenseForm,
     RecurringExpenseShareForm,
-    RecurringExpenseUpdateForm,
 )
 from budget.models import Household, HouseholdMember, RecurringExpense
 from budget.models.account import BankAccount
@@ -67,7 +66,7 @@ def settings_recurring_form_view(
             RecurringExpense, id=expense_id, household=household, is_active=True
         )
 
-    form_class = RecurringExpenseUpdateForm if expense else RecurringExpenseForm
+    form_class = RecurringExpenseForm
 
     if request.method == "POST":
         form = form_class(

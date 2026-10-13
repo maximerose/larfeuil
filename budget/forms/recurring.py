@@ -88,18 +88,6 @@ class RecurringExpenseForm(forms.ModelForm):
         return label
 
 
-class RecurringExpenseUpdateForm(RecurringExpenseForm):
-    """Formulaire allégé pour l'édition : hérite du formulaire principal et restreint les champs."""
-
-    class Meta(RecurringExpenseForm.Meta):
-        fields: ClassVar[list[str]] = [
-            "label",
-            "total_amount",
-            "default_bank_account",
-            "usual_due_day",
-        ]
-
-
 class RecurringExpenseShareForm(forms.ModelForm):
     class Meta:
         model = RecurringExpenseShare
