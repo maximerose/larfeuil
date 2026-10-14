@@ -169,7 +169,9 @@ def quick_transaction_form_view(request: AuthenticatedHttpRequest) -> HttpRespon
     # --- GET ---
     categories_expense = list(
         Category.objects.filter(is_active=True, household=household)
-        .exclude(type__in=[CategoryType.INCOME, CategoryType.SAVINGS])
+        .exclude(
+            type__in=[CategoryType.INCOME, CategoryType.SAVINGS, CategoryType.RECURRING]
+        )
         .only("id", "name", "is_meal_voucher_eligible")
     )
 
@@ -177,8 +179,14 @@ def quick_transaction_form_view(request: AuthenticatedHttpRequest) -> HttpRespon
         Category.objects.filter(
             is_active=True, household=household, type=CategoryType.INCOME
         )
-        .exclude(type=CategoryType.SAVINGS)
+        .exclude(type__in=[CategoryType.SAVINGS, CategoryType.RECURRING])
         .only("id", "name")
+    )
+
+    categories_transfer = list(
+        Category.objects.filter(
+            is_active=True, household=household, type=CategoryType.VARIABLE
+        ).only("id", "name")
     )
 
     accounts = list(
@@ -270,6 +278,7 @@ def quick_transaction_form_view(request: AuthenticatedHttpRequest) -> HttpRespon
         {
             "categories_expense": categories_expense,
             "categories_income": categories_income,
+            "categories_transfer": categories_transfer,
             "accounts": accounts,
             "household_account_options": all_household_accounts,
             "selected_account_id": selected_account_id,
@@ -676,21 +685,40 @@ def monthly_history_view(request: AuthenticatedHttpRequest) -> HttpResponse:
     ).aggregate(s=Sum("total_amount"))["s"] or Decimal("0.00")
 
     # --- 4. RÉPARTITION (GRAPHIQUE DOUGHNUT) ---
-    breakdown_qs = (
-        base_txs.filter(transaction_type="EXPENSE")
-        .exclude(category__type="SAVINGS")
-        .values("category__name")
-        .annotate(total=Sum("total_amount"))
-        .order_by("-total")
+    expenses_qs = base_txs.filter(transaction_type="EXPENSE").exclude(
+        category__type="SAVINGS"
     )
 
-    chart_labels = []
-    chart_data = []
+    chart_dict_raw = {}
 
-    for b in breakdown_qs:
-        cat_name = b["category__name"] or "Sans catégorie"
-        chart_labels.append(cat_name)
-        chart_data.append(float(b["total"]))
+    for tx in expenses_qs:
+        is_fixed = (tx.category and tx.category.type == "RECURRING") or (
+            tx.recurring_expense is not None
+        )
+
+        # Trouver la catégorie (priorité à la transaction, puis à la charge fixe)
+        cat_name = None
+        if tx.category:
+            cat_name = tx.category.name
+        elif tx.recurring_expense and tx.recurring_expense.category:
+            cat_name = tx.recurring_expense.category.name
+
+        # Assigner le libellé final
+        if not cat_name:
+            final_label = "Autres charges fixes" if is_fixed else "Sans catégorie"
+        else:
+            final_label = cat_name
+
+        # Cumul du montant
+        chart_dict_raw[final_label] = (
+            chart_dict_raw.get(final_label, Decimal("0.00")) + tx.total_amount
+        )
+
+    # Tri par montant décroissant pour l'affichage du graphique
+    sorted_chart = sorted(chart_dict_raw.items(), key=lambda x: x[1], reverse=True)
+
+    chart_labels = [item[0] for item in sorted_chart]
+    chart_data = [float(item[1]) for item in sorted_chart]
 
     chart_dict = {"labels": chart_labels, "data": chart_data} if chart_labels else None
 

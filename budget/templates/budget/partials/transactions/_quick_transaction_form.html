@@ -147,7 +147,7 @@
     </div>
 
     <div class="p-3 bg-slate-900/50 rounded-xl border border-brand-border">
-      {% include "budget/components/category_select.html" with label="Catégorie (Optionnelle : pour remboursements)" name="transfer_category" options=categories_expense placeholder="Aucune (Transfert classique)" allow_create=True create_type="category" %}
+      {% include "budget/components/category_select.html" with label="Catégorie (Optionnelle : pour remboursements)" name="transfer_category" options=categories_transfer placeholder="Aucune (Transfert classique)" allow_create=True create_type="category" %}
       <div class="flex items-start gap-2 text-[10px] text-slate-500 mt-2 leading-tight">
         {% include "budget/components/icon.html" with name="light-bulb" class="w-4 h-4 shrink-0" %}
         <span>Si vous sélectionnez une catégorie, cela créera automatiquement deux dépenses inversées pour équilibrer vos statistiques. Idéal quand un proche vous rembourse sa part !</span>

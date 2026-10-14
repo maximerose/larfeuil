@@ -121,17 +121,12 @@ class Transaction(BaseModel):
                 old_self.bank_account.current_balance += (
                     old_self.total_amount - old_self.meal_voucher_amount
                 )
-                if (
-                    old_self.meal_voucher_amount > 0
-                    and hasattr(old_self, "meal_voucher_bank_account")
-                    and old_self.meal_voucher_bank_account
-                ):
-                    old_self.meal_voucher_bank_account.current_balance += (
-                        old_self.meal_voucher_amount
-                    )
-                    old_self.meal_voucher_bank_account.save(
-                        update_fields=["current_balance"]
-                    )
+
+                old_mv_account = old_self.meal_voucher_bank_account
+                if old_self.meal_voucher_amount > 0 and old_mv_account is not None:
+                    old_mv_account.current_balance += old_self.meal_voucher_amount
+                    old_mv_account.save(update_fields=["current_balance"])
+
             elif old_self.transaction_type == TransactionType.INCOME:
                 old_self.bank_account.current_balance -= old_self.total_amount
 
@@ -143,15 +138,12 @@ class Transaction(BaseModel):
         if self.transaction_type == TransactionType.EXPENSE:
             cash_amount = self.total_amount - self.meal_voucher_amount
             self.bank_account.current_balance -= cash_amount
-            if (
-                self.meal_voucher_amount > 0
-                and hasattr(self, "meal_voucher_bank_account")
-                and self.meal_voucher_bank_account
-            ):
-                self.meal_voucher_bank_account.current_balance -= (
-                    self.meal_voucher_amount
-                )
-                self.meal_voucher_bank_account.save(update_fields=["current_balance"])
+
+            mv_account = self.meal_voucher_bank_account
+            if self.meal_voucher_amount > 0 and mv_account is not None:
+                mv_account.current_balance -= self.meal_voucher_amount
+                mv_account.save(update_fields=["current_balance"])
+
         elif self.transaction_type == TransactionType.INCOME:
             self.bank_account.current_balance += self.total_amount
 
