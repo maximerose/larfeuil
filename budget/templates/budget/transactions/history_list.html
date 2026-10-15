@@ -21,10 +21,13 @@
 
         <div class="col-span-2 lg:col-span-1">
           <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Période</label>
-          <input type="month"
-                 name="month"
-                 value="{{ target_month|date:'Y-m' }}"
-                 class="input-base px-3 py-2 w-full text-sm font-medium capitalize" />
+          <select name="month" class="input-base px-3 py-2 w-full text-sm font-medium capitalize">
+            {% for m in available_months %}
+              <option value="{{ m|date:'Y-m' }}" {% if m.year == target_month.year and m.month == target_month.month %}selected{% endif %}>
+                {{ m|date:'F Y' }}
+              </option>
+            {% endfor %}
+          </select>
         </div>
 
         <div>

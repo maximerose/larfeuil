@@ -84,69 +84,52 @@
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           {% for item in fix_data %}
-            <div class="p-4 bg-slate-900 rounded-xl flex flex-col gap-3 transition-all {% if item.is_due_this_month and item.frequency_months > 1 %} border border-brand-border/60 border-l-4 border-l-action-warning {% else %} border border-brand-border/60 {% endif %}">
-              <div class="flex items-start justify-between">
-                <div class="truncate flex flex-col justify-center gap-0.5">
-                  <div class="flex items-center gap-2">
-                    <span class="text-sm font-semibold text-slate-300 truncate">{{ item.name }}</span>
+            <div class="p-4 bg-slate-900 rounded-xl flex items-center gap-3 transition-all {% if item.is_due_this_month and item.frequency_months > 1 %} border border-brand-border/60 border-l-4 border-l-action-warning {% else %} border border-brand-border/60 {% endif %}">
 
-                    {% if item.frequency_months == 1 and item.due_day %}
-                      <span class="shrink-0 inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-[10px] font-bold shadow-sm transition-colors bg-slate-800 text-slate-400 border-slate-700">
-                        {% include "budget/components/icon.html" with name="calendar" class="w-2.5 h-2.5" %}
-                        Le {{ item.due_day }}
+              <!-- Informations textuelles -->
+              <div class="flex-1 truncate flex flex-col justify-center gap-1">
+                <div class="flex items-center gap-2">
+                  <span class="text-sm font-semibold text-slate-300 truncate">{{ item.name }}</span>
+                </div>
+
+                <div class="flex items-center gap-2 mt-0.5">
+                  <!-- 1. Badges de statut (uniquement si montant prévu > 0) -->
+                  {% if item.amount > 0 %}
+                    {% if item.is_paid %}
+                      <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-budget-income/20 text-budget-income border border-budget-income/30">
+                        Payé
                       </span>
-                    {% elif item.frequency_months > 1 and item.next_date %}
-                      <span class="shrink-0 inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-[10px] font-bold shadow-sm transition-colors {% if item.is_due_this_month %}bg-action-warning/10 text-action-warning border-action-warning/30 {% else %}bg-slate-800 text-slate-400 border-slate-700{% endif %}">
-                        {% include "budget/components/icon.html" with name="calendar" class="w-2.5 h-2.5" %}
-                        {{ item.next_date|date:"d/m/y" }}
+                    {% else %}
+                      <!-- Remplacement du "elif item.is_due_this_month" par un "else" direct -->
+                      <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-800 text-slate-400 border border-slate-700">
+                        À payer
                       </span>
                     {% endif %}
-                  </div>
-                  <span class="text-[10px] transition-colors {% if item.is_due_this_month and item.frequency_months > 1 %}text-action-warning font-bold{% else %}text-slate-500{% endif %}">
-                    Par défaut : {{ item.default_amount|stringformat:".2f" }} €
-                  </span>
+                  {% endif %}
+
+                  <!-- 2. Affichage des dates (toujours affiché, peu importe le montant prévu) -->
+                  {% if item.is_paid and item.payment_date %}
+                    <span class="inline-flex items-center gap-1 text-[10px] font-medium text-budget-income opacity-80">
+                      {% include "budget/components/icon.html" with name="calendar" class="w-3 h-3" %}
+                      Le {{ item.payment_date|date:"d/m/y" }}
+                    </span>
+                  {% elif item.frequency_months == 1 and item.due_day %}
+                    <span class="inline-flex items-center gap-1 text-[10px] font-medium text-slate-500">
+                      {% include "budget/components/icon.html" with name="calendar" class="w-3 h-3" %}
+                      Le {{ item.due_day }}
+                    </span>
+                  {% elif item.frequency_months > 1 and item.next_date %}
+                    <span class="inline-flex items-center gap-1 text-[10px] font-medium {% if item.is_due_this_month %}text-action-warning{% else %}text-slate-500{% endif %}">
+                      {% include "budget/components/icon.html" with name="calendar" class="w-3 h-3" %}
+                      {{ item.next_date|date:"d/m/y" }}
+                    </span>
+                  {% endif %}
                 </div>
-                <button type="button"
-                        onclick="addForecastLine('rec_{{ item.id }}', '{{ item.default_amount|floatformat:2 }}')"
-                        class="text-[10px] font-bold text-brand hover:underline px-2 py-1 bg-brand/10 rounded-lg shrink-0 transition-colors mt-0.5">
-                  + Ajouter
-                </button>
               </div>
 
-              <div id="lines-rec_{{ item.id }}" data-default-acc-id="{{ item.default_acc_id }}" class="space-y-2">
-                <!-- Modèle caché -->
-                <div class="line-row line-template hidden items-start gap-3">
-                  <div class="flex-1 min-w-0">
-                    {% include "budget/components/select.html" with name="forecast_tx_acc_rec_"|add:item.id|add:"_template" options=account_options selected="" placeholder=item.placeholder exclude_value=item.default_acc_id custom_class="line-select" %}
-                  </div>
-                  <div class="w-28 shrink-0">
-                    {% include "budget/components/currency_input.html" with name="forecast_rec_"|add:item.id|add:"_template" value="" custom_class="line-amount" %}
-                  </div>
-                  <button type="button"
-                          onclick="deleteForecastLine(this)"
-                          class="p-2 text-slate-500 hover:text-action-danger hover:bg-slate-800 rounded-lg transition-colors cursor-pointer shrink-0 mt-0.5"
-                          title="Supprimer">
-                    {% include "budget/components/icon.html" with name="trash" class="w-4 h-4" %}
-                  </button>
-                </div>
-
-                <!-- Lignes réelles -->
-                {% for line in item.lines %}
-                  <div class="line-row flex items-start gap-3">
-                    <div class="flex-1 min-w-0">
-                      {% include "budget/components/select.html" with name="forecast_tx_acc_rec_"|add:item.id|add:"_"|add:line.id options=account_options selected=line.acc_id placeholder=item.placeholder exclude_value=item.default_acc_id custom_class="line-select" %}
-                    </div>
-                    <div class="w-28 shrink-0">
-                      {% include "budget/components/currency_input.html" with name="forecast_rec_"|add:item.id|add:"_"|add:line.id value=line.amount custom_class="line-amount" %}
-                    </div>
-                    <button type="button"
-                            onclick="deleteForecastLine(this)"
-                            class="p-2 text-slate-500 hover:text-action-danger hover:bg-slate-800 rounded-lg transition-colors cursor-pointer shrink-0 mt-0.5"
-                            title="Supprimer">
-                      {% include "budget/components/icon.html" with name="trash" class="w-4 h-4" %}
-                    </button>
-                  </div>
-                {% endfor %}
+              <!-- Champ de montant simple -->
+              <div class="w-28 shrink-0">
+                {% include "budget/components/currency_input.html" with name="forecast_rec_"|add:item.id value=item.amount %}
               </div>
             </div>
           {% empty %}

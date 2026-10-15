@@ -5,7 +5,7 @@ from itertools import chain
 
 from django.contrib import messages
 from django.db.models import Q
-from django.db.models.aggregates import Sum
+from django.db.models.aggregates import Min, Sum
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import get_object_or_404, render
 from django.utils import timezone
@@ -661,9 +661,15 @@ def monthly_history_view(request: AuthenticatedHttpRequest) -> HttpResponse:
     )
 
     if selected_member_id:
-        base_txs = base_txs.filter(bank_account__owner_id=selected_member_id)
+        base_txs = base_txs.filter(
+            Q(bank_account__owner_id=selected_member_id)
+            | Q(meal_voucher_bank_account__owner_id=selected_member_id)
+        )
     if selected_account_id:
-        base_txs = base_txs.filter(bank_account_id=selected_account_id)
+        base_txs = base_txs.filter(
+            Q(bank_account_id=selected_account_id)
+            | Q(meal_voucher_bank_account_id=selected_account_id)
+        )
 
     # --- 3. CALCUL SÉCURISÉ DES KPIS ---
     income_kpi = base_txs.filter(transaction_type="INCOME").aggregate(
@@ -684,45 +690,7 @@ def monthly_history_view(request: AuthenticatedHttpRequest) -> HttpResponse:
         | Q(category__type="SAVINGS")
     ).aggregate(s=Sum("total_amount"))["s"] or Decimal("0.00")
 
-    # --- 4. RÉPARTITION (GRAPHIQUE DOUGHNUT) ---
-    expenses_qs = base_txs.filter(transaction_type="EXPENSE").exclude(
-        category__type="SAVINGS"
-    )
-
-    chart_dict_raw = {}
-
-    for tx in expenses_qs:
-        is_fixed = (tx.category and tx.category.type == "RECURRING") or (
-            tx.recurring_expense is not None
-        )
-
-        # Trouver la catégorie (priorité à la transaction, puis à la charge fixe)
-        cat_name = None
-        if tx.category:
-            cat_name = tx.category.name
-        elif tx.recurring_expense and tx.recurring_expense.category:
-            cat_name = tx.recurring_expense.category.name
-
-        # Assigner le libellé final
-        if not cat_name:
-            final_label = "Autres charges fixes" if is_fixed else "Sans catégorie"
-        else:
-            final_label = cat_name
-
-        # Cumul du montant
-        chart_dict_raw[final_label] = (
-            chart_dict_raw.get(final_label, Decimal("0.00")) + tx.total_amount
-        )
-
-    # Tri par montant décroissant pour l'affichage du graphique
-    sorted_chart = sorted(chart_dict_raw.items(), key=lambda x: x[1], reverse=True)
-
-    chart_labels = [item[0] for item in sorted_chart]
-    chart_data = [float(item[1]) for item in sorted_chart]
-
-    chart_dict = {"labels": chart_labels, "data": chart_data} if chart_labels else None
-
-    # --- 5. APPLICATION DES FILTRES À LA LISTE DES TRANSACTIONS ---
+    # --- 4. APPLICATION DES FILTRES À LA LISTE DES TRANSACTIONS ---
     txs = base_txs
     if selected_category_id == "none":
         txs = txs.filter(category__isnull=True)
@@ -744,7 +712,57 @@ def monthly_history_view(request: AuthenticatedHttpRequest) -> HttpResponse:
     elif selected_tx_type == "SAVINGS":
         txs = txs.filter(transaction_type="EXPENSE", category__type="SAVINGS")
 
-    # --- RÉCUPÉRATION ET FILTRAGE DES TRANSFERTS ---
+    # --- 5. RÉPARTITION (GRAPHIQUE) ---
+    # Le graphique se base désormais sur la liste filtrée (txs)
+    if selected_tx_type == "INCOME":
+        chart_qs = txs.filter(transaction_type="INCOME")
+        chart_title = "Répartition des Revenus"
+    elif selected_tx_type == "SAVINGS":
+        chart_qs = txs.filter(transaction_type="EXPENSE", category__type="SAVINGS")
+        chart_title = "Répartition de l'Épargne"
+    else:
+        chart_qs = txs.filter(transaction_type="EXPENSE").exclude(
+            category__type="SAVINGS"
+        )
+        chart_title = "Répartition des Dépenses"
+
+    chart_dict_raw = {}
+
+    for tx in chart_qs:
+        is_fixed = (tx.category and tx.category.type == "RECURRING") or (
+            tx.recurring_expense is not None
+        )
+
+        # Trouver la catégorie (priorité à la transaction, puis à la charge fixe)
+        cat_name = None
+        if tx.category:
+            cat_name = tx.category.name
+        elif tx.recurring_expense and tx.recurring_expense.category:
+            cat_name = tx.recurring_expense.category.name
+
+        # Assigner le libellé final
+        if not cat_name:
+            if chart_title == "Répartition des Revenus":
+                final_label = "Sans catégorie"
+            else:
+                final_label = "Autres charges fixes" if is_fixed else "Sans catégorie"
+        else:
+            final_label = cat_name
+
+        # Cumul du montant
+        chart_dict_raw[final_label] = (
+            chart_dict_raw.get(final_label, Decimal("0.00")) + tx.total_amount
+        )
+
+    # Tri par montant décroissant pour l'affichage du graphique
+    sorted_chart = sorted(chart_dict_raw.items(), key=lambda x: x[1], reverse=True)
+
+    chart_labels = [item[0] for item in sorted_chart]
+    chart_data = [float(item[1]) for item in sorted_chart]
+
+    chart_dict = {"labels": chart_labels, "data": chart_data} if chart_labels else None
+
+    # --- 6. RÉCUPÉRATION ET FILTRAGE DES TRANSFERTS ---
     transfers = Transfer.objects.filter(
         Q(source_account__owner__household=household)
         | Q(destination_account__owner__household=household),
@@ -795,16 +813,40 @@ def monthly_history_view(request: AuthenticatedHttpRequest) -> HttpResponse:
         for acc in visible_accounts
     ]
 
-    # --- 7. PRÉPARATION DU CONTEXTE ---
+    # --- 7. RÉCUPÉRATION DES MOIS DISPONIBLES
+    first_tx_date = Transaction.objects.filter(
+        bank_account__owner__household=household
+    ).aggregate(m=Min("budget_month"))["m"]
+
+    # Si aucune transaction, on propose au moins le mois en cours
+    start_date = (
+        first_tx_date.replace(day=1)
+        if first_tx_date
+        else timezone.localdate().replace(day=1)
+    )
+    end_date = timezone.localdate().replace(day=1)
+
+    available_months = []
+    current = start_date
+    while current <= end_date:
+        available_months.append(current)
+        current = advance_date(current, 1)
+
+    # On trie du plus récent au plus ancien pour l'affichage
+    available_months.reverse()
+
+    # --- 8. PRÉPARATION DU CONTEXTE ---
     context = {
         "member": member,
         "transactions": combined_history,
         "target_month": target_month,
+        "available_months": available_months,
         "income_kpi": income_kpi,
         "fixed_kpi": fixed_kpi,
         "variable_kpi": variable_kpi,
         "savings_kpi": savings_kpi,
         "chart_json": chart_dict,
+        "chart_title": chart_title,
         "members": HouseholdMember.objects.filter(household=household, is_active=True),
         "categories": Category.objects.filter(
             household=household, is_active=True

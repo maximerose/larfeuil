@@ -32,9 +32,8 @@
 <!-- 2. RÉPARTITION (GRAPHIQUE) -->
 {% if chart_json %}
   <div class="bg-brand-card border border-brand-border rounded-card p-4 sm:p-5 space-y-4 shadow-sm">
-    <h3 class="text-sm font-bold text-slate-100">Répartition des Dépenses</h3>
+    <h3 class="text-sm font-bold text-slate-100">{{ chart_title|default:"Répartition" }}</h3>
 
-    <!-- FIX 1 : Suppression de "flex justify-center" qui écrase la largeur du canvas -->
     <div class="relative h-56 w-full">
       <canvas id="historyBreakdownChart"></canvas>
     </div>

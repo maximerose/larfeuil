@@ -19,6 +19,7 @@ from budget.models import (
 )
 from budget.models.account import AccountType
 from budget.models.category import CategoryType
+from budget.models.transaction import Transaction
 from budget.utils import advance_date, remove_accents
 from core.models import Visibility
 
@@ -49,10 +50,12 @@ def forecast_list_view(request: AuthenticatedHttpRequest) -> HttpResponse:
         is_active=True,
     )
 
-    # Calcul des montants par défaut attendus
+    # Calcul des montants par défaut attendus et statut "Payé"
     default_rec_amounts = {}
     due_status_map = {}
     next_date_map = {}
+    paid_status_map = {}
+    payment_date_map = {}
 
     for r in recurring_items:
         is_due = False
@@ -70,9 +73,24 @@ def forecast_list_view(request: AuthenticatedHttpRequest) -> HttpResponse:
                     and next_date.month == selected_date.month
                 )
 
+        # Vérifier si la charge a déjà été payée (il existe une transaction ce mois-ci)
+        paid_tx = (
+            Transaction.objects.filter(
+                recurring_expense=r,
+                budget_month__year=selected_date.year,
+                budget_month__month=selected_date.month,
+            )
+            .order_by("-transaction_date")
+            .first()
+        )
+
+        is_paid = paid_tx is not None
+
         default_rec_amounts[str(r.id)] = r.total_amount if is_due else Decimal("0.00")
         due_status_map[str(r.id)] = is_due
         next_date_map[str(r.id)] = next_date
+        paid_status_map[str(r.id)] = is_paid
+        payment_date_map[str(r.id)] = paid_tx.transaction_date if is_paid else None
 
     # 1. Sauvegarde / Modification / Suppression (POST)
     if request.method == "POST":
@@ -86,16 +104,14 @@ def forecast_list_view(request: AuthenticatedHttpRequest) -> HttpResponse:
                     ):
                         continue
 
-                    # Clé sous forme : forecast_<type>_<item_id>_<line_id>
                     parts = key.split("_")
-                    if len(parts) < 4:
+                    if len(parts) < 3:
                         continue
 
                     p_type = parts[1]
                     item_id = parts[2]
-                    line_id = "_".join(parts[3:])
+                    line_id = "_".join(parts[3:]) if len(parts) > 3 else "0"
 
-                    # Ignore la ligne de modèle de clonage HTML
                     if line_id == "template":
                         continue
 
@@ -109,12 +125,11 @@ def forecast_list_view(request: AuthenticatedHttpRequest) -> HttpResponse:
                     except (ValueError, TypeError, DecimalException):
                         continue
 
-                    tx_acc_id = (
-                        request.POST.get(
-                            f"forecast_tx_acc_{p_type}_{item_id}_{line_id}"
-                        )
-                        or None
-                    )
+                    # On ne traite l'account_id que si on utilise le format avancé (cat/acc)
+                    account_id = None
+                    if p_type in ["cat", "acc"]:
+                        account_key = f"forecast_tx_acc_{p_type}_{item_id}_{line_id}"
+                        account_id = request.POST.get(account_key) or None
 
                     lookup = {"month": selected_date, "member": member}
                     if p_type == "cat":
@@ -129,27 +144,64 @@ def forecast_list_view(request: AuthenticatedHttpRequest) -> HttpResponse:
                     if p_type == "rec":
                         is_default = (
                             amount == default_rec_amounts.get(item_id, Decimal("0.00"))
-                            and not tx_acc_id
+                            and not account_id
                         )
 
                     # Suppression si montant à 0 OU si c'est la valeur par défaut d'une charge fixe
-                    if amount == Decimal("0.00") or is_default:
-                        if not line_id.startswith("new"):
-                            MonthlyForecast.objects.filter(
-                                id=line_id, member=member
-                            ).delete()
+                    if amount <= Decimal("0.00") or is_default:
+                        if p_type == "cat":
+                            qs = MonthlyForecast.objects.filter(
+                                member=member, month=selected_date, category_id=item_id
+                            )
+                        elif p_type == "acc":
+                            qs = MonthlyForecast.objects.filter(
+                                member=member,
+                                month=selected_date,
+                                bank_account_id=item_id,
+                            )
+                        elif p_type == "rec":
+                            qs = MonthlyForecast.objects.filter(
+                                member=member,
+                                month=selected_date,
+                                recurring_expense_id=item_id,
+                            )
+
+                        if line_id != "0":  # Format multi-lignes
+                            if account_id:
+                                qs = qs.filter(transaction_account_id=account_id)
+                            else:
+                                qs = qs.filter(transaction_account__isnull=True)
+
+                        qs.delete()
                     else:
                         # Création ou Mise à jour
-                        if line_id.startswith("new"):
-                            MonthlyForecast.objects.create(
-                                amount=amount,
-                                transaction_account_id=tx_acc_id,
-                                **lookup,
+                        if p_type == "cat":
+                            defaults = {"amount": amount}
+                            MonthlyForecast.objects.update_or_create(
+                                member=member,
+                                month=selected_date,
+                                category_id=item_id,
+                                transaction_account_id=account_id,
+                                defaults=defaults,
                             )
-                        else:
-                            MonthlyForecast.objects.filter(
-                                id=line_id, member=member
-                            ).update(amount=amount, transaction_account_id=tx_acc_id)
+                        elif p_type == "acc":
+                            defaults = {"amount": amount}
+                            MonthlyForecast.objects.update_or_create(
+                                member=member,
+                                month=selected_date,
+                                bank_account_id=item_id,
+                                transaction_account_id=account_id,
+                                defaults=defaults,
+                            )
+                        elif p_type == "rec":
+                            defaults = {"amount": amount}
+                            # Les charges fixes utilisent le format simple (line_id = "0"), transaction_account est inutile ici
+                            MonthlyForecast.objects.update_or_create(
+                                member=member,
+                                month=selected_date,
+                                recurring_expense_id=item_id,
+                                defaults=defaults,
+                            )
 
             elif action == "replicate":
                 try:
@@ -235,12 +287,10 @@ def forecast_list_view(request: AuthenticatedHttpRequest) -> HttpResponse:
 
     cat_map = defaultdict(list)
     acc_map = defaultdict(list)
-    rec_map = defaultdict(list)
 
     for f in existing_forecasts:
         c_id = getattr(f, "category_id", None)
         b_id = getattr(f, "bank_account_id", None)
-        r_id = getattr(f, "recurring_expense_id", None)
         t_id = getattr(f, "transaction_account_id", None)
 
         if c_id:
@@ -249,10 +299,6 @@ def forecast_list_view(request: AuthenticatedHttpRequest) -> HttpResponse:
             )
         if b_id:
             acc_map[str(b_id)].append(
-                {"id": str(f.id), "amount": f.amount, "acc_id": str(t_id or "")}
-            )
-        if r_id:
-            rec_map[str(r_id)].append(
                 {"id": str(f.id), "amount": f.amount, "acc_id": str(t_id or "")}
             )
 
@@ -278,16 +324,29 @@ def forecast_list_view(request: AuthenticatedHttpRequest) -> HttpResponse:
     # Charges fixes
     fix_data = []
     for r in recurring_items:
-        def_acc = r.default_bank_account or default_account
+        # Récupère l'override s'il existe pour ce mois-ci, sinon le montant par défaut du mois (qui est à 0 si ce n'est pas le bon mois)
+        forecast_override = next(
+            (
+                f
+                for f in existing_forecasts
+                if getattr(f, "recurring_expense_id", None) == r.id
+            ),
+            None,
+        )
+        current_amount = (
+            forecast_override.amount
+            if forecast_override
+            else default_rec_amounts[str(r.id)]
+        )
+
         fix_data.append(
             {
                 "id": str(r.id),
                 "name": r.label,
-                "lines": get_lines(rec_map, r.id),
-                "default_amount": r.total_amount,
-                "default_acc_id": str(def_acc.id) if def_acc else "",
-                "placeholder": f"Par défaut ({def_acc.name if def_acc else 'Aucun compte'})",
+                "amount": current_amount,
                 "is_due_this_month": due_status_map[str(r.id)],
+                "is_paid": paid_status_map[str(r.id)],
+                "payment_date": payment_date_map[str(r.id)],
                 "next_date": next_date_map[str(r.id)],
                 "frequency_months": r.frequency_months,
                 "due_day": r.usual_due_day.day if r.usual_due_day else None,

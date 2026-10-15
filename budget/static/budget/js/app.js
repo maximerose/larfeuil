@@ -173,14 +173,35 @@ function initTomSelects() {
       create: false,
       allowEmptyOption: true,
       onDropdownOpen: function () {
-        // Remonte le champ tout en haut de l'écran (avec une toute petite marge) pour voir un maximum d'options
         setTimeout(() => {
-          const rect = this.wrapper.getBoundingClientRect();
-          const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-          window.scrollTo({ top: rect.top + scrollTop - 80, behavior: "smooth" });
+          const target = this.wrapper;
+          const scrollableParent = target.closest(".overflow-y-auto") || window;
+          const rect = target.getBoundingClientRect();
+          const isMobile = window.innerWidth < 768; // <-- Détection mobile
+
+          if (scrollableParent === window) {
+            const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+            window.scrollTo({ top: rect.top + scrollTop - 80, behavior: "smooth" });
+          } else {
+            // On agrandit la modale uniquement sur petit écran
+            if (isMobile) {
+              scrollableParent.style.paddingBottom = "65vh";
+            }
+            const parentRect = scrollableParent.getBoundingClientRect();
+            scrollableParent.scrollTo({
+              top: scrollableParent.scrollTop + (rect.top - parentRect.top) - 20,
+              behavior: "smooth",
+            });
+          }
         }, 100);
       },
       onDropdownClose: function () {
+        const scrollableParent = this.wrapper.closest(".overflow-y-auto");
+        if (scrollableParent) {
+          setTimeout(() => {
+            scrollableParent.style.paddingBottom = "";
+          }, 150);
+        }
         this.blur();
       },
       render: {
@@ -243,11 +264,16 @@ document.addEventListener("focusin", (e) => {
     setTimeout(() => {
       const scrollableParent = target.closest(".overflow-y-auto") || window;
       const rect = target.getBoundingClientRect();
+      const isMobile = window.innerWidth < 768; // <-- Détection mobile
 
       if (scrollableParent === window) {
         const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
         window.scrollTo({ top: rect.top + scrollTop - 80, behavior: "smooth" });
       } else {
+        // On agrandit la modale uniquement sur petit écran
+        if (isMobile) {
+          scrollableParent.style.paddingBottom = "65vh";
+        }
         const parentRect = scrollableParent.getBoundingClientRect();
         scrollableParent.scrollTo({
           top: scrollableParent.scrollTop + (rect.top - parentRect.top) - 20,
@@ -255,6 +281,16 @@ document.addEventListener("focusin", (e) => {
         });
       }
     }, 150);
+  }
+});
+
+document.addEventListener("focusout", (e) => {
+  const target = e.target;
+  if (target.tagName === "INPUT" || target.tagName === "TEXTAREA") {
+    const scrollableParent = target.closest(".overflow-y-auto");
+    if (scrollableParent) {
+      scrollableParent.style.paddingBottom = "";
+    }
   }
 });
 
