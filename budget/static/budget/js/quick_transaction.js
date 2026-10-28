@@ -74,10 +74,10 @@ function initQuickTransactionForm() {
     if (txType === "EXPENSE" && isEligible && window.trAccountsInfo.length > 0) {
       if (window._lastCatId !== catId) {
         window._lastCatId = catId; // On mémorise pour éviter une boucle infinie
-        
+
         const currentVal = mainSelect.tomselect ? mainSelect.tomselect.getValue() : mainSelect.value;
         const isCurrentlyTr = window.trAccountsInfo.some(tr => tr.id === currentVal);
-        
+
         if (!isCurrentlyTr) {
           // Cherche un compte TR avec du solde dispo
           const availableTr = window.trAccountsInfo.find(tr => tr.remaining > 0);

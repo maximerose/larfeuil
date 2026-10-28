@@ -1,39 +1,33 @@
 exclude: '^(node_modules/|staticfiles/|.*\.min\.css)'
 repos:
-  - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.6.0
-    hooks:
-      - id: check-yaml
-      - id: check-json
-        exclude: ^\.devcontainer/
-      - id: check-added-large-files
-      - id: trailing-whitespace
-      - id: end-of-file-fixer
+- repo: https://github.com/pre-commit/pre-commit-hooks
+  rev: v6.0.0
+  hooks:
+  - id: check-yaml
+  - id: check-json
+    exclude: ^\.devcontainer/
+  - id: check-added-large-files
+  - id: trailing-whitespace
+  - id: end-of-file-fixer
 
-  - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.6.4
-    hooks:
-      - id: ruff
-        args: [--fix]
-      - id: ruff-format
+- repo: https://github.com/astral-sh/ruff-pre-commit
+  rev: v0.17.3
+  hooks:
+  - id: ruff
+    args: [--fix]
+  - id: ruff-format
 
-  - repo: https://github.com/djlint/djLint
-    rev: v1.35.2
-    hooks:
-      - id: djlint-django
-        args: ["--reformat"]
+- repo: https://github.com/djlint/djLint
+  rev: v1.47.1
+  hooks:
+  - id: djlint-django
+    args: ["--reformat"]
 
-  - repo: local
-    hooks:
-      - id: python-check
-        name: Control Python Syntax
-        entry: bash -c 'if [ -f .venv/Scripts/python ]; then .venv/Scripts/python -m py_compile "$@"; elif [ -f .venv/bin/python ]; then .venv/bin/python -m py_compile "$@"; else python -m py_compile "$@"; fi' --
-        language: system
-        types: [python]
-
-      - id: django-test
-        name: Django Tests
-        entry: bash -c 'if [ -f .venv/Scripts/python ]; then .venv/Scripts/python manage.py test; elif [ -f .venv/bin/python ]; then .venv/bin/python manage.py test; else python manage.py test; fi'
-        language: system
-        types: [python]
-        pass_filenames: false
+- repo: local
+  hooks:
+  - id: django-test
+    name: Django Tests
+    entry: bash -c 'if [ -f .venv/Scripts/python ]; then .venv/Scripts/python manage.py test --keepdb --parallel; elif [ -f .venv/bin/python ]; then .venv/bin/python manage.py test --keepdb --parallel; else python manage.py test --keepdb --parallel; fi'
+    language: system
+    types: [python]
+    pass_filenames: false

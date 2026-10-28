@@ -125,7 +125,9 @@ class Transaction(BaseModel):
                 old_mv_account = old_self.meal_voucher_bank_account
                 if old_self.meal_voucher_amount > 0 and old_mv_account is not None:
                     if old_mv_account.id == old_self.bank_account.id:
-                        old_self.bank_account.current_balance += old_self.meal_voucher_amount
+                        old_self.bank_account.current_balance += (
+                            old_self.meal_voucher_amount
+                        )
                     else:
                         old_mv_account.current_balance += old_self.meal_voucher_amount
                         old_mv_account.save(update_fields=["current_balance"])
