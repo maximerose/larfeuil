@@ -23,7 +23,8 @@
           <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Période</label>
           <select name="month" class="input-base px-3 py-2 w-full text-sm font-medium capitalize">
             {% for m in available_months %}
-              <option value="{{ m|date:'Y-m' }}" {% if m.year == target_month.year and m.month == target_month.month %}selected{% endif %}>
+              <option value="{{ m|date:'Y-m' }}"
+                      {% if m.year == target_month.year and m.month == target_month.month %}selected{% endif %}>
                 {{ m|date:'F Y' }}
               </option>
             {% endfor %}
@@ -35,7 +36,8 @@
           <select name="member" class="input-base px-3 py-2 w-full text-sm">
             <option value="">Tous</option>
             {% for m in members %}
-              <option value="{{ m.id }}" {% if selected_member == m.id|stringformat:"s" %}selected{% endif %}>{{ m.name }}</option>
+              <option value="{{ m.id }}"
+                      {% if selected_member == m.id|stringformat:"s" %}selected{% endif %}>{{ m.name }}</option>
             {% endfor %}
           </select>
         </div>
@@ -67,7 +69,8 @@
             <option value="">Toutes</option>
             <option value="none" {% if selected_category == "none" %}selected{% endif %}>Sans catégorie</option>
             {% for c in categories %}
-              <option value="{{ c.id }}" {% if selected_category == c.id|stringformat:"s" %}selected{% endif %}>{{ c.name }}</option>
+              <option value="{{ c.id }}"
+                      {% if selected_category == c.id|stringformat:"s" %}selected{% endif %}>{{ c.name }}</option>
             {% endfor %}
           </select>
         </div>

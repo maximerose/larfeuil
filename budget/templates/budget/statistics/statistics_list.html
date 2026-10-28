@@ -16,7 +16,8 @@
         <label class="text-xs font-semibold text-slate-400 uppercase">De</label>
         <select name="start_month" class="input-base text-xs py-2 px-3">
           {% for m in available_months %}
-            <option value="{{ m|date:'Y-m' }}" {% if m == start_date %}selected{% endif %}>{{ m|date:'F Y'|capfirst }}</option>
+            <option value="{{ m|date:'Y-m' }}"
+                    {% if m == start_date %}selected{% endif %}>{{ m|date:'F Y'|capfirst }}</option>
           {% endfor %}
         </select>
       </div>
@@ -25,7 +26,8 @@
         <label class="text-xs font-semibold text-slate-400 uppercase">À</label>
         <select name="end_month" class="input-base text-xs py-2 px-3">
           {% for m in available_months %}
-            <option value="{{ m|date:'Y-m' }}" {% if m == end_date %}selected{% endif %}>{{ m|date:'F Y'|capfirst }}</option>
+            <option value="{{ m|date:'Y-m' }}"
+                    {% if m == end_date %}selected{% endif %}>{{ m|date:'F Y'|capfirst }}</option>
           {% endfor %}
         </select>
       </div>

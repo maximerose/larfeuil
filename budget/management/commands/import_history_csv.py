@@ -1,8 +1,8 @@
 import csv
 import datetime
 import os
-from decimal import Decimal
 import re
+from decimal import Decimal
 
 from django.conf import settings
 from django.contrib.auth import get_user_model

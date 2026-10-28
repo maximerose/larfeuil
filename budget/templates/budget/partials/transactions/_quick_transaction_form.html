@@ -164,7 +164,11 @@
         <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Imputation</label>
         <div class="flex gap-1 h-9.5">
           <label class="flex-1 cursor-pointer h-full">
-            <input type="radio" name="budget_shift" value="-1" class="peer hidden" {% if budget_shift == -1 %}checked{% endif %} />
+            <input type="radio"
+                   name="budget_shift"
+                   value="-1"
+                   class="peer hidden"
+                   {% if budget_shift == -1 %}checked{% endif %} />
             <div class="h-full flex items-center justify-center border border-slate-700 rounded-lg text-xs font-bold text-slate-400 peer-checked:border-brand peer-checked:text-brand peer-checked:bg-brand/10 transition-colors">
               M-1
             </div>
@@ -180,7 +184,11 @@
             </div>
           </label>
           <label class="flex-1 cursor-pointer h-full">
-            <input type="radio" name="budget_shift" value="1" class="peer hidden" {% if budget_shift == 1 %}checked{% endif %} />
+            <input type="radio"
+                   name="budget_shift"
+                   value="1"
+                   class="peer hidden"
+                   {% if budget_shift == 1 %}checked{% endif %} />
             <div class="h-full flex items-center justify-center border border-slate-700 rounded-lg text-xs font-bold text-slate-400 peer-checked:border-brand peer-checked:text-brand peer-checked:bg-brand/10 transition-colors">
               M+1
             </div>

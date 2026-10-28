@@ -15,11 +15,17 @@
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap"
+          rel="stylesheet" />
     <link href="https://fonts.googleapis.com/css2?family=Satisfy&display=swap" rel="stylesheet" />
 
-    <link rel="apple-touch-icon" sizes="180x180" href="{% static 'budget/img/larfeuil_logo/apple-touch-icon.png' %}?v=2" />
-    <link rel="icon" type="image/png" sizes="96x96" href="{% static 'budget/img/larfeuil_logo/favicon-96x96.png' %}?v=2" />
+    <link rel="apple-touch-icon"
+          sizes="180x180"
+          href="{% static 'budget/img/larfeuil_logo/apple-touch-icon.png' %}?v=2" />
+    <link rel="icon"
+          type="image/png"
+          sizes="96x96"
+          href="{% static 'budget/img/larfeuil_logo/favicon-96x96.png' %}?v=2" />
     <link rel="manifest" href="/manifest.json" />
     <meta name="theme-color" content="#0f172a" />
     <link rel="stylesheet" href="{% static 'budget/css/output.css' %}" />
@@ -66,7 +72,8 @@
                      class="w-8 h-8 group-hover:scale-105 transition-transform" />
                 <div class="flex items-center gap-2 truncate tracking-tight overflow-visible">
                   <!-- Logo en Satisfy -->
-                  <span class="font-logo text-2xl text-slate-100 group-hover:text-brand transition-colors pl-1 pb-1" id="brand-logo">Larfeuil</span>
+                  <span class="font-logo text-2xl text-slate-100 group-hover:text-brand transition-colors pl-1 pb-1"
+                        id="brand-logo">Larfeuil</span>
 
                   <!-- Fil d'ariane sur mobile -->
                   <div class="md:hidden flex items-center gap-2 text-base font-bold">
@@ -132,14 +139,18 @@
     <div id="pwa-install-banner"
          class="fixed bottom-6 left-4 right-4 mx-auto max-w-md z-50 bg-brand-card border border-brand-border p-4 rounded-xl shadow-2xl flex items-center justify-between transition-all duration-300 translate-y-32 opacity-0">
       <div class="flex items-center gap-3">
-        <img src="{% static 'budget/img/larfeuil_logo/apple-touch-icon.png' %}" class="w-10 h-10 rounded-md" alt="Logo" />
+        <img src="{% static 'budget/img/larfeuil_logo/apple-touch-icon.png' %}"
+             class="w-10 h-10 rounded-md"
+             alt="Logo" />
         <div class="text-sm">
           <p class="font-bold text-slate-100">Installer Larfeuil</p>
           <p class="text-slate-400 text-xs">Accès rapide en plein écran</p>
         </div>
       </div>
       <div class="flex items-center gap-2">
-        <button type="button" id="pwa-close-btn" class="p-2 text-slate-400 hover:text-white transition-colors">✕</button>
+        <button type="button"
+                id="pwa-close-btn"
+                class="p-2 text-slate-400 hover:text-white transition-colors">✕</button>
         <button type="button"
                 class="pwa-install-btn px-3 py-1.5 bg-brand text-brand-dark font-bold text-sm rounded-md hover:bg-emerald-400 transition-colors">
           Installer
