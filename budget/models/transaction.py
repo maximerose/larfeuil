@@ -124,8 +124,11 @@ class Transaction(BaseModel):
 
                 old_mv_account = old_self.meal_voucher_bank_account
                 if old_self.meal_voucher_amount > 0 and old_mv_account is not None:
-                    old_mv_account.current_balance += old_self.meal_voucher_amount
-                    old_mv_account.save(update_fields=["current_balance"])
+                    if old_mv_account.id == old_self.bank_account.id:
+                        old_self.bank_account.current_balance += old_self.meal_voucher_amount
+                    else:
+                        old_mv_account.current_balance += old_self.meal_voucher_amount
+                        old_mv_account.save(update_fields=["current_balance"])
 
             elif old_self.transaction_type == TransactionType.INCOME:
                 old_self.bank_account.current_balance -= old_self.total_amount
@@ -141,8 +144,11 @@ class Transaction(BaseModel):
 
             mv_account = self.meal_voucher_bank_account
             if self.meal_voucher_amount > 0 and mv_account is not None:
-                mv_account.current_balance -= self.meal_voucher_amount
-                mv_account.save(update_fields=["current_balance"])
+                if mv_account.id == self.bank_account.id:
+                    self.bank_account.current_balance -= self.meal_voucher_amount
+                else:
+                    mv_account.current_balance -= self.meal_voucher_amount
+                    mv_account.save(update_fields=["current_balance"])
 
         elif self.transaction_type == TransactionType.INCOME:
             self.bank_account.current_balance += self.total_amount
@@ -156,11 +162,14 @@ class Transaction(BaseModel):
                 self.total_amount - self.meal_voucher_amount
             )
 
-            # Stockage dans une variable locale pour que Pylance comprenne que ce n'est pas None
             mv_account = self.meal_voucher_bank_account
             if self.meal_voucher_amount > 0 and mv_account is not None:
-                mv_account.current_balance += self.meal_voucher_amount
-                mv_account.save(update_fields=["current_balance"])
+                # FIX: Même protection à la suppression
+                if mv_account.id == self.bank_account.id:
+                    self.bank_account.current_balance += self.meal_voucher_amount
+                else:
+                    mv_account.current_balance += self.meal_voucher_amount
+                    mv_account.save(update_fields=["current_balance"])
 
         elif self.transaction_type == TransactionType.INCOME:
             self.bank_account.current_balance -= self.total_amount

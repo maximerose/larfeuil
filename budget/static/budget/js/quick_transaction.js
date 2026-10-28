@@ -29,6 +29,8 @@ function initQuickTransactionForm() {
     initTomSelects();
   }
 
+  window._lastCatId = undefined;
+
   const configEl = document.getElementById("quick-tx-modal-config");
   const isEditMode = configEl ? configEl.dataset.isEdit === "true" : false;
   const initialTxType = configEl ? configEl.dataset.initialType : "EXPENSE";
@@ -68,7 +70,37 @@ function initQuickTransactionForm() {
     const catId = categorySelect ? categorySelect.value : "";
     const isEligible = window.catTrMap && window.catTrMap[catId] === true;
 
-    // 1. Activer / Désactiver les options TR proprement (ajout ou retrait dans TomSelect)
+    // --- 1. AUTO-SÉLECTION DU COMPTE TR AU CHANGEMENT DE CATÉGORIE ---
+    if (txType === "EXPENSE" && isEligible && window.trAccountsInfo.length > 0) {
+      if (window._lastCatId !== catId) {
+        window._lastCatId = catId; // On mémorise pour éviter une boucle infinie
+        
+        const currentVal = mainSelect.tomselect ? mainSelect.tomselect.getValue() : mainSelect.value;
+        const isCurrentlyTr = window.trAccountsInfo.some(tr => tr.id === currentVal);
+        
+        if (!isCurrentlyTr) {
+          // Cherche un compte TR avec du solde dispo
+          const availableTr = window.trAccountsInfo.find(tr => tr.remaining > 0);
+          if (availableTr) {
+            if (mainSelect.tomselect) {
+              if (!mainSelect.tomselect.options[availableTr.id]) {
+                mainSelect.tomselect.addOption({ value: availableTr.id, text: availableTr.name });
+              }
+              mainSelect.tomselect.setValue(availableTr.id);
+            } else {
+              mainSelect.value = availableTr.id;
+              mainSelect.dispatchEvent(new Event('change'));
+            }
+            // On sort ici pour laisser le onChange de TomSelect relancer updateTrLogic() proprement
+            return;
+          }
+        }
+      }
+    } else {
+      window._lastCatId = catId;
+    }
+
+    // --- 2. ACTIVER / DÉSACTIVER LES OPTIONS TR PROPREMENT ---
     window.trAccountsInfo.forEach((trAcc) => {
       const trId = trAcc.id;
       const canUseTr = txType === "EXPENSE" && isEligible && trAcc.remaining > 0;
