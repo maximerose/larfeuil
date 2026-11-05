@@ -110,73 +110,51 @@ class Transaction(BaseModel):
                 "Une transaction doit obligatoirement être rattachée à une catégorie ou à une charge fixe."
             )
 
+    def _update_account_balances(self, reverse=False) -> None:
+        """
+        Ajuste les soldes des comptes bancaires liés à la transaction.
+        Si reverse=True, l'opération mathématique est inversée (utile pour annuler/supprimer).
+        """
+        sign = Decimal(-1) if reverse else Decimal(1)
+
+        if self.transaction_type == TransactionType.EXPENSE:
+            cash_amount = self.total_amount - self.meal_voucher_amount
+            self.bank_account.current_balance -= cash_amount * sign
+
+            mv_account = self.meal_voucher_bank_account
+            if self.meal_voucher_amount > 0 and mv_account is not None:
+                if mv_account.id == self.bank_account.id:
+                    self.bank_account.current_balance -= self.meal_voucher_amount * sign
+                else:
+                    mv_account.current_balance -= self.meal_voucher_amount * sign
+                    mv_account.save(update_fields=["current_balance"])
+
+        elif self.transaction_type == TransactionType.INCOME:
+            self.bank_account.current_balance += self.total_amount * sign
+
+        self.bank_account.save(update_fields=["current_balance"])
+
     def save(self, *args, **kwargs) -> None:
-        is_new = self._state.adding
-
-        # Si la transaction existe déjà, on doit d'abord restaurer les anciens soldes
-        if not is_new:
+        # Si la transaction existe déjà, on annule son impact sur les soldes avant la mise à jour
+        if not self._state.adding:
+            # 1. Annuler l'ancienne transaction sur ses comptes
             old_self = Transaction.objects.get(pk=self.pk)
+            old_self._update_account_balances(reverse=True)
 
-            if old_self.transaction_type == TransactionType.EXPENSE:
-                old_self.bank_account.current_balance += (
-                    old_self.total_amount - old_self.meal_voucher_amount
-                )
-
-                old_mv_account = old_self.meal_voucher_bank_account
-                if old_self.meal_voucher_amount > 0 and old_mv_account is not None:
-                    if old_mv_account.id == old_self.bank_account.id:
-                        old_self.bank_account.current_balance += (
-                            old_self.meal_voucher_amount
-                        )
-                    else:
-                        old_mv_account.current_balance += old_self.meal_voucher_amount
-                        old_mv_account.save(update_fields=["current_balance"])
-
-            elif old_self.transaction_type == TransactionType.INCOME:
-                old_self.bank_account.current_balance -= old_self.total_amount
-
-            old_self.bank_account.save(update_fields=["current_balance"])
+            # 2. Rafraîchir l'instance actuelle pour récupérer les soldes mis à jour par old_self
+            # Cela évite le bug du double-débit dû au cache Python !
+            self.bank_account.refresh_from_db()
+            if self.meal_voucher_bank_account:
+                self.meal_voucher_bank_account.refresh_from_db()
 
         super().save(*args, **kwargs)
 
-        # Application des nouveaux montants sur les comptes
-        if self.transaction_type == TransactionType.EXPENSE:
-            cash_amount = self.total_amount - self.meal_voucher_amount
-            self.bank_account.current_balance -= cash_amount
-
-            mv_account = self.meal_voucher_bank_account
-            if self.meal_voucher_amount > 0 and mv_account is not None:
-                if mv_account.id == self.bank_account.id:
-                    self.bank_account.current_balance -= self.meal_voucher_amount
-                else:
-                    mv_account.current_balance -= self.meal_voucher_amount
-                    mv_account.save(update_fields=["current_balance"])
-
-        elif self.transaction_type == TransactionType.INCOME:
-            self.bank_account.current_balance += self.total_amount
-
-        self.bank_account.save(update_fields=["current_balance"])
+        # On applique la nouvelle transaction
+        self._update_account_balances(reverse=False)
 
     def delete(self, *args, **kwargs):
         """Réajuste le solde du compte lors de la suppression d'une transaction."""
-        if self.transaction_type == TransactionType.EXPENSE:
-            self.bank_account.current_balance += (
-                self.total_amount - self.meal_voucher_amount
-            )
-
-            mv_account = self.meal_voucher_bank_account
-            if self.meal_voucher_amount > 0 and mv_account is not None:
-                # FIX: Même protection à la suppression
-                if mv_account.id == self.bank_account.id:
-                    self.bank_account.current_balance += self.meal_voucher_amount
-                else:
-                    mv_account.current_balance += self.meal_voucher_amount
-                    mv_account.save(update_fields=["current_balance"])
-
-        elif self.transaction_type == TransactionType.INCOME:
-            self.bank_account.current_balance -= self.total_amount
-
-        self.bank_account.save(update_fields=["current_balance"])
+        self._update_account_balances(reverse=True)
         super().delete(*args, **kwargs)
 
     class Meta(BaseModel.Meta):
