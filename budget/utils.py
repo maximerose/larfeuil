@@ -73,8 +73,9 @@ def get_remaining_meal_voucher_ceiling(
     )["total"] or Decimal("0.00")
 
     spent_today = spent_as_tr + spent_as_main
+    remaining_ceiling = max(Decimal("0.00"), limit - spent_today)
 
-    return max(Decimal("0.00"), limit - spent_today)
+    return min(remaining_ceiling, bank_account.current_balance)
 
 
 def advance_date(start_date: datetime.date, months_to_add: int) -> datetime.date:

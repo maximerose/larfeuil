@@ -966,6 +966,9 @@
       border-color: color-mix(in oklab, var(--color-account-savings) 20%, transparent);
     }
   }
+  .border-action-danger {
+    border-color: var(--color-action-danger);
+  }
   .border-action-danger\/20 {
     border-color: color-mix(in srgb, #f43f5e 20%, transparent);
     @supports (color: color-mix(in lab, red, red)) {

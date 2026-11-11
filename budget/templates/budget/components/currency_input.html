@@ -20,7 +20,6 @@
            name="{{ name }}"
            value="{{ value|floatformat:2|default:'' }}"
            {% if placeholder %}placeholder="{{ placeholder }}"{% endif %}
-           {% if required %}required{% endif %}
            {% if autofocus %}autofocus{% endif %}
            class="input-base pl-9 pr-6 py-2 text-right text-sm font-medium w-full {{ custom_class|default:'' }}" />
 

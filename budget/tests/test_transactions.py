@@ -176,6 +176,7 @@ class TransactionAndTransferTestCase(TestCase):
             name="Swile Principal",
             account_type=AccountType.MEAL_VOUCHER,
             owner=self.member,
+            current_balance=Decimal("100.00"),
             daily_meal_voucher_limit=Decimal("25.00"),
         )
 

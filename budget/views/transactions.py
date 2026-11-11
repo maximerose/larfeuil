@@ -231,33 +231,8 @@ def quick_transaction_form_view(request: AuthenticatedHttpRequest) -> HttpRespon
     tr_accounts_info = []
 
     if tr_accounts:
-        today_txs = list(
-            Transaction.objects.filter(
-                transaction_date=today,
-                transaction_type=TransactionType.EXPENSE,
-            ).only(
-                "bank_account_id",
-                "meal_voucher_bank_account_id",
-                "total_amount",
-                "meal_voucher_amount",
-            )
-        )
-
         for tr in tr_accounts:
-            limit = tr.daily_meal_voucher_limit or Decimal("25.00")
-
-            spent_as_tr = sum(
-                tx.meal_voucher_amount
-                for tx in today_txs
-                if getattr(tx, "meal_voucher_bank_account_id", None) == tr.id
-            )
-            spent_as_main = sum(
-                (tx.total_amount - tx.meal_voucher_amount)
-                for tx in today_txs
-                if getattr(tx, "bank_account_id", None) == tr.id
-            )
-
-            remaining = max(Decimal("0.00"), limit - (spent_as_tr + spent_as_main))
+            remaining = get_remaining_meal_voucher_ceiling(today, tr) or Decimal("0.00")
 
             fallback_id = getattr(tr, "fallback_account_id", None)
 

@@ -40,8 +40,12 @@ function initQuickTransactionForm() {
   const refundHint = document.getElementById("refund-hint");
 
   const categorySelect = document.querySelector('select[name="expense_category"]');
-  const mainSelect = document.querySelector('select[name="expense_account"]') || document.querySelector('select[name="ui_main_account"]');
-  const fallbackSelect = document.querySelector('select[name="tr_fallback_account"]') || document.querySelector('select[name="ui_fallback_account"]');
+  const mainSelect =
+    document.querySelector('select[name="expense_account"]') ||
+    document.querySelector('select[name="ui_main_account"]');
+  const fallbackSelect =
+    document.querySelector('select[name="tr_fallback_account"]') ||
+    document.querySelector('select[name="ui_fallback_account"]');
   const splitBreakdown = document.getElementById("tr-split-breakdown");
   const trAmountInput = document.getElementById("meal_voucher_amount_input");
   const hiddenTrAccountId = document.getElementById("meal_voucher_account_id");
@@ -76,11 +80,11 @@ function initQuickTransactionForm() {
         window._lastCatId = catId; // On mémorise pour éviter une boucle infinie
 
         const currentVal = mainSelect.tomselect ? mainSelect.tomselect.getValue() : mainSelect.value;
-        const isCurrentlyTr = window.trAccountsInfo.some(tr => tr.id === currentVal);
+        const isCurrentlyTr = window.trAccountsInfo.some((tr) => tr.id === currentVal);
 
         if (!isCurrentlyTr) {
           // Cherche un compte TR avec du solde dispo
-          const availableTr = window.trAccountsInfo.find(tr => tr.remaining > 0);
+          const availableTr = window.trAccountsInfo.find((tr) => tr.remaining > 0);
           if (availableTr) {
             if (mainSelect.tomselect) {
               if (!mainSelect.tomselect.options[availableTr.id]) {
@@ -89,7 +93,7 @@ function initQuickTransactionForm() {
               mainSelect.tomselect.setValue(availableTr.id);
             } else {
               mainSelect.value = availableTr.id;
-              mainSelect.dispatchEvent(new Event('change'));
+              mainSelect.dispatchEvent(new Event("change"));
             }
             // On sort ici pour laisser le onChange de TomSelect relancer updateTrLogic() proprement
             return;
@@ -103,7 +107,7 @@ function initQuickTransactionForm() {
     // --- 2. ACTIVER / DÉSACTIVER LES OPTIONS TR PROPREMENT ---
     window.trAccountsInfo.forEach((trAcc) => {
       const trId = trAcc.id;
-      const canUseTr = txType === "EXPENSE" && isEligible && trAcc.remaining > 0;
+      const canUseTr = txType === "EXPENSE" && isEligible;
 
       if (mainSelect.tomselect) {
         if (canUseTr) {
@@ -114,9 +118,7 @@ function initQuickTransactionForm() {
         } else {
           // Le retirer
           if (mainSelect.tomselect.getValue() === trId) {
-            const firstValid = Object.keys(mainSelect.tomselect.options).find(
-              (val) => val !== trId && val !== ""
-            );
+            const firstValid = Object.keys(mainSelect.tomselect.options).find((val) => val !== trId && val !== "");
             mainSelect.tomselect.setValue(firstValid || "", true);
           }
           mainSelect.tomselect.removeOption(trId);
@@ -139,54 +141,49 @@ function initQuickTransactionForm() {
     const totalAmount = parseFloat(hiddenTotalAmountInput ? hiddenTotalAmountInput.value : 0) || 0;
 
     if (txType === "EXPENSE" && selectedTrAcc) {
+      // 1. Toujours afficher la ventilation si un compte TR est sélectionné
+      if (splitBreakdown) splitBreakdown.classList.remove("hidden");
+
       const trRemaining = selectedTrAcc.remaining;
+      if (trMaxBadge) trMaxBadge.textContent = `Dispo: ${trRemaining.toFixed(2).replace(".", ",")} €`;
 
-      if (totalAmount > trRemaining) {
-        // Dépassement : afficher la ventilation
-        if (splitBreakdown) splitBreakdown.classList.remove("hidden");
-        if (trMaxBadge) trMaxBadge.textContent = `Plafond dispo: ${trRemaining.toFixed(2).replace('.', ',')} €`;
-
-        if (trAmountInput && (!trAmountInput.value || parseFloat(trAmountInput.value) > trRemaining || parseFloat(trAmountInput.value) <= 0)) {
-          trAmountInput.value = trRemaining.toFixed(2);
+      // 2. Initialisation intelligente du montant TR imputé
+      if (trAmountInput) {
+        // Si l'utilisateur n'a encore rien saisi ou si c'est la toute première sélection automatique
+        // on pré-remplit avec le maximum possible (soit le montant total de la transaction, soit le plafond dispo)
+        if (!trAmountInput.dataset.userEdited) {
+          const suggestedAmount = Math.min(totalAmount, trRemaining);
+          trAmountInput.value = suggestedAmount.toFixed(2);
         }
+      }
 
-        const currentTrAmount = Math.min(totalAmount, Math.max(0, parseFloat(trAmountInput ? trAmountInput.value : 0) || trRemaining));
-        const remainingForFallback = totalAmount - currentTrAmount;
+      // 3. Calculs des restes
+      const currentTrAmount = Math.max(0, parseFloat(trAmountInput ? trAmountInput.value : 0) || 0);
+      const remainingForFallback = Math.max(0, totalAmount - currentTrAmount);
 
-        const remDisplay = document.getElementById("tr-split-remaining-display");
-        if (remDisplay) remDisplay.textContent = remainingForFallback.toFixed(2).replace('.', ',') + " €";
+      const remDisplay = document.getElementById("tr-split-remaining-display");
+      if (remDisplay) remDisplay.textContent = remainingForFallback.toFixed(2).replace(".", ",") + " €";
 
-        mainSelect.name = "ui_main_account";
-        if (fallbackSelect) fallbackSelect.name = "expense_account";
+      mainSelect.name = "ui_main_account";
+      if (fallbackSelect) fallbackSelect.name = "expense_account";
 
-        // Sélection par défaut du relais
-        if (fallbackSelect) {
-          const fallbackVal = fallbackSelect.value;
-          if (!fallbackVal || fallbackVal === selectedTrAcc.id) {
-            const defaultFallbackId = selectedTrAcc.fallback_id || "";
-            if (fallbackSelect.tomselect && defaultFallbackId) {
-              fallbackSelect.tomselect.setValue(defaultFallbackId, true);
-            } else if (defaultFallbackId) {
-              fallbackSelect.value = defaultFallbackId;
-            }
+      // Sélection par défaut du relais
+      if (fallbackSelect) {
+        const fallbackVal = fallbackSelect.value;
+        if (!fallbackVal || fallbackVal === selectedTrAcc.id) {
+          const defaultFallbackId = selectedTrAcc.fallback_id || "";
+          if (fallbackSelect.tomselect && defaultFallbackId) {
+            fallbackSelect.tomselect.setValue(defaultFallbackId, true);
+          } else if (defaultFallbackId) {
+            fallbackSelect.value = defaultFallbackId;
           }
         }
-
-        if (hiddenTrAccountId) hiddenTrAccountId.value = selectedTrAcc.id;
-        if (hiddenTrAmount) hiddenTrAmount.value = currentTrAmount.toFixed(2);
-
-      } else {
-        // Achat <= Plafond
-        if (splitBreakdown) splitBreakdown.classList.add("hidden");
-
-        mainSelect.name = "expense_account";
-        if (fallbackSelect) fallbackSelect.name = "ui_fallback_account";
-
-        if (hiddenTrAccountId) hiddenTrAccountId.value = selectedTrAcc.id;
-        if (hiddenTrAmount) hiddenTrAmount.value = totalAmount.toFixed(2);
       }
+
+      if (hiddenTrAccountId) hiddenTrAccountId.value = selectedTrAcc.id;
+      if (hiddenTrAmount) hiddenTrAmount.value = currentTrAmount.toFixed(2);
     } else {
-      // Compte classique
+      // Compte classique : on masque la ventilation
       if (splitBreakdown) splitBreakdown.classList.add("hidden");
 
       mainSelect.name = "expense_account";
@@ -199,11 +196,28 @@ function initQuickTransactionForm() {
 
   // Soumission
   if (formEl) {
-    formEl.addEventListener("submit", function () {
-      const selectedTrAcc = getTrAccount(mainSelect ? mainSelect.value : null);
-      const totalAmount = parseFloat(hiddenTotalAmountInput ? hiddenTotalAmountInput.value : 0) || 0;
+    formEl.addEventListener("htmx:beforeRequest", function (e) {
+      // 1. Vérification du montant total
+      const totalAmountVal = parseFloat(hiddenTotalAmountInput ? hiddenTotalAmountInput.value : 0) || 0;
 
-      if (selectedTrAcc && totalAmount > selectedTrAcc.remaining && fallbackSelect) {
+      // On bloque si le montant est exactement 0 (les négatifs sont acceptés comme remboursements)
+      if (totalAmountVal === 0) {
+        e.preventDefault(); // Annule la requête HTMX
+
+        if (displayAmountInput) {
+          displayAmountInput.focus();
+          displayAmountInput.classList.add("border-b-2", "border-action-danger", "text-action-danger");
+          setTimeout(
+            () => displayAmountInput.classList.remove("border-b-2", "border-action-danger", "text-action-danger"),
+            2000,
+          );
+        }
+        return;
+      }
+
+      // 2. Exécuter l'ancienne logique de fallback si nécessaire
+      const selectedTrAcc = getTrAccount(mainSelect ? mainSelect.value : null);
+      if (selectedTrAcc && fallbackSelect) {
         const fallbackValue = fallbackSelect.value;
         if (fallbackValue && fallbackValue !== selectedTrAcc.id) {
           if (mainSelect.tomselect) {
@@ -248,7 +262,9 @@ function initQuickTransactionForm() {
     const tempDestVal = destSelect.value;
 
     if (sourceSelect.tomselect) {
-      Object.keys(sourceSelect.tomselect.options).forEach((val) => (sourceSelect.tomselect.options[val].disabled = false));
+      Object.keys(sourceSelect.tomselect.options).forEach(
+        (val) => (sourceSelect.tomselect.options[val].disabled = false),
+      );
       sourceSelect.tomselect.setValue(tempDestVal, true);
     }
     if (destSelect.tomselect) {
@@ -283,14 +299,22 @@ function initQuickTransactionForm() {
     if (categorySelect.tomselect) categorySelect.tomselect.on("change", window.updateTrLogic);
   }
 
-  document.body.addEventListener("change", function(e) {
-      if (e.target.name === "expense_account" || e.target.name === "ui_main_account" || e.target.name === "tr_fallback_account" || e.target.name === "ui_fallback_account") {
-          window.updateTrLogic();
-      }
+  document.body.addEventListener("change", function (e) {
+    if (
+      e.target.name === "expense_account" ||
+      e.target.name === "ui_main_account" ||
+      e.target.name === "tr_fallback_account" ||
+      e.target.name === "ui_fallback_account"
+    ) {
+      window.updateTrLogic();
+    }
   });
 
   if (trAmountInput) {
-    trAmountInput.addEventListener("input", window.updateTrLogic);
+    trAmountInput.addEventListener("input", function () {
+      this.dataset.userEdited = "true";
+      window.updateTrLogic();
+    });
   }
 
   if (displayAmountInput) {
